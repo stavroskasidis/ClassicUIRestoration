@@ -43,6 +43,10 @@ local function ApplyClassicPowerBar(manaBar)
 	local target = ns.GetBar(manaBar)
 	if target ~= manaBar then
 		target.classicOwned = true
+		-- UnitFrameManaBar_UpdateType ends by resetting Blizzard's own fill
+		-- to alpha 1 (0.5 when dead), which would show the retail bar art
+		-- through the classic mirror on every unit change; keep it hidden.
+		manaBar:GetStatusBarTexture():SetAlpha(0)
 	end
 	ns.SetBarTexture(target, T.STATUS_BAR)
 	local texture = target:GetStatusBarTexture()
@@ -76,6 +80,8 @@ local function ApplyClassicAlternatePowerBar(self)
 	local target = ns.GetBar(self)
 	if target ~= self then
 		target.classicOwned = true
+		-- UpdateIsAliveState resets the retail fill's alpha like the mana bar above.
+		self:GetStatusBarTexture():SetAlpha(0)
 	end
 	ns.SetBarTexture(target, T.STATUS_BAR)
 	local info = self.powerName and PowerBarColor[self.powerName]
@@ -137,6 +143,7 @@ function module:Apply()
 	if AlternatePowerBar then
 		ns.Hook(AlternatePowerBar, "UpdateArt", ApplyClassicAlternatePowerBar)
 		ns.Hook(AlternatePowerBar, "EvaluateUnit", ApplyClassicAlternatePowerBar)
+		ns.Hook(AlternatePowerBar, "UpdateIsAliveState", ApplyClassicAlternatePowerBar)
 		ApplyClassicAlternatePowerBar(AlternatePowerBar)
 	end
 
