@@ -3,7 +3,7 @@
 ## Notes: Restores the classic (pre-Dragonflight) look of portraits, cast bars, health bars, power bars, unit frames and nameplates. Every element can be switched back to the modern look individually.
 ## Version: @project-version@
 ## Author: Stavros
-## IconTexture: Interface\Icons\INV_Misc_Book_09
+## IconTexture: Interface\AddOns\ClassicUIRestoration\Icon.png
 ## SavedVariables: ClassicUIRestorationDB
 ## Category: User Interface
 ## X-License: MIT
