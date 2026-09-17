@@ -1,2 +1,5 @@
 # Machine-specific deploy settings (WoW install location)
 deploy.config.json
+
+# Assembled addon folders (Shared + flavor), produced by build.ps1
+build/

@@ -1,0 +1,18 @@
+## Interface: 120100
+## Title: Classic UI Restoration
+## Notes: Restores the classic (pre-Dragonflight) look of portraits, cast bars, health bars, power bars, unit frames and nameplates. Every element can be switched back to the retail look individually.
+## Version: @project-version@
+## Author: Stavros
+## IconTexture: Interface\Icons\INV_Misc_Book_09
+## SavedVariables: ClassicUIRestorationDB
+## Category: User Interface
+## X-License: MIT
+
+Core.lua
+Modules\UnitFrames.lua
+Modules\Portraits.lua
+Modules\HealthBars.lua
+Modules\PowerBars.lua
+Modules\CastBars.lua
+Modules\Nameplates.lua
+Options.lua

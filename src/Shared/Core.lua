@@ -19,7 +19,7 @@ _G.ClassicUIRestoration = ns
 
 ns.ADDON_NAME = ADDON_NAME
 ns.TITLE = "Classic UI Restoration"
-ns.VERSION = C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version") or "1.0.0"
+ns.VERSION = C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version") or "dev" -- stamped into the .toc by build.ps1
 
 -- Legacy textures that still ship with the retail client.
 ns.T = {

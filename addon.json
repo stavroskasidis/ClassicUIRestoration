@@ -1,0 +1,12 @@
+{
+	"name": "ClassicUIRestoration",
+	"version": "1.0.0",
+	"flavors": {
+		"Retail": {
+			"gameDir": "_retail_"
+		},
+		"Forever": {
+			"gameDir": "_classic_beta_"
+		}
+	}
+}

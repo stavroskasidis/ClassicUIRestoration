@@ -1,52 +1,60 @@
 <#
 .SYNOPSIS
-	Deploys the addon into the World of Warcraft AddOns folder.
+	Deploys the addon into the World of Warcraft AddOns folder(s).
 
 .DESCRIPTION
-	Mirrors <repo>\<Flavor>\ into <WoW>\<flavor dir>\Interface\AddOns\ClassicUIRestoration\.
+	Runs build.ps1 for each flavor being deployed (src\Shared + src\<Flavor>
+	merged into <repo>\build\<Flavor>\ClassicUIRestoration\) and mirrors that
+	build output into <WoW>\<gameDir>\Interface\AddOns\ClassicUIRestoration\.
+
+	Without -Flavor, every flavor declared in addon.json whose game folder
+	exists in the WoW install is deployed; flavors whose client is not
+	installed are skipped with a note. With -Flavor, that one flavor is
+	deployed and a missing game folder is an error.
 
 	The WoW install location (the folder that contains _retail_, _classic_, ...)
 	is asked for on the first run and stored in deploy.config.json next to this
 	script. That file is git-ignored because it is machine specific.
 
 .PARAMETER Flavor
-	Which game flavor to deploy: the name of a source folder in this repo
-	(Retail by default). Each flavor maps to a game sub-folder in $FlavorDirs.
+	Deploy only this flavor. Flavors and the game sub-folder each one deploys
+	to ("gameDir") are declared in addon.json.
 
 .PARAMETER Reset
 	Forget the stored WoW location and ask for it again.
 
 .EXAMPLE
-	.\deploy.ps1
-	.\deploy.ps1 -Flavor Retail
+	.\deploy.ps1                  # every flavor whose client is installed
+	.\deploy.ps1 -Flavor Forever  # just one
 	.\deploy.ps1 -Reset
 #>
 [CmdletBinding()]
 param(
-	[string]$Flavor = "Retail",
+	[string]$Flavor,
 	[switch]$Reset
 )
 
 $ErrorActionPreference = "Stop"
 
-$AddonName = "ClassicUIRestoration"
+$RepoRoot    = $PSScriptRoot
+$ConfigPath  = Join-Path $RepoRoot "deploy.config.json"
+$BuildScript = Join-Path $RepoRoot "build.ps1"
 
-# Source folder in this repo -> game flavor folder inside the WoW install.
-# Add a line here when a new flavor (e.g. WoW Forever) gets its own folder.
-$FlavorDirs = @{
-	Retail = "_retail_"
+# Addon name and flavor -> game folder mapping ("gameDir") come from addon.json.
+# (Forever currently ships as the "wow_classic_beta" product, _classic_beta_;
+# update its gameDir there once it gets its own product folder.)
+$Addon     = Get-Content (Join-Path $RepoRoot "addon.json") -Raw | ConvertFrom-Json
+$AddonName = $Addon.name
+$FlavorDirs = [ordered]@{}
+foreach ($property in $Addon.flavors.PSObject.Properties) {
+	if (-not $property.Value.gameDir) {
+		throw "Flavor '$($property.Name)' in addon.json has no 'gameDir'."
+	}
+	$FlavorDirs[$property.Name] = $property.Value.gameDir
 }
 
-$RepoRoot   = $PSScriptRoot
-$ConfigPath = Join-Path $RepoRoot "deploy.config.json"
-
-if (-not $FlavorDirs.ContainsKey($Flavor)) {
+if ($Flavor -and -not $FlavorDirs.Contains($Flavor)) {
 	throw "Unknown flavor '$Flavor'. Known flavors: $($FlavorDirs.Keys -join ', ')"
-}
-
-$Source = Join-Path $RepoRoot $Flavor
-if (-not (Test-Path (Join-Path $Source "$AddonName.toc"))) {
-	throw "No addon found at '$Source' (expected $AddonName.toc)."
 }
 
 # --- WoW location -----------------------------------------------------------
@@ -88,30 +96,57 @@ if (-not $config -or -not $config.wowPath -or -not (Test-Path $config.wowPath)) 
 	Write-Host "Stored WoW location in $ConfigPath"
 }
 
-$WowPath   = $config.wowPath
-$FlavorDir = Join-Path $WowPath $FlavorDirs[$Flavor]
-if (-not (Test-Path $FlavorDir)) {
-	throw "Flavor folder '$FlavorDir' does not exist in the WoW install. Run with -Reset to change the location."
+$WowPath = $config.wowPath
+
+# --- Which flavors -----------------------------------------------------------
+
+# Flavor name -> its addon folder inside the game, for every flavor to deploy.
+$targets = [ordered]@{}
+if ($Flavor) {
+	$gameDir = Join-Path $WowPath $FlavorDirs[$Flavor]
+	if (-not (Test-Path $gameDir)) {
+		throw "Game folder '$gameDir' for flavor '$Flavor' does not exist in the WoW install. Run with -Reset to change the location."
+	}
+	$targets[$Flavor] = Join-Path $gameDir "Interface\AddOns\$AddonName"
+} else {
+	foreach ($name in $FlavorDirs.Keys) {
+		$gameDir = Join-Path $WowPath $FlavorDirs[$name]
+		if (Test-Path $gameDir) {
+			$targets[$name] = Join-Path $gameDir "Interface\AddOns\$AddonName"
+		} else {
+			Write-Host "Skipping $name`: '$gameDir' is not installed."
+		}
+	}
+	if ($targets.Count -eq 0) {
+		throw "None of the game folders ($($FlavorDirs.Values -join ', ')) exist under '$WowPath'. Run with -Reset to change the location."
+	}
 }
 
-$Target = Join-Path $FlavorDir "Interface\AddOns\$AddonName"
+# --- Build + deploy ---------------------------------------------------------
 
-# --- Deploy -----------------------------------------------------------------
+foreach ($name in $targets.Keys) {
+	$buildOutput = Join-Path $RepoRoot "build\$name\$AddonName"
+	$target      = $targets[$name]
 
-Write-Host "Deploying $Flavor -> $Target"
-New-Item -ItemType Directory -Force (Split-Path $Target -Parent) | Out-Null
+	& $BuildScript -Flavor $name
+	if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $buildOutput "$AddonName.toc"))) {
+		throw "build.ps1 did not produce '$buildOutput'."
+	}
 
-# /MIR keeps the target an exact copy of the source (removes deleted files);
-# /XD .git makes sure no repository metadata is copied or purged.
-$robocopyArgs = @($Source, $Target, "/MIR", "/XD", ".git", "/NJH", "/NJS", "/NDL", "/NP", "/R:2", "/W:1")
-& robocopy @robocopyArgs
-$code = $LASTEXITCODE
+	Write-Host "Deploying $buildOutput -> $target"
+	New-Item -ItemType Directory -Force (Split-Path $target -Parent) | Out-Null
 
-# Robocopy exit codes below 8 mean success (bits 1/2/4 = copied/extra/mismatched).
-if ($code -ge 8) {
-	throw "robocopy failed with exit code $code"
+	# /MIR keeps the target an exact copy of the build output (removes deleted files).
+	$robocopyArgs = @($buildOutput, $target, "/MIR", "/NJH", "/NJS", "/NDL", "/NP", "/R:2", "/W:1")
+	& robocopy @robocopyArgs
+	$code = $LASTEXITCODE
+
+	# Robocopy exit codes below 8 mean success (bits 1/2/4 = copied/extra/mismatched).
+	if ($code -ge 8) {
+		throw "robocopy failed with exit code $code while deploying $name"
+	}
 }
 
-Write-Host "Done. Type /reload in game to pick up the changes."
+Write-Host "Done ($($targets.Keys -join ', ')). Type /reload in game to pick up the changes."
 
 exit 0
