@@ -15,6 +15,15 @@
 	Only widget state is touched - no Lua fields are written on the plates,
 	which matters because nameplate values are "secret" in 12.x.
 
+	The style's cast bar (Blizzard's classicStyleCastBar path) draws the
+	glossy UI-StatusBar fill with a 32px spark glow, which looks out of place
+	at nameplate size. The plates here get the flat health bar fill and no
+	spark instead, and the retail finish glow, "casting at you" glow and
+	important-cast pulse are blanked. Blizzard re-applies
+	its fill on every cast, so like the Cast Bars module this one polls the
+	visible plate cast bars from its own frame (the bars themselves cannot be
+	hooked, see Modules\CastBars.lua).
+
 	This module can be toggled live.
 ]]
 
@@ -23,7 +32,7 @@ local _, ns = ...
 local module = ns:RegisterModule({
 	key = "nameplates",
 	name = "Nameplates",
-	tooltip = "Uses the classic nameplate style (classic border, flat health bar, level text and the small classic cast bar). Turning this off restores the nameplate style that was active before.",
+	tooltip = "Uses the classic nameplate style (classic border, flat health bar, level text and a flat cast bar without spark). Turning this off restores the nameplate style that was active before.",
 	live = true,
 })
 
@@ -107,7 +116,51 @@ local function HideOwnTextures(unitFrame)
 	if castBar and castBar.Border then
 		castBar.Border:SetAlpha(1)
 	end
+	if castBar and castBar.Spark then
+		castBar.Spark:SetAlpha(1)
+	end
+	if castBar and castBar.CastTargetIndicator then
+		castBar.CastTargetIndicator:SetAtlas("ui-hud-nameplates-targetedbyenemy")
+	end
+	if castBar and castBar.ImportantCastIndicator then
+		castBar.ImportantCastIndicator:SetAtlas("ui-hud-nameplates-importantcast")
+	end
 end
+
+-- Plate cast bars seen while the classic style was active; polled below.
+local watchedCastBars = setmetatable({}, { __mode = "k" })
+
+-- Fill texture as Blizzard reads it back (file id); on secret casts even that
+-- is a secret, in which case the flat fill is simply re-applied.
+local barFillID = GetFileIDFromPath and GetFileIDFromPath(BAR_FILL)
+local function HasFlatFill(fill)
+	local texture = fill and fill:GetTexture()
+	if issecretvalue and issecretvalue(texture) then
+		return false
+	end
+	return texture == barFillID or texture == BAR_FILL
+end
+
+local function RepairCastBarArt(castBar)
+	local art = ns.CastBarArt
+	if not HasFlatFill(castBar:GetStatusBarTexture()) then
+		castBar:SetStatusBarTexture(BAR_FILL)
+	end
+	-- Classic plates have no finish flash; blank the retail glow.
+	if art and castBar.Flash and art.HasAtlas(castBar.Flash) then
+		castBar.Flash:SetColorTexture(0, 0, 0, 0)
+	end
+end
+
+local updater = CreateFrame("Frame")
+updater:Hide()
+updater:SetScript("OnUpdate", function()
+	for castBar in pairs(watchedCastBars) do
+		if castBar:IsShown() then
+			RepairCastBarArt(castBar)
+		end
+	end
+end)
 
 -- Re-applies the classic border/bar geometry after Blizzard's UpdateAnchors.
 local function EnforceClassicLayout(unitFrame)
@@ -160,6 +213,24 @@ local function EnforceClassicLayout(unitFrame)
 	-- Cast bar border (only visible while casting).
 	local castContainer = unitFrame.CastBarsContainer
 	local castBar = castContainer and castContainer.castBar
+	if castBar then
+		watchedCastBars[castBar] = true
+		-- No spark on classic plates. Blizzard only ever shows/hides it, so
+		-- the alpha sticks (restored by HideOwnTextures).
+		if castBar.Spark then
+			castBar.Spark:SetAlpha(0)
+		end
+		-- Nor the retail "casting at you" glow around the bar and the pulsing
+		-- important-cast glow. Blizzard shows/hides them and animates the
+		-- latter's alpha, so they are blanked rather than faded; the atlases
+		-- come from the XML template only (restored by HideOwnTextures).
+		if castBar.CastTargetIndicator then
+			castBar.CastTargetIndicator:SetColorTexture(0, 0, 0, 0)
+		end
+		if castBar.ImportantCastIndicator then
+			castBar.ImportantCastIndicator:SetColorTexture(0, 0, 0, 0)
+		end
+	end
 	if castBar and own.castBorder then
 		if castBar.Border then
 			castBar.Border:SetAlpha(0)
@@ -239,10 +310,12 @@ function module:Enable()
 	end
 	SetStyle(classic)
 	ApplyToExistingPlates()
+	updater:Show()
 end
 
 function module:Disable()
 	enabled = false
+	updater:Hide()
 	local classic = GetClassicStyle()
 	local restore = ns.db.nameplatesPreviousStyle
 	if restore == nil or restore == classic then

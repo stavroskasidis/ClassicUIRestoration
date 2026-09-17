@@ -24,6 +24,12 @@
 	    right of every health bar and shrink the bar to make room for it. The
 	    classic border has its own level bubble, so the box is faded out and
 	    the bar takes the full width again.
+	  * The minimap frame is re-skinned by Blizzard_Minimap\Camelot\Skin.lua
+	    on every "rotate minimap" change (container/backdrop size, compass
+	    atlas, a static ring underlay in the rotated mode); the classic art is
+	    re-applied after it. Camelot also adds a day/night indicator
+	    (MinimapCluster.DielFrame) at the top right of the map, where classic
+	    has the calendar; it is moved to the free bottom-left spot of the ring.
 
 	Everything here runs *after* the shared modules: this file is listed last
 	in the .toc, and hooks on the same function fire in installation order.
@@ -228,5 +234,62 @@ function module:Apply()
 		for _, frame in pairs(BossTargetFrameContainer.BossTargetFrames) do
 			SkinTargetStyleFrame(frame, false)
 		end
+	end
+end
+
+---------------------------------------------------------------------------
+-- Minimap part (follows the Minimap option)
+---------------------------------------------------------------------------
+
+local minimapPart = ns:RegisterModule({
+	key = "forever_minimap",
+	name = "WoW Forever minimap adjustments",
+	parent = "minimap",
+	live = false,
+})
+
+-- Puts the classic art back after the camelot skin resized the container and
+-- backdrop and swapped the compass atlas; its ring underlay is not part of
+-- the classic look.
+local function ReapplyClassicMinimap()
+	local shared = ns.moduleByKey.minimap
+	if shared and shared.ReapplyArt then
+		shared:ReapplyArt()
+	end
+	if MinimapCompassTextureUnderlay then
+		MinimapCompassTextureUnderlay:Hide()
+	end
+end
+
+-- Camelot anchors the day/night indicator to the cluster (and scales it) from
+-- its own MinimapCluster:SetEditModeScale; inside the scaled backdrop it
+-- needs neither.
+local function AnchorDielFrame()
+	local diel = MinimapCluster.DielFrame
+	if not diel then return end
+	diel:SetScale(1)
+	Point(diel, "CENTER", Minimap, "CENTER", -58, -58)
+end
+
+function minimapPart:Apply()
+	if not MinimapCluster or not MinimapBackdrop or not MinimapCompassTexture then return end
+
+	ReapplyClassicMinimap()
+	-- Skin.lua sizes the frames after the atlas swap; re-apply once it is done.
+	ns.Hook(MinimapCompassTexture, "SetAtlas", function()
+		C_Timer.After(0, ReapplyClassicMinimap)
+	end)
+
+	if MinimapCluster.DielFrame then
+		MinimapCluster.DielFrame:SetParent(MinimapBackdrop)
+		AnchorDielFrame()
+		ns.Hook(MinimapCluster, "SetEditModeScale", AnchorDielFrame)
+	end
+
+	-- Camelot's player coordinates sit right under the map, where the
+	-- classic clock plate (Minimap CENTER 0,-75, 28px tall) now is.
+	local coords = MinimapCluster.MinimapContainer.PlayerCoords
+	if coords then
+		Point(coords, "TOP", Minimap, "CENTER", 0, -92)
 	end
 end

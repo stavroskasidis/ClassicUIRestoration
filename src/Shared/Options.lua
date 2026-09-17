@@ -82,13 +82,13 @@ function ns:BuildOptions()
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(
 		"Apply changes",
-		"Unit Frames are applied when the interface loads; reload after changing the option."))
+		"Unit Frames and the Minimap are applied when the interface loads; reload after changing those options."))
 
 	layout:AddInitializer(CreateSettingsButtonInitializer(
 		"Reload the interface",
 		RELOADUI or "Reload UI",
 		function() ReloadUI() end,
-		"Reloads the interface so that pending unit frame changes take effect.",
+		"Reloads the interface so that pending unit frame and minimap changes take effect.",
 		true))
 
 	Settings.RegisterAddOnCategory(category)

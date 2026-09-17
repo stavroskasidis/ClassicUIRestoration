@@ -16,10 +16,11 @@ Classic UI Restoration**.
 | --- | --- | --- |
 | **Unit Frames** | Classic frame artwork and layout for the player, target, focus, target-of-target, pet, party and boss frames (elite/rare/minus dragons, level background, classic icon positions, black backdrop behind the bars), the classic circular portraits with the "Zzz" resting bubble and crossed-swords combat indicator on the player portrait, and the flat classic health bars (green, incl. heal prediction / absorb overlays) and power bars (solid classic colours, no end-cap spark). The raid-style frame bars get the classic textures as well. | UI reload |
 | **Cast Bars** | Classic cast bar art (border, spark, flash, yellow/green/red fill colours) for the player, pet, target, focus and boss cast bars. Works with the "lock to player frame" Edit Mode option. | Immediate |
-| **Nameplates** | Switches nameplates to the client's built-in classic style (classic border, flat health bar, level text in the border's bubble, small classic cast bar) and remembers the previous style so it can be restored. | Immediate |
+| **Nameplates** | Switches nameplates to the client's built-in classic style (classic border, flat health bar, level text in the border's bubble, flat cast bar without spark) and remembers the previous style so it can be restored. | Immediate |
+| **Minimap** | Classic minimap: the 140px map in the round `UI-Minimap-Border` ring with the zone text bar on top, the round tracking button on the left, always-visible classic zoom buttons, the calendar page with the day printed on it, the clock on its plate at the bottom of the map, the square world map button, the letter icon (in a ring) for new mail and crafting orders, the compass ring while "rotate minimap" is on and the north tag otherwise. The addon compartment button gets the same round classic button look, below the tracking button. Edit Mode's size slider and the icon scale still work; its "header underneath" option has no classic equivalent and is ignored. | UI reload |
 
-The "UI reload" option is applied while the interface loads because
-Blizzard's frames cannot be safely un-skinned at runtime; changing it
+The "UI reload" options are applied while the interface loads because
+Blizzard's frames cannot be safely un-skinned at runtime; changing them
 prompts for a reload (there is also a Reload button on the options page and
 `/cuir reload`).
 
@@ -33,8 +34,12 @@ re-textured and re-anchored. Blizzard's layout functions are hooked with
 `hooksecurefunc` so the classic layout survives target changes, vehicle
 swapping, party roster updates and Edit Mode.
 
-Cast bars use the `classicStyleCastBar` mode that Blizzard's `CastingBarMixin`
-already supports, and nameplates use the `nameplateStyle` CVar's Classic value.
+Cast bars are re-textured from script hooks on the bars themselves (their
+cast methods must not be hooked on 12.x, see `Modules\CastBars.lua`), and
+nameplates use the `nameplateStyle` CVar's Classic value. The minimap keeps
+Blizzard's cluster (so Edit Mode, the tracking menu and the notifications keep
+working) and re-parents its pieces into the scaled map container at the
+classic positions.
 
 ## WoW Forever
 
@@ -55,7 +60,12 @@ extra module, `Modules/Forever.lua`, which handles what the overlay adds:
 - nameplates get a level indicator box (`PlayerLevelDiffFrame`) to the right
   of every health bar: hidden while the classic nameplate style is on, and the
   bar takes the full width again,
-- the hunter pet happiness indicator next to the pet frame is left as is.
+- the hunter pet happiness indicator next to the pet frame is left as is,
+- the minimap frame is re-skinned by the overlay on every "rotate minimap"
+  change (`Blizzard_Minimap\Camelot\Skin.lua`); the classic art is put back
+  afterwards, and the overlay's day/night indicator (`MinimapCluster.DielFrame`),
+  which sits where classic has the calendar, is moved to the bottom left of
+  the ring and its player coordinates are moved below the classic clock.
 
 ## Files
 
@@ -69,5 +79,6 @@ Modules/HealthBars.lua   health bar textures/colours
 Modules/PowerBars.lua    power bar textures/colours
 Modules/CastBars.lua     classic cast bars (live toggle)
 Modules/Nameplates.lua   classic nameplate style (live toggle)
+Modules/Minimap.lua      classic minimap cluster
 Modules/Forever.lua      Forever only: adjustments for the "camelot" overlay
 ```

@@ -1,7 +1,8 @@
 # Agent instructions for Classic UI Restoration
 
 This repository contains *Classic UI Restoration*, a World of Warcraft addon
-that restores pre-Dragonflight UI elements (unit frames, cast bars, nameplates)
+that restores pre-Dragonflight UI elements (unit frames, cast bars, nameplates,
+minimap)
 on the modern client, with each element individually switchable back to the
 retail look.
 
@@ -17,6 +18,7 @@ src/Shared/             addon code common to every flavor (lands in the addon ro
   Modules/PowerBars.lua    power bar textures/colours               (part of Unit Frames)
   Modules/CastBars.lua     classic cast bars (live toggle)
   Modules/Nameplates.lua   classic nameplate style (live toggle)
+  Modules/Minimap.lua      classic minimap cluster (reload; keeps Blizzard's cluster, re-parents its pieces into MinimapContainer)
   README.md             user-facing description of every option (both flavors)
 src/Retail/             retail WoW flavor (Interface 12.x)
   ClassicUIRestoration.toc
@@ -85,7 +87,8 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
   `<ContentMain>.LevelBackgroundCircle`, PvP status in
   `PvpBackgroundCircle/PvpBackgroundIcon` (retail `PVPIcon`/`PrestigePortrait`
   never shown), nameplate `PlayerLevelDiffFrame` level box next to the health
-  bar, `PetFrameHappiness`, `ComboFrame_ApplyOverrides`. To find the installed
+  bar, `PetFrameHappiness`, `ComboFrame_ApplyOverrides`, minimap `DielFrame`
+  (day/night) and `MinimapContainer.PlayerCoords`. To find the installed
   client's interface version in game: `/run print((select(4, GetBuildInfo())))`.
 - The legacy textures (`Interface\TargetingFrame\UI-TargetingFrame`,
   `UI-StatusBar`, `Interface\CastingBar\*`, `Interface\Tooltips\Nameplate-Border`
@@ -126,6 +129,15 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
 - Nameplates: the built-in `nameplateStyle` CVar value `Enum.NamePlateStyle.Classic`
   is used as the base; the module fixes its texcoords/insets itself and restores
   the previous CVar value on disable.
+- Minimap: `MinimapCluster` is a `ResizeLayoutFrame` (sizes itself to its shown
+  children) and an Edit Mode system; `MinimapContainer` is what the Size slider
+  scales, so every classic piece lives inside it. `MinimapCompassTexture` is
+  the region the engine rotates with the map ("rotate minimap"), so it carries
+  the CompassRing and the static ring border is the addon's own texture.
+  `Blizzard_TimeManager` (clock) is load-on-demand: skin it on `ADDON_LOADED`.
+  Forever's `Blizzard_Minimap\Camelot\Skin.lua` re-sizes the container/backdrop
+  and swaps the compass atlas on every rotate change; `Diel.lua` adds a day/night
+  frame (`MinimapCluster.DielFrame`) and replaces `MinimapCluster.SetEditModeScale`.
 
 ## Module conventions
 

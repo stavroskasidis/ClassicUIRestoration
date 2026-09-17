@@ -5,15 +5,28 @@
 	on the player, pet, target, focus and boss cast bars.
 
 	IMPORTANT (12.x): cast timing values on Blizzard's bars are "secret" and may
-	only be used by untainted code. Writing *any* Lua field on those bars (for
-	example the mixin's classicStyleCastBar flag) taints the values Blizzard
-	stores afterwards and breaks its OnUpdate. Therefore this module never
-	writes fields on the bars: it only post-hooks Blizzard's layout functions
-	and changes textures, sizes and anchors, which are widget state and safe.
+	only be used by untainted code. Two things break that and must be avoided:
+	  * Writing *any* Lua field on those bars (for example the mixin's
+	    classicStyleCastBar flag) taints the values Blizzard stores afterwards
+	    and breaks its OnUpdate.
+	  * hooksecurefunc on the bar's cast methods (UpdateBarFillTexture,
+	    ShowSpark, HandleCastStop, FinishSpell). Once such a wrapper sits on a
+	    bar that carries secret cast data, every call Blizzard makes into it
+	    fails with "string conversion on a secret string value (execution
+	    tainted)", even when the hook body does nothing.
+	  * HookScript on the bars: their script handlers are restricted, an
+	    addon-installed OnShow/OnUpdate handler simply never runs.
+	This module therefore never writes fields on the bars and never hooks
+	them. Blizzard re-applies its retail atlases at cast start, stop,
+	interrupt and finish; the module's own OnUpdate polls the visible bars
+	and, whenever it finds a retail atlas on the fill, spark or flash, swaps
+	the classic art back in before the frame is drawn. Everything it touches
+	is widget state.
 
 	The classic fill colour is derived from the retail atlas Blizzard just
 	assigned (standard / channel / uninterruptable / interrupted), so the bar
-	type never has to be read.
+	type never has to be read. For casts whose data is secret the atlas name
+	is secret too; those fall back to the standard yellow.
 
 	This module can be toggled live.
 ]]
@@ -66,10 +79,23 @@ end
 -- Classic look
 ---------------------------------------------------------------------------
 
+-- Whether a region currently carries an atlas (i.e. retail art Blizzard just
+-- applied), and its name when addon code is allowed to read it. The name is
+-- a secret value for secret casts; it must not be compared or formatted then.
+local function GetAtlasName(region)
+	local atlas = region and region:GetAtlas()
+	if issecretvalue and issecretvalue(atlas) then
+		return true, nil
+	end
+	if type(atlas) == "string" then
+		return true, atlas
+	end
+	return false, nil
+end
+
 local function ApplyClassicFill(bar)
-	local texture = bar:GetStatusBarTexture()
-	local atlas = texture and texture:GetAtlas()
-	local color = (type(atlas) == "string" and ATLAS_COLORS[string.lower(atlas)]) or YELLOW
+	local _, atlas = GetAtlasName(bar:GetStatusBarTexture())
+	local color = (atlas and ATLAS_COLORS[string.lower(atlas)]) or YELLOW
 	bar:SetStatusBarTexture(T.STATUS_BAR)
 	bar:SetStatusBarColor(color[1], color[2], color[3])
 end
@@ -282,27 +308,51 @@ local function GetBars()
 	return bars
 end
 
--- Hooks are installed once per bar and only act while the module is enabled.
+-- Blizzard puts retail atlases back on the fill (cast start/stop/interrupt/
+-- finish), the spark (cast start) and the flash (finish). A region that
+-- carries an atlas is therefore one Blizzard has just touched; put the classic
+-- art back. Polled from the module's own frame every update while the bar is
+-- shown (see the header for why the bar itself cannot be hooked); the checks
+-- are a handful of GetAtlas calls and a no-op almost every frame.
+local function RepairClassicArt(bar)
+	if GetAtlasName(bar:GetStatusBarTexture()) then
+		ApplyClassicFill(bar)
+	end
+	if GetAtlasName(bar.Spark) then
+		ApplyClassicSpark(bar)
+	end
+	if GetAtlasName(bar.Flash) then
+		ApplyClassicFlash(bar)
+	end
+end
+
+-- Shared with the Nameplates module, whose cast bars have the same problem.
+ns.CastBarArt = {
+	HasAtlas = GetAtlasName,
+	ApplyFill = ApplyClassicFill,
+	ApplySpark = ApplyClassicSpark,
+}
+
+local watchedBars = {}
+local updater = CreateFrame("Frame")
+updater:Hide()
+updater:SetScript("OnUpdate", function()
+	for _, bar in ipairs(watchedBars) do
+		if bar:IsShown() then
+			RepairClassicArt(bar)
+		end
+	end
+end)
+
+-- Installed once per bar and only acting while the module is enabled. See the
+-- header: the bar's cast methods and scripts must not be hooked.
 local function InstallHooks(bar)
 	if hookedBars[bar] then return end
 	hookedBars[bar] = true
+	table.insert(watchedBars, bar)
 
-	-- Blizzard picks a retail fill atlas here; swap it for the classic colour.
-	ns.Hook(bar, "UpdateBarFillTexture", function(self)
-		if enabled then ApplyClassicFill(self) end
-	end)
-	-- Blizzard re-sets the spark atlas on every cast start.
-	ns.Hook(bar, "ShowSpark", function(self)
-		if enabled then ApplyClassicSpark(self) end
-	end)
-	-- The finish flash atlas is re-set when a cast completes.
-	ns.Hook(bar, "HandleCastStop", function(self)
-		if enabled then ApplyClassicFlash(self) end
-	end)
-	ns.Hook(bar, "FinishSpell", function(self)
-		if enabled then ApplyClassicFlash(self) end
-	end)
 	if IsLarge(bar) then
+		-- Edit Mode / settings change the player bar's look; no secrets involved.
 		ns.Hook(bar, "SetLook", function(self, look)
 			if enabled then ApplyClassicLook(self, look) end
 		end)
@@ -319,10 +369,12 @@ function module:Enable()
 		InstallHooks(bar)
 		xpcall(ApplyClassic, geterrorhandler(), bar)
 	end
+	updater:Show()
 end
 
 function module:Disable()
 	enabled = false
+	updater:Hide()
 	for _, bar in ipairs(GetBars()) do
 		xpcall(RestoreRetail, geterrorhandler(), bar)
 	end

@@ -63,6 +63,20 @@ ns.T = {
 	RAID_RES_BG        = "Interface\\RaidFrame\\Raid-Bar-Resource-Background",
 	ABSORB_FILL        = "Interface\\RaidFrame\\Absorb-Fill",
 	SHIELD_FILL        = "Interface\\RaidFrame\\Shield-Fill",
+	MINIMAP_BORDER     = "Interface\\Minimap\\UI-Minimap-Border",
+	MINIMAP_BACKGROUND = "Interface\\Minimap\\UI-Minimap-Background",
+	MINIMAP_RING       = "Interface\\Minimap\\MiniMap-TrackingBorder",
+	MINIMAP_NORTH_TAG  = "Interface\\Minimap\\CompassNorthTag",
+	MINIMAP_COMPASS    = "Interface\\Minimap\\CompassRing",
+	MINIMAP_TRACKING   = "Interface\\Minimap\\Tracking\\None",
+	MINIMAP_ZOOM_IN    = "Interface\\Minimap\\UI-Minimap-ZoomInButton-",   -- + Up / Down / Disabled
+	MINIMAP_ZOOM_OUT   = "Interface\\Minimap\\UI-Minimap-ZoomOutButton-",  -- + Up / Down / Disabled
+	MINIMAP_HIGHLIGHT  = "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight",
+	MINIMAP_WORLD_MAP  = "Interface\\Minimap\\UI-Minimap-WorldMapSquare",
+	CALENDAR_BUTTON    = "Interface\\Calendar\\UI-Calendar-Button",
+	CLOCK_BACKGROUND   = "Interface\\TimeManager\\ClockBackground",
+	MAIL_ICON          = "Interface\\Icons\\INV_Letter_15",
+	MOUSE_HIGHLIGHT    = "Interface\\Buttons\\UI-Common-MouseHilight",
 }
 
 -- Classic colours.

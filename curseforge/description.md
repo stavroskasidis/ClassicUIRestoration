@@ -10,9 +10,9 @@ Classic UI Restoration
 
 ## Summary (short field, under 250 characters)
 
-Brings back the classic (pre-Dragonflight) unit frames, cast bars and
-nameplates on the modern UI. Each element can be switched back to the modern
-look individually. For retail and WoW Forever.
+Brings back the classic (pre-Dragonflight) unit frames, cast bars,
+nameplates and minimap on the modern UI. Each element can be switched back
+to the modern look individually. For retail and WoW Forever.
 
 ## Categories
 
@@ -45,7 +45,13 @@ miss and keep the rest modern.
   yellow / green / red fill colours) for the player, pet, target, focus and
   boss cast bars. Works with Edit Mode's "lock to player frame" option.
 - **Nameplates** – the classic nameplate style (classic border, flat health
-  bar, level in the border's bubble, small classic cast bar).
+  bar, level in the border's bubble, flat classic cast bar).
+- **Minimap** – the classic minimap: the round gold border with the zone
+  text bar on top, the round tracking button, the always-visible zoom
+  buttons, the calendar page with the day printed on it, the clock on its
+  plate under the map, the square world map button, the letter icon for new
+  mail and the compass ring / north tag. Edit Mode's size slider still
+  works, and the addon compartment button gets the classic round look.
 
 ### How it works
 
@@ -54,9 +60,6 @@ Everything the modern frames do (Edit Mode, heal prediction, absorbs, vehicle
 swapping, role icons, threat, auras) keeps working; only textures, positions
 and colours change. No libraries, no configuration to import, nothing to
 position manually.
-
-Cast Bars and Nameplates toggle instantly. Unit Frames are applied when the
-interface loads, so switching that option prompts for a `/reload`.
 
 ### Options
 
@@ -67,16 +70,9 @@ Restoration**. One checkbox per element.
 
 Forever runs the modern UI, so this addon works there as well; the Forever
 build additionally tidies up the few things the Forever UI adds (the level and
-PvP circles on the frames, the level box next to nameplates) so the classic
-look is complete. Download the file matching your game version.
-
-### Notes
-
-- Retail 12.x hides ("secret") some unit values from addons. The addon is
-  built around that and never reads them, so it does not cause "action
-  blocked" errors.
-- The classic textures are the ones still shipped in the game client; the
-  addon does not bundle any assets.
+PvP circles on the frames, the level box next to nameplates, the day/night
+indicator and coordinates on the minimap) so the classic look is complete.
+Download the file matching your game version.
 
 ### Feedback
 
