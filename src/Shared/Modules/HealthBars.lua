@@ -22,9 +22,18 @@ local module = ns:RegisterModule({
 
 local HEALTH_R, HEALTH_G, HEALTH_B = unpack(ns.C.HEALTH)
 
-local function SetBarTexture(bar)
+-- Loss bars (animated loss, temp max health loss) sit at the same frame
+-- level as the health fill and stay behind it only by draw layer.
+-- SetStatusBarTexture resets a fill to ARTWORK, which would lift the red
+-- loss fill above the mirror's BACKGROUND fill and paint the whole bar red
+-- while a loss animates, so the layer is put back below the mirror's.
+local function SetLossBarTexture(bar)
 	if not bar then return end
 	bar:SetStatusBarTexture(T.STATUS_BAR)
+	local fill = bar:GetStatusBarTexture()
+	if fill then
+		fill:SetDrawLayer("BACKGROUND", -1)
+	end
 end
 
 -- Retail health bars lock their colour because the atlases are pre-coloured;
@@ -82,10 +91,10 @@ local function SkinPlayer()
 	local function Apply()
 		ApplyClassicHealthBar(hbc.HealthBar)
 		if hbc.PlayerFrameHealthBarAnimatedLoss then
-			SetBarTexture(hbc.PlayerFrameHealthBarAnimatedLoss)
+			SetLossBarTexture(hbc.PlayerFrameHealthBarAnimatedLoss)
 		end
 		if hbc.PlayerFrameTempMaxHealthLoss then
-			SetBarTexture(hbc.PlayerFrameTempMaxHealthLoss)
+			SetLossBarTexture(hbc.PlayerFrameTempMaxHealthLoss)
 		end
 	end
 	Apply()
@@ -103,7 +112,7 @@ local function SkinTargetStyleFrame(frame)
 	local function Apply()
 		ApplyClassicHealthBar(hbc.HealthBar)
 		if hbc.TempMaxHealthLoss then
-			SetBarTexture(hbc.TempMaxHealthLoss)
+			SetLossBarTexture(hbc.TempMaxHealthLoss)
 		end
 	end
 	Apply()
@@ -147,7 +156,7 @@ local function SkinPartyMember(frame)
 	local function Apply()
 		ApplyClassicHealthBar(hbc.HealthBar)
 		if hbc.TempMaxHealthLoss then
-			SetBarTexture(hbc.TempMaxHealthLoss)
+			SetLossBarTexture(hbc.TempMaxHealthLoss)
 		end
 	end
 	Apply()
