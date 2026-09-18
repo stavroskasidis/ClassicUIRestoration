@@ -65,11 +65,17 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
   check Lua syntax (e.g. with a Lua parser) and re-read the changed code for
   the taint rules below. In-game verification is done by the user; ask for a
   `/reload` and, when useful, a screenshot or the output of `/cuir`.
-- Keep `src/Shared/README.md` in sync with the options and behaviour. For a
-  user-visible release bump `"version"` in `addon.json` (`x.y.z`); never write
-  a literal version into a `.toc` — they contain `## Version: @project-version@`,
-  which `build.ps1` replaces (in `.toc`, `.lua` and `.md` files) and uses for
-  the zip name. `ns.VERSION` in `Core.lua` reads it back from the TOC.
+- Keep every user-facing description in sync with the options and behaviour
+  whenever a module is added, removed or renamed: `src/Shared/README.md` (the
+  option table, "How it works" and the file list), the `## Notes:` line of
+  every `.toc`, the reload-section texts in `Options.lua`, and
+  `curseforge/description.md` (the "What it restores" list and the summary,
+  which must stay under 250 characters).
+- For a user-visible release bump `"version"` in `addon.json` (`x.y.z`);
+  never write a literal version into a `.toc` — they contain
+  `## Version: @project-version@`, which `build.ps1` replaces (in `.toc`,
+  `.lua` and `.md` files) and uses for the zip name. `ns.VERSION` in
+  `Core.lua` reads it back from the TOC.
 - Do not commit unless asked. Never commit `deploy.config.json`.
 
 ## Client facts (retail 12.x) that shape the code
