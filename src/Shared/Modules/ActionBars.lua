@@ -80,15 +80,40 @@ for k = 0, 5 do
 	CELLS[k + 1] = { PieceCoords(2, 2 + 42 * k, 44 + 42 * k) }
 end
 
--- One strip cell behind a button, scaled to the button's width and keeping
--- the strip's 42:43 proportion; adjacent buttons' cells meet on their
--- shared metal column.
-local function CreateCell(button, index)
+local cells = setmetatable({}, { __mode = "k" }) -- button -> strip cell texture
+
+-- Sizes a button's cell: the button's width (keeping the strip's 42:43
+-- proportion) plus the bar's icon padding along the bar, so neighbouring
+-- cells meet on their shared metal column instead of leaving a gap.
+local function LayoutCell(bar, button)
+	local cell = cells[button]
+	if not cell then return end
+	local padding = tonumber(bar.buttonPadding) or 0
 	local width = button:GetWidth()
+	local height = width * PIECE_HEIGHT / CELL_WIDTH
+	if bar.isHorizontal == false then
+		height = height + padding
+	else
+		width = width + padding
+	end
+	cell:SetSize(width, height)
+end
+
+-- Padding and orientation are Edit Mode settings; Blizzard re-lays the
+-- buttons out from UpdateGridLayout when they change.
+local function LayoutCells(bar)
+	for _, button in ipairs(bar.actionButtons) do
+		LayoutCell(bar, button)
+	end
+end
+
+-- One strip cell behind a button.
+local function CreateCell(bar, button, index)
 	local cell = button:CreateTexture(nil, "BACKGROUND", nil, -3)
 	SetTexture(cell, T.MAINMENUBAR_STRIP, unpack(CELLS[(index - 1) % #CELLS + 1]))
-	cell:SetSize(width, width * PIECE_HEIGHT / CELL_WIDTH)
 	cell:SetPoint("CENTER", button, "CENTER", 0, 0)
+	cells[button] = cell
+	LayoutCell(bar, button)
 	return cell
 end
 
@@ -129,7 +154,6 @@ local FRAME_ART_BIAS = 0.5 / 64
 -- buttons; it is faded to keep the square readable but light.
 local EMPTY_SLOT_ALPHA = 0.6
 
-local cells = setmetatable({}, { __mode = "k" })        -- button -> strip cell texture
 local smallButtons = setmetatable({}, { __mode = "k" }) -- pet/stance/possess buttons
 
 -- Fills a texture over the (inset) icon.
@@ -184,14 +208,14 @@ local function ApplyButtonArt(button)
 	end
 end
 
-local function SkinButton(button, index, small)
+local function SkinButton(bar, button, index, small)
 	if not button or cells[button] then return end
 	smallButtons[button] = small or nil
 
 	-- Retail's slot art / plain background: replaced by the strip cell.
 	if button.SlotArt then button.SlotArt:SetAlpha(0) end
 	if button.SlotBackground then button.SlotBackground:SetAlpha(0) end
-	cells[button] = CreateCell(button, index)
+	CreateCell(bar, button, index)
 	ns.StripMask(button.IconMask, button.icon)
 	-- The cooldowns and overlays are anchored to the icon and follow it.
 	if button.icon then
@@ -248,8 +272,9 @@ local function SkinBars()
 		local bar = _G[entry[1]]
 		if bar and type(bar.actionButtons) == "table" then
 			for index, button in ipairs(bar.actionButtons) do
-				SkinButton(button, index, entry[2])
+				SkinButton(bar, button, index, entry[2])
 			end
+			ns.Hook(bar, "UpdateGridLayout", LayoutCells)
 		end
 	end
 end
