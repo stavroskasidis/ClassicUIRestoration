@@ -10,7 +10,7 @@ Classic UI Restoration
 
 ## Summary (short field, under 250 characters)
 
-Brings back the Classic unit frames, cast bars, breath/fatigue bars, nameplates, minimap, loot, trainer, vendor and auction house windows and action bar gryphons. Every element can be switched back on its own. For Retail and WoW Forever.
+Brings back the Classic unit frames, cast bars, breath/fatigue bars, nameplates, minimap, loot, trainer, vendor and auction house windows, action bar art and gryphons. Every element can be switched back on its own. For Retail and WoW Forever.
 
 ## Categories
 
@@ -40,6 +40,7 @@ parts you miss and keep the rest modern.
 - **Auction House**
 - **Action Bar Gryphons**
 - **Vendor Window** icons (repair buttons, buyback slot)
+- **Action Bar Art** (square classic button borders, vanilla slot art, page arrows)
 
 ## How it works
 

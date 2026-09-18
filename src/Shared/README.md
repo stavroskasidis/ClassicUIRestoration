@@ -24,6 +24,7 @@ Classic UI Restoration**.
 | **Auction House** | The vanilla auction house window: the classic `UI-AuctionFrame-*` panel (the Browse art with the filter column for the Buy and Auctions tabs, the Auction art with the Create Auction panel for the Sell tab) with the auctioneer's portrait in its ring, the round close button, the classic Browse-style tabs under the frame, the classic column headers and sort arrow, the filter buttons on their classic plates with the tree lines, the classic knob scroll bars in their troughs, the classic dropdown boxes, the player's money in the outlined box and 80px Bid / Buyout / Close buttons in the slots at the bottom right. The Sell tab's controls are restacked into the narrow classic panel (label over input, classic input boxes) with the Post button as the classic Create Auction button. Blizzard's searching, filters, favourites, buying, posting, sorting and tooltips keep working; the retail commodity market view, item headers and dialogs keep their inset borders on the classic marble. | UI reload |
 | **Action Bar Gryphons** | The vanilla stone gryphons (`UI-MainMenuBar-EndCap-Dwarf`) at both ends of the main action bar instead of the modern gryphon/wyvern art. Classic showed the gryphon to both factions, so Horde characters get it too. Edit Mode's "hide bar art" option and the bar's scale keep working. | Immediate |
 | **Vendor Window** | The vanilla icons in the vendor window (the panel itself is still the classic one): the classic hammer / anvil / gold anvil repair buttons (`UI-Merchant-RepairIcons`), a matching classic-style icon for the retail Sell All Junk button, and the plain buyback item slot without the modern undo arrow. | Immediate |
+| **Action Bar Art** | The vanilla action bar art: the square `UI-Quickslot2` border with square icons on every action button (main bar, extra bars, pet / stance / possess bars), the `UI-Quickslot` empty-slot look while the grid is shown, the classic pushed / highlight / checked glows, red attack flash and green equipped border; the embossed gryphon slots of the vanilla `UI-MainMenuBar-Dwarf` strip behind the main bar's buttons in place of the modern plate and dividers; and the vanilla page arrows. Edit Mode's bar settings (rows, padding, orientation, icon size, "hide bar art") keep working. | UI reload |
 
 The "UI reload" options are applied while the interface loads because
 Blizzard's frames cannot be safely un-skinned at runtime; changing them
@@ -64,6 +65,12 @@ place of the modern atlas; on Forever, where each end cap is a movable Edit
 Mode frame, only the texture inside it is swapped.
 The vendor window only needs its repair / junk button icons and buyback
 slot re-textured, since Blizzard never redrew the panel.
+The action bar art re-textures Blizzard's action buttons in place and draws
+one cell of the vanilla bar strip behind each main bar button (like the
+modern per-button slot art), so Edit Mode's layout settings still apply;
+the Blizzard functions that re-apply the modern atlases (`UpdateButtonArt`,
+the buttons' `Update`, `UpdateDividers`) are hooked to put the vanilla art
+back.
 
 ## WoW Forever
 
@@ -110,6 +117,7 @@ Modules/TrainerFrame.lua classic trainer window
 Modules/AuctionHouse.lua classic auction house
 Modules/EndCaps.lua      vanilla action bar gryphons (live toggle)
 Modules/MerchantFrame.lua vanilla vendor window icons (live toggle)
+Modules/ActionBars.lua   vanilla action bar art (button borders, slot strip, page arrows)
 Textures/                the bundled Sell All Junk icon (vanilla style)
 Modules/Forever.lua      Forever only: adjustments for the "camelot" overlay
 ```

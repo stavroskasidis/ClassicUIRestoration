@@ -528,12 +528,14 @@ ns.Hook("UnitFrameManaCostPredictionBars_Update", RetargetManaCostPrediction)
 -- Saved variables & lifecycle
 ---------------------------------------------------------------------------
 
--- The options are account-wide (ClassicUIRestorationDB). The WoW Forever beta
--- client writes account-wide saved variables but does not load them back, so
--- the same table is also declared per character (ClassicUIRestorationCharDB):
--- both globals point at one table, the client serialises it into both files,
--- and at load the per-character copy is used whenever the account copy comes
--- back empty. On a working client the account copy wins.
+-- The options are account-wide (ClassicUIRestorationDB). The same table is
+-- also declared per character (ClassicUIRestorationCharDB): both globals point
+-- at one table, the client serialises it into both files, and at load the
+-- per-character copy is used whenever the account copy comes back empty. On a
+-- working client the account copy wins. The mirror was added for the WoW
+-- Forever beta, which turned out to write both files but load neither back
+-- (client bug, 1.60.1, reported 2026-09-18); options reset every session there
+-- until Blizzard fixes it, and nothing on the addon side can help.
 local function InitializeDB()
 	local account = ClassicUIRestorationDB
 	local character = ClassicUIRestorationCharDB

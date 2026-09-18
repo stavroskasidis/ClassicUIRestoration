@@ -103,6 +103,10 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
   bar, `PetFrameHappiness`, `ComboFrame_ApplyOverrides`, minimap `DielFrame`
   (day/night) and `MinimapContainer.PlayerCoords`. To find the installed
   client's interface version in game: `/run print((select(4, GetBuildInfo())))`.
+  The 1.60.1 beta client writes SavedVariables (account-wide and per-character)
+  but never loads them back, so options reset every session on Forever; this is
+  a client bug (reported 2026-09-18, reproduces with a minimal addon, retail is
+  fine) with no addon-side fix — do not chase it in `InitializeDB`.
 - The legacy textures (`Interface\TargetingFrame\UI-TargetingFrame`,
   `UI-StatusBar`, `Interface\CastingBar\*`, `Interface\Tooltips\Nameplate-Border`
   etc.) still ship with the retail client, so the addon references them by path
@@ -169,8 +173,7 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
 - Match the existing style: tabs, `local _, ns = ...` header, a doc comment
   block at the top of each file explaining *why*, short comments on non-obvious
   client behaviour, no globals except the saved variables (`ClassicUIRestorationDB`
-  account-wide, mirrored into `ClassicUIRestorationCharDB` per character because
-  the Forever beta client does not load account-wide saved variables; both
+  account-wide, mirrored into `ClassicUIRestorationCharDB` per character; both
   globals reference the same table, see `InitializeDB` in `Core.lua`) and the
   slash command tables.
 - Diagnostic slash sub-commands are temporary: remove them once the issue they
