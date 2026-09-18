@@ -11,7 +11,7 @@ Classic UI Restoration
 ## Summary (short field, under 250 characters)
 
 Brings back the classic (pre-Dragonflight) unit frames, cast bars,
-nameplates and minimap on the modern UI. Each element can be switched back
+nameplates, minimap and loot window on the modern UI. Each element can be switched back
 to the modern look individually. For retail and WoW Forever.
 
 ## Categories
@@ -52,6 +52,9 @@ miss and keep the rest modern.
   plate under the map, the square world map button, the letter icon for new
   mail and the compass ring / north tag. Edit Mode's size slider still
   works, and the addon compartment button gets the classic round look.
+- **Loot Window** – the vanilla loot panel: the classic panel artwork with
+  the skull in its ring, the classic item rows and the Prev / Next page
+  arrows.
 
 ### How it works
 

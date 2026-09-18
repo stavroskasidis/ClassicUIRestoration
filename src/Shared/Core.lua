@@ -77,6 +77,15 @@ ns.T = {
 	CLOCK_BACKGROUND   = "Interface\\TimeManager\\ClockBackground",
 	MAIL_ICON          = "Interface\\Icons\\INV_Letter_15",
 	MOUSE_HIGHLIGHT    = "Interface\\Buttons\\UI-Common-MouseHilight",
+	LOOT_PANEL         = "Interface\\LootFrame\\UI-LootPanel",
+	PANEL_CLOSE        = "Interface\\Buttons\\UI-Panel-MinimizeButton-", -- + Up / Down / Disabled / Highlight
+	LOOT_NAME_FRAME    = "Interface\\QuestFrame\\UI-QuestItemNameFrame",
+	LOOT_SKULL         = "Interface\\TargetingFrame\\TargetDead",
+	LOOT_FISHING       = "Interface\\LootFrame\\FishingLoot-Icon",
+	CHAT_SCROLL_UP     = "Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-",   -- + Up / Down / Disabled
+	CHAT_SCROLL_DOWN   = "Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-", -- + Up / Down / Disabled
+	SCROLL_UP          = "Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-",   -- + Up / Down / Disabled
+	SCROLL_DOWN        = "Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-", -- + Up / Down / Disabled
 }
 
 -- Classic colours.
@@ -192,6 +201,27 @@ function ns.SetTexture(texture, path, left, right, top, bottom)
 	else
 		texture:SetTexCoord(0, 1, 0, 1)
 	end
+end
+
+-- Whether a texture file exists in this client. The legacy art is referenced
+-- by path and not bundled, so pieces a client no longer ships need a fallback;
+-- SetTexture reports whether the file was found.
+local probe = UIParent:CreateTexture()
+probe:Hide()
+function ns.HasTexture(path)
+	local found = probe:SetTexture(path)
+	probe:SetTexture(nil)
+	return found == true
+end
+
+-- Applies an atlas only if this client has it (SetAtlas errors on unknown
+-- names). Returns true when it was applied.
+function ns.SetAtlas(texture, name, useAtlasSize)
+	if C_Texture.GetAtlasInfo(name) then
+		texture:SetAtlas(name, useAtlasSize)
+		return true
+	end
+	return false
 end
 
 -- Detach a MaskTexture from the given textures (and hide it) so that the
@@ -371,9 +401,22 @@ ns.Hook("UnitFrameManaCostPredictionBars_Update", RetargetManaCostPrediction)
 -- Saved variables & lifecycle
 ---------------------------------------------------------------------------
 
+-- The options are account-wide (ClassicUIRestorationDB). The WoW Forever beta
+-- client writes account-wide saved variables but does not load them back, so
+-- the same table is also declared per character (ClassicUIRestorationCharDB):
+-- both globals point at one table, the client serialises it into both files,
+-- and at load the per-character copy is used whenever the account copy comes
+-- back empty. On a working client the account copy wins.
 local function InitializeDB()
-	ClassicUIRestorationDB = ClassicUIRestorationDB or {}
-	ns.db = ClassicUIRestorationDB
+	local account = ClassicUIRestorationDB
+	local character = ClassicUIRestorationCharDB
+	local db = account
+	if type(db) ~= "table" or next(db) == nil then
+		db = (type(character) == "table" and next(character) ~= nil) and character or {}
+	end
+	ClassicUIRestorationDB = db
+	ClassicUIRestorationCharDB = db
+	ns.db = db
 	for _, module in ipairs(ns.modules) do
 		if module.parent then
 			ns.db[module.key] = nil -- follows the parent's setting
@@ -534,6 +577,9 @@ SlashCmdList.CLASSICUIRESTORATION = function(msg)
 		return
 	elseif msg == "debug" then
 		xpcall(ns.DebugTarget, geterrorhandler(), ns)
+		return
+	elseif msg == "loot" and ns.DebugLoot then
+		xpcall(ns.DebugLoot, geterrorhandler(), ns)
 		return
 	end
 	if ns.OpenOptions then

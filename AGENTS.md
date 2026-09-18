@@ -2,7 +2,7 @@
 
 This repository contains *Classic UI Restoration*, a World of Warcraft addon
 that restores pre-Dragonflight UI elements (unit frames, cast bars, nameplates,
-minimap)
+minimap, loot window)
 on the modern client, with each element individually switchable back to the
 retail look.
 
@@ -19,6 +19,7 @@ src/Shared/             addon code common to every flavor (lands in the addon ro
   Modules/CastBars.lua     classic cast bars (live toggle)
   Modules/Nameplates.lua   classic nameplate style (live toggle)
   Modules/Minimap.lua      classic minimap cluster (reload; keeps Blizzard's cluster, re-parents its pieces into MinimapContainer)
+  Modules/LootFrame.lua    vanilla loot panel (reload; re-skins the ScrollingFlatPanel loot frame in place, pages its scroll box)
   README.md             user-facing description of every option (both flavors)
 src/Retail/             retail WoW flavor (Interface 12.x)
   ClassicUIRestoration.toc
@@ -155,7 +156,10 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
   `CLASSICUIRESTORATION_RELOAD` StaticPopup.
 - Match the existing style: tabs, `local _, ns = ...` header, a doc comment
   block at the top of each file explaining *why*, short comments on non-obvious
-  client behaviour, no globals except the `ClassicUIRestorationDB` saved variable
-  and the slash command tables.
+  client behaviour, no globals except the saved variables (`ClassicUIRestorationDB`
+  account-wide, mirrored into `ClassicUIRestorationCharDB` per character because
+  the Forever beta client does not load account-wide saved variables; both
+  globals reference the same table, see `InitializeDB` in `Core.lua`) and the
+  slash command tables.
 - Diagnostic slash sub-commands are temporary: remove them once the issue they
   were added for is fixed.
