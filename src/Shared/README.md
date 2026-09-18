@@ -20,6 +20,7 @@ Classic UI Restoration**.
 | **Nameplates** | Switches nameplates to the client's built-in classic style (classic border, flat health bar, level text in the border's bubble, flat cast bar without spark) and remembers the previous style so it can be restored. | Immediate |
 | **Minimap** | Classic minimap: the 140px map in the round `UI-Minimap-Border` ring with the zone text bar on top, the round tracking button on the left, always-visible classic zoom buttons, the calendar page with the day printed on it, the clock on its plate at the bottom of the map, the square world map button, the letter icon (in a ring) for new mail and crafting orders, the compass ring while "rotate minimap" is on and the north tag otherwise. The addon compartment button gets the same round classic button look, below the tracking button. Edit Mode's size slider and the icon scale still work; its "header underneath" option has no classic equivalent and is ignored. | UI reload |
 | **Loot Window** | The vanilla loot panel: the classic `UI-LootPanel` artwork with the skull (fishing bobber for fishing loot) in its ring, the round close button, one classic name plate per item and the Prev / Next arrows; four items fit, with more the panel shows three per page like the original (the mouse wheel steps one row). Blizzard's looting, tooltips, quest markers and the "open loot window at mouse" option keep working. | UI reload |
+| **Trainer Window** | The vanilla class / profession trainer window: the classic `UI-ClassTrainer-*` panel with the trainer's portrait in its ring, a compact list of 16px skill rows coloured by state (green = can learn, red = requirements not met, grey = already known) with the selected row on a tinted highlight bar, and a detail pane below it with the selected skill's icon, name, requirements, cost and description (from the skill's tooltip). Train / Exit buttons, the player's money, the filter in the classic dropdown box and the classic knob scroll bars complete the panel; the profession rank bar sits where vanilla had its "All" tab. Blizzard's selection, training, filters and tooltips keep working. On Forever the collapsible skill categories become the vanilla +/- header rows. | UI reload |
 | **Action Bar Gryphons** | The vanilla stone gryphons (`UI-MainMenuBar-EndCap-Dwarf`) at both ends of the main action bar instead of the modern gryphon/wyvern art. Classic showed the gryphon to both factions, so Horde characters get it too. Edit Mode's "hide bar art" option and the bar's scale keep working. | Immediate |
 
 The "UI reload" options are applied while the interface loads because
@@ -46,7 +47,10 @@ working) and re-parents its pieces into the scaled map container at the
 classic positions.
 The loot window keeps Blizzard's scroll-box list of items and only re-skins
 the panel and the rows; the classic page arrows scroll that list a page at
-a time. The action bar gryphons are Blizzard's own end cap textures with the
+a time. The trainer window does the same with Blizzard's skill list (its rows
+shrunk to the vanilla 16px text rows) and adds its own detail pane, filled
+from the service tooltip data since the vanilla description API is gone.
+The action bar gryphons are Blizzard's own end cap textures with the
 vanilla file (cropped to its art and scaled to the modern 45px buttons) in
 place of the modern atlas; on Forever, where each end cap is a movable Edit
 Mode frame, only the texture inside it is swapped.
@@ -92,6 +96,7 @@ Modules/MirrorTimers.lua classic breath/fatigue timer bars (live toggle)
 Modules/Nameplates.lua   classic nameplate style (live toggle)
 Modules/Minimap.lua      classic minimap cluster
 Modules/LootFrame.lua    classic loot window
+Modules/TrainerFrame.lua classic trainer window
 Modules/EndCaps.lua      vanilla action bar gryphons (live toggle)
 Modules/Forever.lua      Forever only: adjustments for the "camelot" overlay
 ```
