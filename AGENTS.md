@@ -2,7 +2,7 @@
 
 This repository contains *Classic UI Restoration*, a World of Warcraft addon
 that restores pre-Dragonflight UI elements (unit frames, cast bars, nameplates,
-minimap, loot window)
+minimap, loot window, vendor window)
 on the modern client, with each element individually switchable back to the
 retail look.
 
@@ -24,6 +24,8 @@ src/Shared/             addon code common to every flavor (lands in the addon ro
   Modules/TrainerFrame.lua vanilla trainer window (reload; re-skins Blizzard_TrainerUI in place)
   Modules/AuctionHouse.lua vanilla auction house (reload; resizes Blizzard_AuctionHouseUI to 832x447, classic art per tab, sub-frames re-anchored into it)
   Modules/EndCaps.lua      vanilla action bar gryphons (live toggle)
+  Modules/MerchantFrame.lua vanilla vendor window icons: repair/junk buttons, buyback slot (live toggle)
+  Textures/                bundled art (UI-Merchant-SellJunk.tga, the vanilla-style Sell All Junk icon)
   README.md             user-facing description of every option (both flavors)
 src/Retail/             retail WoW flavor (Interface 12.x)
   ClassicUIRestoration.toc

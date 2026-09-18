@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: Classic UI Restoration
-## Notes: Restores the classic (pre-Dragonflight) look of portraits, cast bars, breath/fatigue bars, health bars, power bars, unit frames, nameplates, the minimap, the loot window, the trainer window, the auction house and the action bar gryphons. Every element can be switched back to the modern look individually.
+## Notes: Restores the classic (pre-Dragonflight) look of portraits, cast bars, breath/fatigue bars, health bars, power bars, unit frames, nameplates, the minimap, the loot window, the trainer window, the auction house, the vendor window's icons and the action bar gryphons. Every element can be switched back to the modern look individually.
 ## Version: @project-version@
 ## Author: Stavros
 ## IconTexture: Interface\AddOns\ClassicUIRestoration\Icon.png
@@ -22,5 +22,6 @@ Modules\LootFrame.lua
 Modules\TrainerFrame.lua
 Modules\AuctionHouse.lua
 Modules\EndCaps.lua
+Modules\MerchantFrame.lua
 Modules\Forever.lua
 Options.lua
