@@ -21,6 +21,9 @@ src/Shared/             addon code common to every flavor (lands in the addon ro
   Modules/Nameplates.lua   classic nameplate style (live toggle)
   Modules/Minimap.lua      classic minimap cluster (reload; keeps Blizzard's cluster, re-parents its pieces into MinimapContainer)
   Modules/LootFrame.lua    vanilla loot panel (reload; re-skins the ScrollingFlatPanel loot frame in place, pages its scroll box)
+  Modules/TrainerFrame.lua vanilla trainer window (reload; re-skins Blizzard_TrainerUI in place)
+  Modules/AuctionHouse.lua vanilla auction house (reload; resizes Blizzard_AuctionHouseUI to 832x447, classic art per tab, sub-frames re-anchored into it)
+  Modules/EndCaps.lua      vanilla action bar gryphons (live toggle)
   README.md             user-facing description of every option (both flavors)
 src/Retail/             retail WoW flavor (Interface 12.x)
   ClassicUIRestoration.toc

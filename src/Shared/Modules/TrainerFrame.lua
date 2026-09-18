@@ -59,8 +59,6 @@ T.PLUS_BUTTON        = "Interface\\Buttons\\UI-PlusButton-Up"
 T.MINUS_BUTTON       = "Interface\\Buttons\\UI-MinusButton-Up"
 T.PLUS_HILIGHT       = "Interface\\Buttons\\UI-PlusButton-Hilight"
 T.EMPTY_SLOT         = "Interface\\Buttons\\UI-EmptySlot"
-T.SCROLL_KNOB        = "Interface\\Buttons\\UI-ScrollBar-Knob"
-T.DROPDOWN_BOX       = "Interface\\Glues\\CharacterCreate\\CharacterCreate-LabelFrame"
 
 local module = ns:RegisterModule({
 	key = "trainer",
@@ -209,14 +207,8 @@ local function ApplyFrameArt(frame)
 
 	local close = frame.CloseButton
 	if close then
-		close:SetSize(32, 32)
+		ns.SkinCloseButton(close)
 		Point(close, "TOPRIGHT", frame, "TOPRIGHT", -29, -8)
-		if ns.HasTexture(T.PANEL_CLOSE .. "Up") then
-			close:SetNormalTexture(T.PANEL_CLOSE .. "Up")
-			close:SetPushedTexture(T.PANEL_CLOSE .. "Down")
-			close:SetDisabledTexture(T.PANEL_CLOSE .. "Disabled")
-			close:SetHighlightTexture(T.PANEL_CLOSE .. "Highlight", "ADD")
-		end
 	end
 
 	local train = ClassTrainerTrainButton or frame.TrainButton
@@ -248,111 +240,17 @@ end
 
 -- Retail's filter is a WowStyle1FilterDropdownTemplate button (an atlas
 -- swapped by its mixin on every state change, sized to its text on every
--- update). Its background is faded and the classic dropdown box art is drawn
--- on it; the menu logic is untouched.
+-- update); it gets the classic dropdown box (ns.SkinDropdownBox).
 local function SkinFilterDropdown(frame)
 	local dropdown = frame.FilterDropdown
 	if not dropdown then return end
-
-	local width = DROPDOWN_WIDTH + 50
-	dropdown:SetSize(width, 32)
 	Point(dropdown, "TOPRIGHT", frame, "TOPRIGHT", -26, -64)
-	if dropdown.Background then dropdown.Background:SetAlpha(0) end
-	ns.Hook(dropdown, "UpdateText", function(self) self:SetWidth(width) end)
-
-	local right = dropdown
-	if ns.HasTexture(T.DROPDOWN_BOX) then
-		local left = dropdown:CreateTexture(nil, "ARTWORK")
-		SetTexture(left, T.DROPDOWN_BOX, 0, 0.1953125, 0, 1)
-		left:SetSize(25, 64)
-		left:SetPoint("TOPLEFT", dropdown, "TOPLEFT", 0, 17)
-		local middle = dropdown:CreateTexture(nil, "ARTWORK")
-		SetTexture(middle, T.DROPDOWN_BOX, 0.1953125, 0.8046875, 0, 1)
-		middle:SetSize(DROPDOWN_WIDTH, 64)
-		middle:SetPoint("LEFT", left, "RIGHT", 0, 0)
-		right = dropdown:CreateTexture(nil, "ARTWORK")
-		SetTexture(right, T.DROPDOWN_BOX, 0.8046875, 1, 0, 1)
-		right:SetSize(25, 64)
-		right:SetPoint("LEFT", middle, "RIGHT", 0, 0)
-	end
-
-	local arrowPrefix = ns.HasTexture(T.CHAT_SCROLL_DOWN .. "Up") and T.CHAT_SCROLL_DOWN or T.SCROLL_DOWN
-	local arrow = dropdown:CreateTexture(nil, "OVERLAY")
-	SetTexture(arrow, arrowPrefix .. "Up")
-	arrow:SetSize(24, 24)
-	arrow:SetPoint("TOPRIGHT", right, "TOPRIGHT", -16, -18)
-	dropdown:HookScript("OnMouseDown", function() SetTexture(arrow, arrowPrefix .. "Down") end)
-	dropdown:HookScript("OnMouseUp", function() SetTexture(arrow, arrowPrefix .. "Up") end)
-	dropdown:SetHighlightTexture(T.MOUSE_HIGHLIGHT, "ADD")
-	local highlight = dropdown:GetHighlightTexture()
-	if highlight then
-		highlight:ClearAllPoints()
-		highlight:SetSize(24, 24)
-		highlight:SetPoint("CENTER", arrow, "CENTER", 0, 0)
-	end
-
-	local text = dropdown.Text
-	if text then
-		text:SetFontObject(GameFontHighlightSmall)
-		text:SetJustifyH("RIGHT")
-		Point(text, "RIGHT", right, "RIGHT", -43, 2)
-	end
+	ns.SkinDropdownBox(dropdown, DROPDOWN_WIDTH)
 end
 
 ---------------------------------------------------------------------------
 -- Scroll bars
 ---------------------------------------------------------------------------
-
--- MinimalScrollBar's steppers swap atlases on their own Texture from their
--- mixin; that texture is faded and a classic arrow drawn over it.
-local function SkinStepper(button, prefix)
-	if not button then return end
-	if button.Texture then button.Texture:SetAlpha(0) end
-	button:SetSize(16, 16)
-	local texture = button:CreateTexture(nil, "ARTWORK")
-	texture:SetAllPoints(button)
-	local function Update(pushed)
-		if not button:IsEnabled() then
-			SetTexture(texture, prefix .. "Disabled")
-		elseif pushed then
-			SetTexture(texture, prefix .. "Down")
-		else
-			SetTexture(texture, prefix .. "Up")
-		end
-	end
-	button:HookScript("OnMouseDown", function() Update(true) end)
-	button:HookScript("OnMouseUp", function() Update(false) end)
-	button:HookScript("OnEnable", function() Update(false) end)
-	button:HookScript("OnDisable", function() Update(false) end)
-	if ns.HasTexture(prefix .. "Highlight") then
-		button:SetHighlightTexture(prefix .. "Highlight", "ADD")
-	end
-	Update(false)
-end
-
-local function SkinScrollBar(scrollBar)
-	if not scrollBar then return end
-	scrollBar:SetWidth(16)
-	local track = scrollBar.Track
-	if track then
-		for _, key in ipairs({ "Begin", "End", "Middle" }) do
-			if track[key] then track[key]:SetAlpha(0) end
-		end
-		local thumb = track.Thumb
-		if thumb then
-			for _, key in ipairs({ "Begin", "End", "Middle" }) do
-				if thumb[key] then thumb[key]:SetAlpha(0) end
-			end
-			-- The classic knob is a fixed 18x24 whatever the thumb's extent.
-			art.knob = thumb:CreateTexture(nil, "ARTWORK")
-			SetTexture(art.knob, T.SCROLL_KNOB, 0.2, 0.8, 0.125, 0.875)
-			art.knob:SetSize(18, 24)
-			art.knob:SetPoint("CENTER", thumb, "CENTER", 0, 0)
-		end
-	end
-	SkinStepper(scrollBar.Back, T.SCROLL_UP)
-	SkinStepper(scrollBar.Forward, T.SCROLL_DOWN)
-end
 
 -- The scroll trough art (UI-ClassTrainer-ScrollBar) that vanilla drew behind
 -- both scroll bars: a top and a bottom piece that overlap in the middle.
@@ -791,7 +689,7 @@ local function Skin()
 
 	ApplyFrameArt(frame)
 	SkinFilterDropdown(frame)
-	SkinScrollBar(frame.ScrollBar)
+	ns.SkinScrollBar(frame.ScrollBar)
 	art.listTroughTop, art.listTroughBottom = CreateTrough(frame, 0.0234375)
 	art.detailTroughTop, art.detailTroughBottom = CreateTrough(frame, 0)
 	CreateDetailPane(frame)

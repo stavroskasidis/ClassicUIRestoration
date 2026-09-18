@@ -86,6 +86,8 @@ ns.T = {
 	CHAT_SCROLL_DOWN   = "Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-", -- + Up / Down / Disabled
 	SCROLL_UP          = "Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-",   -- + Up / Down / Disabled
 	SCROLL_DOWN        = "Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-", -- + Up / Down / Disabled
+	SCROLL_KNOB        = "Interface\\Buttons\\UI-ScrollBar-Knob",
+	DROPDOWN_BOX       = "Interface\\Glues\\CharacterCreate\\CharacterCreate-LabelFrame",
 }
 
 -- Classic colours.
@@ -249,6 +251,131 @@ end
 
 function ns.Print(msg)
 	print("|cff33ccff" .. ns.TITLE .. "|r: " .. tostring(msg))
+end
+
+---------------------------------------------------------------------------
+-- Classic widget skins shared by the panel modules (trainer, auction house)
+---------------------------------------------------------------------------
+
+-- MinimalScrollBar's steppers swap atlases on their own Texture from their
+-- mixin; that texture is faded and a classic arrow drawn over it.
+local function SkinStepper(button, prefix)
+	if not button then return end
+	if button.Texture then button.Texture:SetAlpha(0) end
+	button:SetSize(16, 16)
+	local texture = button:CreateTexture(nil, "ARTWORK")
+	texture:SetAllPoints(button)
+	local function Update(pushed)
+		if not button:IsEnabled() then
+			ns.SetTexture(texture, prefix .. "Disabled")
+		elseif pushed then
+			ns.SetTexture(texture, prefix .. "Down")
+		else
+			ns.SetTexture(texture, prefix .. "Up")
+		end
+	end
+	button:HookScript("OnMouseDown", function() Update(true) end)
+	button:HookScript("OnMouseUp", function() Update(false) end)
+	button:HookScript("OnEnable", function() Update(false) end)
+	button:HookScript("OnDisable", function() Update(false) end)
+	if ns.HasTexture(prefix .. "Highlight") then
+		button:SetHighlightTexture(prefix .. "Highlight", "ADD")
+	end
+	Update(false)
+end
+
+-- Re-skins a MinimalScrollBar into the classic knob bar: the track is faded,
+-- a fixed 18x24 knob is drawn on the thumb and the steppers become the classic
+-- arrow buttons. Only the look changes; the bar keeps its scroll logic.
+function ns.SkinScrollBar(scrollBar)
+	if not scrollBar then return end
+	scrollBar:SetWidth(16)
+	local track = scrollBar.Track
+	if track then
+		for _, key in ipairs({ "Begin", "End", "Middle" }) do
+			if track[key] then track[key]:SetAlpha(0) end
+		end
+		local thumb = track.Thumb
+		if thumb then
+			for _, key in ipairs({ "Begin", "End", "Middle" }) do
+				if thumb[key] then thumb[key]:SetAlpha(0) end
+			end
+			-- The classic knob is a fixed 18x24 whatever the thumb's extent.
+			local knob = thumb:CreateTexture(nil, "ARTWORK")
+			ns.SetTexture(knob, ns.T.SCROLL_KNOB, 0.2, 0.8, 0.125, 0.875)
+			knob:SetSize(18, 24)
+			knob:SetPoint("CENTER", thumb, "CENTER", 0, 0)
+		end
+	end
+	SkinStepper(scrollBar.Back, ns.T.SCROLL_UP)
+	SkinStepper(scrollBar.Forward, ns.T.SCROLL_DOWN)
+end
+
+-- Draws the classic dropdown box (the CharacterCreate label frame art that
+-- UIDropDownMenuTemplate used) on a modern WowStyle1 dropdown button. The
+-- button's own atlas art is faded, the box is `width` wide plus the art's
+-- 25px ends, and the text is right-aligned before the arrow like the
+-- classic menu. The menu logic is untouched; the caller positions the
+-- button. Blizzard re-sizes some of these buttons to their text on every
+-- update, so the width is re-applied after UpdateText.
+function ns.SkinDropdownBox(dropdown, width)
+	local T = ns.T
+	local total = width + 50
+	dropdown:SetSize(total, 32)
+	if dropdown.Background then dropdown.Background:SetAlpha(0) end
+	if dropdown.Arrow then dropdown.Arrow:SetAlpha(0) end
+	ns.Hook(dropdown, "UpdateText", function(self) self:SetWidth(total) end)
+
+	local right = dropdown
+	if ns.HasTexture(T.DROPDOWN_BOX) then
+		local left = dropdown:CreateTexture(nil, "ARTWORK")
+		ns.SetTexture(left, T.DROPDOWN_BOX, 0, 0.1953125, 0, 1)
+		left:SetSize(25, 64)
+		left:SetPoint("TOPLEFT", dropdown, "TOPLEFT", 0, 17)
+		local middle = dropdown:CreateTexture(nil, "ARTWORK")
+		ns.SetTexture(middle, T.DROPDOWN_BOX, 0.1953125, 0.8046875, 0, 1)
+		middle:SetSize(width, 64)
+		middle:SetPoint("LEFT", left, "RIGHT", 0, 0)
+		right = dropdown:CreateTexture(nil, "ARTWORK")
+		ns.SetTexture(right, T.DROPDOWN_BOX, 0.8046875, 1, 0, 1)
+		right:SetSize(25, 64)
+		right:SetPoint("LEFT", middle, "RIGHT", 0, 0)
+	end
+
+	local arrowPrefix = ns.HasTexture(T.CHAT_SCROLL_DOWN .. "Up") and T.CHAT_SCROLL_DOWN or T.SCROLL_DOWN
+	local arrow = dropdown:CreateTexture(nil, "OVERLAY")
+	ns.SetTexture(arrow, arrowPrefix .. "Up")
+	arrow:SetSize(24, 24)
+	arrow:SetPoint("TOPRIGHT", right, "TOPRIGHT", -16, -18)
+	dropdown:HookScript("OnMouseDown", function() ns.SetTexture(arrow, arrowPrefix .. "Down") end)
+	dropdown:HookScript("OnMouseUp", function() ns.SetTexture(arrow, arrowPrefix .. "Up") end)
+	dropdown:SetHighlightTexture(T.MOUSE_HIGHLIGHT, "ADD")
+	local highlight = dropdown:GetHighlightTexture()
+	if highlight then
+		highlight:ClearAllPoints()
+		highlight:SetSize(24, 24)
+		highlight:SetPoint("CENTER", arrow, "CENTER", 0, 0)
+	end
+
+	local text = dropdown.Text
+	if text then
+		text:SetFontObject(GameFontHighlightSmall)
+		text:SetJustifyH("RIGHT")
+		ns.Point(text, "RIGHT", right, "RIGHT", -43, 2)
+	end
+end
+
+-- The classic round close button (UI-Panel-MinimizeButton, 32x32) on a
+-- modern UIPanelCloseButton; the caller positions it.
+function ns.SkinCloseButton(close)
+	if not close then return end
+	close:SetSize(32, 32)
+	if ns.HasTexture(ns.T.PANEL_CLOSE .. "Up") then
+		close:SetNormalTexture(ns.T.PANEL_CLOSE .. "Up")
+		close:SetPushedTexture(ns.T.PANEL_CLOSE .. "Down")
+		close:SetDisabledTexture(ns.T.PANEL_CLOSE .. "Disabled")
+		close:SetHighlightTexture(ns.T.PANEL_CLOSE .. "Highlight", "ADD")
+	end
 end
 
 ---------------------------------------------------------------------------

@@ -82,13 +82,13 @@ function ns:BuildOptions()
 
 	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(
 		"Apply changes",
-		"Unit Frames, the Minimap, the Loot Window and the Trainer Window are applied when the interface loads; reload after changing those options."))
+		"Unit Frames, the Minimap, the Loot Window, the Trainer Window and the Auction House are applied when the interface loads; reload after changing those options."))
 
 	layout:AddInitializer(CreateSettingsButtonInitializer(
 		"Reload the interface",
 		RELOADUI or "Reload UI",
 		function() ReloadUI() end,
-		"Reloads the interface so that pending unit frame, minimap, loot window and trainer window changes take effect.",
+		"Reloads the interface so that pending unit frame, minimap, loot window, trainer window and auction house changes take effect.",
 		true))
 
 	Settings.RegisterAddOnCategory(category)
