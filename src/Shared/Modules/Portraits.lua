@@ -37,47 +37,55 @@ end
 local function CreatePlayerStatusIcons()
 	local frame = PlayerFrame
 	local container = frame.PlayerFrameContainer
+	local main = frame.PlayerFrameContent.PlayerFrameContentMain
 	local contextual = frame.PlayerFrameContent.PlayerFrameContentContextual
 	local portrait = container.PlayerPortrait
 
-	local restIcon = contextual:CreateTexture(nil, "OVERLAY")
+	-- Classic drew the level number in BORDER and the icons in OVERLAY, so the
+	-- "Zzz" bubble covered the number while resting. Retail's PlayerLevelText
+	-- is a font string in ContentMain, which draws above every texture of the
+	-- contextual frame, so the icons live on their own frame above ContentMain.
+	local icons = CreateFrame("Frame", nil, contextual)
+	icons:SetAllPoints(contextual)
+	icons:SetFrameLevel(main:GetFrameLevel() + 1)
+
+	local restIcon = icons:CreateTexture(nil, "OVERLAY")
 	restIcon:SetSize(31, 31)
 	SetTexture(restIcon, T.STATE_ICON, 0, 0.5, 0, 0.421875)
 	restIcon:SetPoint("TOPLEFT", portrait, "TOPLEFT", -3, -38)
 
-	local restGlow = contextual:CreateTexture(nil, "OVERLAY")
+	local restGlow = icons:CreateTexture(nil, "OVERLAY")
 	restGlow:SetSize(32, 32)
 	SetTexture(restGlow, T.STATE_ICON, 0, 0.5, 0.5, 1)
 	restGlow:SetBlendMode("ADD")
 	restGlow:SetPoint("TOPLEFT", restIcon, "TOPLEFT")
 
-	local attackIcon = contextual:CreateTexture(nil, "OVERLAY")
+	local attackIcon = icons:CreateTexture(nil, "OVERLAY")
 	attackIcon:SetSize(32, 31)
 	SetTexture(attackIcon, T.STATE_ICON, 0.5, 1, 0, 0.484375)
 	attackIcon:SetPoint("TOPLEFT", restIcon, "TOPLEFT", 1, 1)
 
-	local attackGlow = contextual:CreateTexture(nil, "OVERLAY")
+	local attackGlow = icons:CreateTexture(nil, "OVERLAY")
 	attackGlow:SetSize(32, 32)
 	SetTexture(attackGlow, T.STATE_ICON, 0.5, 1, 0.5, 1)
 	attackGlow:SetVertexColor(1, 0, 0)
 	attackGlow:SetBlendMode("ADD")
 	attackGlow:SetPoint("TOPLEFT", attackIcon, "TOPLEFT")
 
-	local attackBackground = contextual:CreateTexture(nil, "ARTWORK")
+	local attackBackground = icons:CreateTexture(nil, "ARTWORK")
 	attackBackground:SetSize(32, 32)
 	SetTexture(attackBackground, T.ATTACK_BG)
 	attackBackground:SetVertexColor(0.8, 0.1, 0.1)
 	attackBackground:SetAlpha(0.4)
 	attackBackground:SetPoint("TOPLEFT", attackIcon, "TOPLEFT", -3, -1)
 
-	local icons = {
+	frame.CUIR_StatusIcons = {
 		restIcon = restIcon,
 		restGlow = restGlow,
 		attackIcon = attackIcon,
 		attackGlow = attackGlow,
 		attackBackground = attackBackground,
 	}
-	frame.CUIR_StatusIcons = icons
 
 	local function SetShown(rest, attack, attackGlowShown, background)
 		restIcon:SetShown(rest)
