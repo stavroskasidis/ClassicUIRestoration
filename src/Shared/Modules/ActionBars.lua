@@ -111,7 +111,7 @@ end
 
 -- Vanilla's 36px icons sat in the strip's 42px cells with the 66x66
 -- UI-Quickslot2 frame (54x54 on the 30px pet/stance buttons) and the 62x62
--- equipped border drawn around them, centred, the frame 1px low. Retail's
+-- equipped border drawn around them. Retail's
 -- icon fills its whole 45px button (its rounded mask and frame hid the
 -- edges) and the buttons touch, so the icon is inset to the vanilla
 -- icon:cell proportion and the vanilla frames are sized from the icon;
@@ -119,6 +119,11 @@ end
 local ICON_RATIO = 36 / 42
 local NORMAL_RATIO, NORMAL_RATIO_SMALL = 66 / 36, 54 / 30
 local BORDER_RATIO = 62 / 36
+-- The UI-Quickslot frames' 39px ring sits at file pixels 12-50 of 64, half a
+-- file pixel up and left of centre; the frame is shifted that half pixel (at
+-- its drawn scale) the other way so it is centred on the icon. Sizes are
+-- rounded to whole pixels so the inset stays the same on every side.
+local FRAME_ART_BIAS = 0.5 / 64
 -- UI-Quickslot (an empty slot with the grid shown) fills its square with
 -- 60% black, which reads nearly opaque over a dark scene on the modern 45px
 -- buttons; it is faded to keep the square readable but light.
@@ -135,8 +140,12 @@ local function FillIcon(texture, button)
 	texture:SetAllPoints(button.icon or button)
 end
 
+local function Round(x)
+	return math.floor(x + 0.5)
+end
+
 local function IconSize(button)
-	return button:GetWidth() * ICON_RATIO
+	return Round(button:GetWidth() * ICON_RATIO)
 end
 
 -- Border art; runs after Blizzard's UpdateButtonArt / Update, which put the
@@ -152,7 +161,7 @@ local function ApplyButtonArt(button)
 		cell:SetShown(hasBarArt)
 	end
 
-	local size = IconSize(button) * (smallButtons[button] and NORMAL_RATIO_SMALL or NORMAL_RATIO)
+	local size = Round(IconSize(button) * (smallButtons[button] and NORMAL_RATIO_SMALL or NORMAL_RATIO))
 	local normal = button:GetNormalTexture()
 	if normal then
 		local empty = not (button.icon and button.icon:IsShown())
@@ -163,9 +172,10 @@ local function ApplyButtonArt(button)
 			SetTexture(normal, T.QUICKSLOT2)
 			normal:SetAlpha(1)
 		end
+		local shift = size * FRAME_ART_BIAS
 		normal:ClearAllPoints()
 		normal:SetSize(size, size)
-		normal:SetPoint("CENTER", button, "CENTER", 0, -1)
+		normal:SetPoint("CENTER", button.icon or button, "CENTER", shift, -shift)
 	end
 	local pushed = button:GetPushedTexture()
 	if pushed then
@@ -208,12 +218,12 @@ local function SkinButton(button, index, small)
 		FillIcon(button.Flash, button)
 	end
 	if button.Border then
-		local size = IconSize(button) * BORDER_RATIO
+		local size = Round(IconSize(button) * BORDER_RATIO)
 		SetTexture(button.Border, T.ACTION_BORDER)
 		button.Border:SetBlendMode("ADD")
 		button.Border:ClearAllPoints()
 		button.Border:SetSize(size, size)
-		button.Border:SetPoint("CENTER", button, "CENTER", 0, 0)
+		button.Border:SetPoint("CENTER", button.icon or button, "CENTER", 0, 0)
 	end
 	-- The proc / new-spell pulse keeps its retail rounded shape otherwise.
 	if button.SpellHighlightTexture then
