@@ -16,6 +16,7 @@ Classic UI Restoration**.
 | --- | --- | --- |
 | **Unit Frames** | Classic frame artwork and layout for the player, target, focus, target-of-target, pet, party and boss frames (elite/rare/minus dragons, level background, classic icon positions, black backdrop behind the bars), the classic circular portraits with the "Zzz" resting bubble and crossed-swords combat indicator on the player portrait, and the flat classic health bars (green, incl. heal prediction / absorb overlays) and power bars (solid classic colours, no end-cap spark). The raid-style frame bars get the classic textures as well. | UI reload |
 | **Cast Bars** | Classic cast bar art (border, spark, flash, yellow/green/red fill colours) for the player, pet, target, focus and boss cast bars. Works with the "lock to player frame" Edit Mode option. | Immediate |
+| **Breath & Fatigue Bars** | Classic look for the mirror timers (breath, fatigue, feign death): the flat bar on a black backdrop with the label on the bar, the large classic cast bar border and the classic colours (blue breath, yellow fatigue, orange death / feign death). Edit Mode's position and size settings keep working. | Immediate |
 | **Nameplates** | Switches nameplates to the client's built-in classic style (classic border, flat health bar, level text in the border's bubble, flat cast bar without spark) and remembers the previous style so it can be restored. | Immediate |
 | **Minimap** | Classic minimap: the 140px map in the round `UI-Minimap-Border` ring with the zone text bar on top, the round tracking button on the left, always-visible classic zoom buttons, the calendar page with the day printed on it, the clock on its plate at the bottom of the map, the square world map button, the letter icon (in a ring) for new mail and crafting orders, the compass ring while "rotate minimap" is on and the north tag otherwise. The addon compartment button gets the same round classic button look, below the tracking button. Edit Mode's size slider and the icon scale still work; its "header underneath" option has no classic equivalent and is ignored. | UI reload |
 | **Loot Window** | The vanilla loot panel: the classic `UI-LootPanel` artwork with the skull (fishing bobber for fishing loot) in its ring, the round close button, one classic name plate per item and the Prev / Next arrows; four items fit, with more the panel shows three per page like the original (the mouse wheel steps one row). Blizzard's looting, tooltips, quest markers and the "open loot window at mouse" option keep working. | UI reload |
@@ -37,8 +38,9 @@ re-textured and re-anchored. Blizzard's layout functions are hooked with
 swapping, party roster updates and Edit Mode.
 
 Cast bars are re-textured from script hooks on the bars themselves (their
-cast methods must not be hooked on 12.x, see `Modules\CastBars.lua`), and
-nameplates use the `nameplateStyle` CVar's Classic value. The minimap keeps
+cast methods must not be hooked on 12.x, see `Modules\CastBars.lua`), the
+breath/fatigue timers are Blizzard's own timer frames re-textured in place,
+and nameplates use the `nameplateStyle` CVar's Classic value. The minimap keeps
 Blizzard's cluster (so Edit Mode, the tracking menu and the notifications keep
 working) and re-parents its pieces into the scaled map container at the
 classic positions.
@@ -86,6 +88,7 @@ Modules/Portraits.lua    portrait masks, rest/combat indicators
 Modules/HealthBars.lua   health bar textures/colours
 Modules/PowerBars.lua    power bar textures/colours
 Modules/CastBars.lua     classic cast bars (live toggle)
+Modules/MirrorTimers.lua classic breath/fatigue timer bars (live toggle)
 Modules/Nameplates.lua   classic nameplate style (live toggle)
 Modules/Minimap.lua      classic minimap cluster
 Modules/LootFrame.lua    classic loot window

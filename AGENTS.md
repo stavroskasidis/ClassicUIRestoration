@@ -17,6 +17,7 @@ src/Shared/             addon code common to every flavor (lands in the addon ro
   Modules/HealthBars.lua   health bar textures/colours              (part of Unit Frames)
   Modules/PowerBars.lua    power bar textures/colours               (part of Unit Frames)
   Modules/CastBars.lua     classic cast bars (live toggle)
+  Modules/MirrorTimers.lua classic breath/fatigue (mirror timer) bars (live toggle)
   Modules/Nameplates.lua   classic nameplate style (live toggle)
   Modules/Minimap.lua      classic minimap cluster (reload; keeps Blizzard's cluster, re-parents its pieces into MinimapContainer)
   Modules/LootFrame.lua    vanilla loot panel (reload; re-skins the ScrollingFlatPanel loot frame in place, pages its scroll box)

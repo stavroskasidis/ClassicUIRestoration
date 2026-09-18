@@ -10,7 +10,7 @@ Classic UI Restoration
 
 ## Summary (short field, under 250 characters)
 
-Brings back the Classic unit frames, cast bars, nameplates, minimap, loot window and action bar gryphons on the modern UI. Each element can be switched back to the modern look individually. For Retail and WoW Forever.
+Brings back the Classic unit frames, cast bars, breath/fatigue bars, nameplates, minimap, loot window and action bar gryphons on the modern UI. Each element can be switched back to the modern look individually. For Retail and WoW Forever.
 
 ## Categories
 
@@ -32,6 +32,7 @@ parts you miss and keep the rest modern.
 
 - **Unit Frames**
 - **Cast Bars**
+- **Breath & Fatigue Bars**
 - **Nameplates**
 - **Minimap**
 - **Loot Window**
@@ -51,4 +52,4 @@ Restoration**. One checkbox per element.
 
 ## Feedback
 
-Bugs and requests: Issues tab. A screenshot and the output of `/cuir` help.
+Leave a comment for bugs and request.
