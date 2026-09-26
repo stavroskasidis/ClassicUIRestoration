@@ -35,6 +35,7 @@ src/Retail/             retail WoW flavor (Interface 12.x)
   ClassicUIRestoration.toc
 src/Forever/            WoW Forever flavor (Interface 16001, client 1.60.x)
   ClassicUIRestoration.toc
+  Modules/ComboPoints.lua classic combo point layout on the target frame, Forever only (live toggle; retail's combo points are on the player frame)
   Modules/SpellBook.lua vanilla spellbook, Forever only (reload; re-skins PlayerSpellsFrame's spellbook page in place, 12 spells per page)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
 addon.json              addon name, version (single source; .toc files carry @project-version@)
@@ -57,7 +58,8 @@ and `src/<Flavor>/` into one addon folder (flavor files win on equal paths), so 
 the same order, so add a new shared file to all of them. Flavor-specific code
 lives only in the flavor folder (Forever: `Modules/Forever.lua`, which hooks
 the same Blizzard functions *after* the shared modules, and
-`Modules/SpellBook.lua`, an option only Forever has); never add runtime
+`Modules/ComboPoints.lua` / `Modules/SpellBook.lua`, options only Forever
+has); never add runtime
 flavor detection to `src/Shared/`, and never edit anything under `build/`.
 
 ## Workflow

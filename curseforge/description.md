@@ -32,6 +32,7 @@ is its own option, so restore only the parts you miss and keep the rest modern.
 ## What it restores
 
 - **Unit Frames**
+- **Combo Points** (WoW Forever: the classic layout down the side of the target's portrait)
 - **Cast Bars**
 - **Breath & Fatigue Bars**
 - **Nameplates**

@@ -15,6 +15,7 @@ Classic UI Restoration**.
 | Option | What it does | Toggle |
 | --- | --- | --- |
 | **Unit Frames** | Classic frame artwork and layout for the player, target, focus, target-of-target, pet, party and boss frames (elite/rare/minus dragons, level background, classic icon positions, black backdrop behind the bars), the classic circular portraits with the "Zzz" resting bubble and crossed-swords combat indicator on the player portrait, and the flat classic health bars (green, incl. heal prediction / absorb overlays) and power bars (solid classic colours, no end-cap spark). The raid-style frame bars get the classic textures as well. | UI reload |
+| **Combo Points** (WoW Forever only) | The classic combo point layout on the target frame: the points run down the right side of the target's portrait (as in vanilla) instead of in an arc over its top. Works with or without the Unit Frames option. | Immediate |
 | **Cast Bars** | Classic cast bar art (border, spark, flash, yellow/green/red fill colours) for the player, pet, target, focus and boss cast bars. Works with the "lock to player frame" Edit Mode option. | Immediate |
 | **Breath & Fatigue Bars** | Classic look for the mirror timers (breath, fatigue, feign death): the flat bar on a black backdrop with the label on the bar, the large classic cast bar border and the classic colours (blue breath, yellow fatigue, orange death / feign death). Edit Mode's position and size settings keep working. | Immediate |
 | **Nameplates** | Switches nameplates to the client's built-in classic style (classic border, flat health bar, level text in the border's bubble, flat cast bar without spark) and remembers the previous style so it can be restored. | Immediate |
@@ -88,8 +89,17 @@ at the metal between slots and repeated across and down.
 
 Forever's UI is the retail 12.x UI with a small "camelot" game-type overlay
 (`Blizzard_UnitFrame\Camelot\*`, `Blizzard_NamePlates\Camelot\*` in Blizzard's
-UI source, branch `forever`), so the Forever build is the same code plus two
+UI source, branch `forever`), so the Forever build is the same code plus three
 extra modules.
+
+`Modules/ComboPoints.lua` is the Combo Points option. Forever keeps vanilla's
+combo points on the target, shown on the target frame with the classic art,
+but the overlay lays them out in an arc over the top of the portrait. The
+option moves Blizzard's points back to the classic arc down the right side
+of the portrait (the offsets of retail's own, unused, target frame combo
+points), centred on the portrait so it also fits the overlay's frame art.
+Retail shows its combo points on the player frame, since they stay with the
+character there, so it has no such option.
 
 `Modules/SpellBook.lua` is the Spellbook option. Forever's spellbook is the
 retail one laid out like the classic book (one tab per school, no
@@ -152,6 +162,7 @@ Modules/ActionBars.lua   vanilla action bar art (button borders, slot strip, pag
 Modules/BagsBar.lua      vanilla bag slots (square slots, backpack icon, slot strip)
 Modules/BagFrames.lua    vanilla bag / backpack windows (part of Bags)
 Textures/                the bundled Sell All Junk icon (vanilla style)
+Modules/ComboPoints.lua  Forever only: classic combo point layout (live toggle)
 Modules/SpellBook.lua    Forever only: vanilla spellbook
 Modules/Forever.lua      Forever only: adjustments for the "camelot" overlay
 ```
