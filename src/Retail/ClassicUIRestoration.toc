@@ -1,6 +1,6 @@
 ## Interface: 120100
 ## Title: Classic UI Restoration
-## Notes: Brings back the Classic UI for various elements (unit frames, cast bars, nameplates, minimap, auction house etc) while keeping the new UI functionality. Every element can be switched back on its own. For Retail and Forever.
+## Notes: Brings back the Classic UI for various elements (unit frames, cast bars, nameplates, minimap, auction house etc) while keeping the new UI functionality. Every element can be switched back on its own. For Forever and Retail.
 ## Version: @project-version@
 ## Author: Stavros
 ## IconTexture: Interface\AddOns\ClassicUIRestoration\Icon.png
