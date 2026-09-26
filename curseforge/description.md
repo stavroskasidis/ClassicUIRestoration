@@ -45,6 +45,7 @@ is its own option, so restore only the parts you miss and keep the rest modern.
 - **Vendor Window** icons (repair buttons, buyback slot)
 - **Action Bar Art** (square classic button borders, vanilla slot art, page arrows)
 - **Bags** (square vanilla bag slots on the bags bar, vanilla bag and backpack windows, also for the combined backpack)
+- **Micro Menu** (the classic micro buttons on the vanilla stone bar panel, with your portrait on the character button)
 - **Spellbook** (WoW Forever: the vanilla book, twelve spells per page, skill line tabs on the side)
 - **Talents** (WoW Forever: the vanilla talent frame, one tree at a time with the classic branches and tabs)
 

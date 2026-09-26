@@ -29,7 +29,10 @@ src/Shared/             addon code common to every flavor (lands in the addon ro
   Modules/ActionBars.lua   vanilla action bar art (reload; button borders, per-button strip cells, page arrows)
   Modules/BagsBar.lua      "Bags" option, bags bar (reload; square equal-size slots, backpack icon, strip cells, Forever key ring)
   Modules/BagFrames.lua    vanilla bag / backpack / combined windows   (part of Bags; slots re-anchored from Blizzard's grid)
-  Textures/                bundled art (UI-Merchant-SellJunk.tga, the vanilla-style Sell All Junk icon)
+  Modules/MicroMenu.lua    classic micro buttons (reload; UI-MicroButton-* files re-applied from hooks on the buttons' Set*Atlas)
+  Textures/                bundled art (UI-Merchant-SellJunk.tga, the vanilla-style Sell All Junk icon;
+                           UI-MicroButton-MainMenu/Quest/Socials-*.tga, the vanilla micro buttons from the
+                           Classic Era client, which retail/Forever only ship as Cataclysm redraws)
   README.md             user-facing description of every option (both flavors)
 src/Retail/             retail WoW flavor (Interface 12.x)
   ClassicUIRestoration.toc
@@ -121,7 +124,8 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
 - The legacy textures (`Interface\TargetingFrame\UI-TargetingFrame`,
   `UI-StatusBar`, `Interface\CastingBar\*`, `Interface\Tooltips\Nameplate-Border`
   etc.) still ship with the retail client, so the addon references them by path
-  and does not bundle copies. Note the retail `Nameplate-Border` is 256x32 with
+  and does not bundle copies (exception: files the client only ships redrawn,
+  like the three vanilla micro buttons in `Textures/`). Note the retail `Nameplate-Border` is 256x32 with
   the art in the left 136 px.
 - **Secrets:** unit health/power/cast values may be "secret" (12.x). Addon code
   must not compare, do arithmetic on, or format them. They may be passed

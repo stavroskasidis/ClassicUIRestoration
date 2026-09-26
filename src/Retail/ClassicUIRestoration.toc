@@ -26,4 +26,5 @@ Modules\MerchantFrame.lua
 Modules\ActionBars.lua
 Modules\BagsBar.lua
 Modules\BagFrames.lua
+Modules\MicroMenu.lua
 Options.lua
