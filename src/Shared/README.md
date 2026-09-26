@@ -19,6 +19,7 @@ Classic UI Restoration**.
 | **Breath & Fatigue Bars** | Classic look for the mirror timers (breath, fatigue, feign death): the flat bar on a black backdrop with the label on the bar, the large classic cast bar border and the classic colours (blue breath, yellow fatigue, orange death / feign death). Edit Mode's position and size settings keep working. | Immediate |
 | **Nameplates** | Switches nameplates to the client's built-in classic style (classic border, flat health bar, level text in the border's bubble, flat cast bar without spark) and remembers the previous style so it can be restored. | Immediate |
 | **Minimap** | Classic minimap: the 140px map in the round `UI-Minimap-Border` ring with the zone text bar on top, the round tracking button on the left, always-visible classic zoom buttons, the calendar page with the day printed on it, the clock on its plate at the bottom of the map, the square world map button, the letter icon (in a ring) for new mail and crafting orders, the compass ring while "rotate minimap" is on and the north tag otherwise. The addon compartment button gets the same round classic button look, below the tracking button. Edit Mode's size slider and the icon scale still work; its "header underneath" option has no classic equivalent and is ignored. | UI reload |
+| **Group Finder Eye** | The classic group finder eye: the animated eye (`LFG-Eye`) in a round minimap button ring instead of the modern eye. The button keeps Blizzard's tooltip, menu and Edit Mode position (next to the micro menu on retail; on WoW Forever the Minimap option puts its default spot at the classic place on the ring). Turn it off to keep the modern eye. | Immediate |
 | **Loot Window** | The vanilla loot panel: the classic `UI-LootPanel` artwork with the skull (fishing bobber for fishing loot) in its ring, the round close button, one classic name plate per item and the Prev / Next arrows; four items fit, with more the panel shows three per page like the original (the mouse wheel steps one row). Blizzard's looting, tooltips, quest markers and the "open loot window at mouse" option keep working. | UI reload |
 | **Trainer Window** | The vanilla class / profession trainer window: the classic `UI-ClassTrainer-*` panel with the trainer's portrait in its ring, a compact list of 16px skill rows coloured by state (green = can learn, red = requirements not met, grey = already known) with the selected row on a tinted highlight bar, and a detail pane below it with the selected skill's icon, name, requirements, cost and description (from the skill's tooltip). Train / Exit buttons, the player's money, the filter in the classic dropdown box and the classic knob scroll bars complete the panel; the profession rank bar sits where vanilla had its "All" tab. Blizzard's selection, training, filters and tooltips keep working. On Forever the collapsible skill categories become the vanilla +/- header rows. | UI reload |
 | **Auction House** | The vanilla auction house window: the classic `UI-AuctionFrame-*` panel (the Browse art with the filter column for the Buy and Auctions tabs, the Auction art with the Create Auction panel for the Sell tab) with the auctioneer's portrait in its ring, the round close button, the classic Browse-style tabs under the frame, the classic column headers and sort arrow, the filter buttons on their classic plates with the tree lines, the classic knob scroll bars in their troughs, the classic dropdown boxes, the player's money in the outlined box and 80px Bid / Buyout / Close buttons in the slots at the bottom right. The Sell tab's controls are restacked into the narrow classic panel (label over input, classic input boxes) with the Post button as the classic Create Auction button. Blizzard's searching, filters, favourites, buying, posting, sorting and tooltips keep working; the retail commodity market view, item headers and dialogs keep their inset borders on the classic marble. | UI reload |
@@ -120,8 +121,13 @@ vanilla two-column page.
 - the minimap frame is re-skinned by the overlay on every "rotate minimap"
   change (`Blizzard_Minimap\Camelot\Skin.lua`); the classic art is put back
   afterwards, and the overlay's day/night indicator (`MinimapCluster.DielFrame`),
-  which sits where classic has the calendar, is moved to the bottom left of
-  the ring and its player coordinates are moved below the classic clock.
+  which sits where classic has the calendar, is shrunk to the size of the
+  classic round buttons and moved to the bottom left of the ring, left of
+  the clock, and its player coordinates are moved below the classic clock.
+  The overlay's default Edit Mode spot for the group finder eye (on the edge
+  of the map) is replaced by the classic eye's spot at the bottom left of the
+  ring (the classic eye of the Group Finder Eye option is drawn at the map's
+  scale there); an eye moved in Edit Mode stays where it was put.
 
 ## Files
 
@@ -136,7 +142,7 @@ Modules/PowerBars.lua    power bar textures/colours
 Modules/CastBars.lua     classic cast bars (live toggle)
 Modules/MirrorTimers.lua classic breath/fatigue timer bars (live toggle)
 Modules/Nameplates.lua   classic nameplate style (live toggle)
-Modules/Minimap.lua      classic minimap cluster
+Modules/Minimap.lua      classic minimap cluster; Group Finder Eye (live toggle)
 Modules/LootFrame.lua    classic loot window
 Modules/TrainerFrame.lua classic trainer window
 Modules/AuctionHouse.lua classic auction house

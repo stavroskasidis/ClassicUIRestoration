@@ -5,7 +5,9 @@
 	UI-Minimap-Border ring with the zone text bar on top, the round tracking
 	button on the left, the always-visible zoom buttons at the bottom right,
 	the calendar page at the top right, the letter icon for new mail, the
-	square world map button and the compass ring / north tag.
+	square world map button and the compass ring / north tag. The classic
+	group finder eye is a separate, live option in this file (see "Group
+	Finder Eye" below), so the modern eye can be kept with the classic map.
 
 	The retail cluster (Blizzard_Minimap\Mainline\Minimap.xml) keeps every
 	element the classic one had, so Blizzard's frames are re-skinned in place
@@ -34,6 +36,18 @@
 	    Blizzard's frames.
 
 	Applied once at login; a UI reload restores the retail look.
+
+	Group Finder Eye (its own option, live): the animated LFG-Eye (30px)
+	inside the tracking ring of a 33px button (QueueStatusMinimapButton in
+	9.2) instead of the retail 45px flipbook eye. Blizzard's QueueStatusButton
+	is kept (tooltip, menu, Edit Mode); its eye is faded out, but its state
+	machine keeps running and still reports whether the queue is searching.
+	The classic ring and eye live on a child frame of the button, so they can
+	be hidden again and scaled on their own. Where the button sits is left to
+	Edit Mode (next to the micro menu on retail; on WoW Forever the Minimap
+	option moves its default spot onto the ring). Only widget state is
+	touched, so turning it off fades Blizzard's eye back in and restores the
+	button's retail size.
 ]]
 
 local _, ns = ...
@@ -561,5 +575,137 @@ function module:Apply()
 	-- Size the cluster (and its Edit Mode selection box) to the classic art.
 	if MinimapCluster.Layout then
 		MinimapCluster:Layout()
+	end
+end
+
+---------------------------------------------------------------------------
+-- Group Finder Eye (separate option, live; see the header)
+---------------------------------------------------------------------------
+
+local eyeModule = ns:RegisterModule({
+	key = "groupfindereye",
+	name = "Group Finder Eye",
+	tooltip = "Restores the classic group finder eye: the animated eye in a round minimap button ring, instead of the modern eye.",
+	live = true,
+})
+
+local QUEUE_BUTTON_SIZE = 33
+local EYE_SIZE = 30
+
+-- LFG-Eye: 29 cells of 64x64 on a 512x256 sheet, 0.1s each
+-- (LFG_EYE_TEXTURES.default in 9.2).
+local EYE_FRAMES, EYE_COLUMNS, EYE_DELAY = 29, 8, 0.1
+local EYE_CELL_WIDTH, EYE_CELL_HEIGHT = 64 / 512, 64 / 256
+
+local eyeEnabled = false
+local eyeScale = 1
+local retailWidth, retailHeight -- the button's size before the first enable
+local eyeArt, eyeTexture, eyeHighlight
+local eyeFrame, eyeElapsed = 1, 0
+
+local function SetEyeFrame(frame)
+	eyeFrame = frame
+	local column = (frame - 1) % EYE_COLUMNS
+	local row = math.floor((frame - 1) / EYE_COLUMNS)
+	eyeTexture:SetTexCoord(column * EYE_CELL_WIDTH, (column + 1) * EYE_CELL_WIDTH,
+		row * EYE_CELL_HEIGHT, (row + 1) * EYE_CELL_HEIGHT)
+end
+
+-- Classic animated the eye while searching and showed the first cell
+-- otherwise, which is what retail's static mode means (e.g. a listed group).
+local function AnimateEye(_, elapsed)
+	local eye = QueueStatusButton.Eye
+	if eye.IsStaticMode and eye:IsStaticMode() then
+		if eyeFrame ~= 1 then
+			SetEyeFrame(1)
+		end
+		eyeElapsed = 0
+		return
+	end
+	eyeElapsed = eyeElapsed + elapsed
+	if eyeElapsed < EYE_DELAY then return end
+	local steps = math.floor(eyeElapsed / EYE_DELAY)
+	eyeElapsed = eyeElapsed - steps * EYE_DELAY
+	SetEyeFrame((eyeFrame - 1 + steps) % EYE_FRAMES + 1)
+end
+
+-- Classic nudged the eye while the button was held down.
+local function PlaceEye(pressed)
+	local offset = pressed and 1 or 0
+	Point(eyeTexture, "CENTER", eyeArt, "CENTER", offset, -offset)
+end
+
+local function ApplyEyeSize()
+	eyeArt:SetScale(eyeScale)
+	QueueStatusButton:SetSize(QUEUE_BUTTON_SIZE * eyeScale, QUEUE_BUTTON_SIZE * eyeScale)
+end
+
+-- Ring, highlight and eye on a child frame of the button, drawn in classic's
+-- order (border, button highlight, eye frame on top). The frame animates
+-- only while the button is shown.
+local function CreateEyeArt(button)
+	eyeArt = CreateFrame("Frame", nil, button)
+	eyeArt:SetSize(QUEUE_BUTTON_SIZE, QUEUE_BUTTON_SIZE)
+	Point(eyeArt, "CENTER", button, "CENTER", 0, 0)
+
+	local ring = eyeArt:CreateTexture(nil, "BORDER")
+	SetTexture(ring, T.MINIMAP_RING)
+	ring:SetSize(52, 52)
+	Point(ring, "TOPLEFT", eyeArt, "TOPLEFT", 1, -1)
+
+	-- Classic's button highlight, shown by hand so that nothing on
+	-- Blizzard's button has to be undone when the option is turned off.
+	eyeHighlight = eyeArt:CreateTexture(nil, "ARTWORK", nil, -1)
+	SetTexture(eyeHighlight, T.MINIMAP_HIGHLIGHT)
+	eyeHighlight:SetBlendMode("ADD")
+	eyeHighlight:SetAllPoints(eyeArt)
+	eyeHighlight:Hide()
+
+	eyeTexture = eyeArt:CreateTexture(nil, "ARTWORK", nil, 1)
+	eyeTexture:SetTexture(T.LFG_EYE)
+	eyeTexture:SetSize(EYE_SIZE, EYE_SIZE)
+	SetEyeFrame(1)
+	PlaceEye(false)
+	eyeArt:SetScript("OnUpdate", AnimateEye)
+
+	button:HookScript("OnEnter", function() eyeHighlight:Show() end)
+	button:HookScript("OnLeave", function() eyeHighlight:Hide() end)
+	button:HookScript("OnMouseDown", function() PlaceEye(true) end)
+	button:HookScript("OnMouseUp", function() PlaceEye(false) end)
+	button:HookScript("OnHide", function()
+		PlaceEye(false)
+		eyeHighlight:Hide()
+	end)
+end
+
+function eyeModule:Enable()
+	local button = QueueStatusButton
+	if not button or not button.Eye then return end
+	if not eyeArt then
+		retailWidth, retailHeight = button:GetSize()
+		CreateEyeArt(button)
+	end
+	eyeEnabled = true
+	button.Eye:SetAlpha(0)
+	eyeArt:Show()
+	ApplyEyeSize()
+end
+
+function eyeModule:Disable()
+	eyeEnabled = false
+	if not eyeArt then return end
+	eyeArt:Hide()
+	QueueStatusButton.Eye:SetAlpha(1)
+	QueueStatusButton:SetSize(retailWidth, retailHeight)
+end
+
+-- Draws the classic eye (and sizes the button's hit area) at a multiple of
+-- the button's own scale, which belongs to Edit Mode's Size setting. The
+-- Forever module matches the minimap's scale with it while the eye sits on
+-- the ring; the retail eye keeps Blizzard's size.
+function eyeModule:SetEyeScale(scale)
+	eyeScale = scale
+	if eyeEnabled then
+		ApplyEyeSize()
 	end
 end

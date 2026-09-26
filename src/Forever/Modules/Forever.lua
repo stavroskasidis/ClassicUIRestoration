@@ -29,7 +29,11 @@
 	    atlas, a static ring underlay in the rotated mode); the classic art is
 	    re-applied after it. Camelot also adds a day/night indicator
 	    (MinimapCluster.DielFrame) at the top right of the map, where classic
-	    has the calendar; it is moved to the free bottom-left spot of the ring.
+	    has the calendar; it is shrunk to the size of the classic round
+	    buttons and moved onto the ring left of the clock. Its default
+	    Edit Mode layout also puts the group finder eye on the map's edge,
+	    which is moved to the classic eye's spot (the classic eye from the
+	    Group Finder Eye option is drawn at the map's scale there).
 
 	Everything here runs *after* the shared modules: this file is listed last
 	in the .toc, and hooks on the same function fire in installation order.
@@ -282,14 +286,51 @@ local function ReapplyClassicMinimap()
 	end
 end
 
+-- The indicator's ring is 38px of its 42px frame; drawn at the size of the
+-- classic round buttons' ~30px rings.
+local DIEL_SCALE = 30 / 38
+
 -- Camelot anchors the day/night indicator to the cluster (and scales it) from
 -- its own MinimapCluster:SetEditModeScale; inside the scaled backdrop it
--- needs neither.
+-- needs neither. It sits on the ring between the group finder eye and the
+-- clock, mirroring the zoom-out button (the right of the ring is the screen
+-- edge in the default layout). Offsets are in its own (scaled) units.
 local function AnchorDielFrame()
 	local diel = MinimapCluster.DielFrame
 	if not diel then return end
-	diel:SetScale(1)
-	Point(diel, "CENTER", Minimap, "CENTER", -58, -58)
+	diel:SetScale(DIEL_SCALE)
+	Point(diel, "CENTER", Minimap, "CENTER", -43 / DIEL_SCALE, -66 / DIEL_SCALE)
+end
+
+-- Camelot's default Edit Mode position for the group finder eye is the edge
+-- of the retail-sized map (Minimap CENTER -68,-68, scaled with the map),
+-- which on the classic map is on the ring. While the eye is in its default
+-- position it goes to the classic spot instead (the centre of 9.2's 33px
+-- QueueStatusMinimapButton at TOPLEFT 22,-100 of MinimapBackdrop), where the
+-- classic eye (Group Finder Eye option) is drawn at the map's scale like the
+-- other ring buttons and the modern eye keeps Blizzard's size; a position
+-- picked in Edit Mode is left alone. The button stays parented to UIParent,
+-- where Edit Mode scales and saves it, so the offset is converted into its
+-- own scale and the eye's Size setting still applies on top of the map's.
+local function AnchorQueueStatusButton()
+	local button = QueueStatusButton
+	local eye = ns.moduleByKey.groupfindereye
+	if not button or not button.IsInDefaultPosition or not eye then return end
+	if not button:IsInDefaultPosition() then
+		eye:SetEyeScale(1)
+		return
+	end
+	local mapScale = MinimapBackdrop:GetEffectiveScale()
+	eye:SetEyeScale(mapScale / button:GetParent():GetEffectiveScale())
+	local scale = mapScale / button:GetEffectiveScale()
+	Point(button, "CENTER", MinimapBackdrop, "TOPLEFT", 38.5 * scale, -116.5 * scale)
+end
+
+-- Blizzard's own minimap scale callback holds the unhooked UpdateDefaultAnchor
+-- (registered at load), so the scale change is followed from here.
+local function OnMinimapScaleChanged()
+	AnchorDielFrame()
+	AnchorQueueStatusButton()
 end
 
 function minimapPart:Apply()
@@ -304,8 +345,17 @@ function minimapPart:Apply()
 	if MinimapCluster.DielFrame then
 		MinimapCluster.DielFrame:SetParent(MinimapBackdrop)
 		AnchorDielFrame()
-		ns.Hook(MinimapCluster, "SetEditModeScale", AnchorDielFrame)
 	end
+
+	if QueueStatusButton then
+		AnchorQueueStatusButton()
+		-- Edit Mode applies the default position through UpdateDefaultAnchor
+		-- (also on reset to default); the eye's Size setting only rescales it.
+		ns.Hook(QueueStatusButton, "UpdateDefaultAnchor", AnchorQueueStatusButton)
+		ns.Hook(QueueStatusButton, "UpdateSystemSettingSize", AnchorQueueStatusButton)
+	end
+
+	ns.Hook(MinimapCluster, "SetEditModeScale", OnMinimapScaleChanged)
 
 	-- Camelot's player coordinates sit right under the map, where the
 	-- classic clock plate (Minimap CENTER 0,-75, 28px tall) now is.

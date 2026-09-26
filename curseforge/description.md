@@ -36,6 +36,7 @@ is its own option, so restore only the parts you miss and keep the rest modern.
 - **Breath & Fatigue Bars**
 - **Nameplates**
 - **Minimap**
+- **Group Finder Eye** (the animated classic eye in a minimap button ring)
 - **Loot Window**
 - **Trainer Windows**
 - **Auction House**
