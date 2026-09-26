@@ -88,6 +88,11 @@ ns.T = {
 	SCROLL_DOWN        = "Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-", -- + Up / Down / Disabled
 	SCROLL_KNOB        = "Interface\\Buttons\\UI-ScrollBar-Knob",
 	DROPDOWN_BOX       = "Interface\\Glues\\CharacterCreate\\CharacterCreate-LabelFrame",
+	MAINMENUBAR_STRIP  = "Interface\\MainMenuBar\\UI-MainMenuBar-Dwarf",
+	QUICKSLOT2         = "Interface\\Buttons\\UI-Quickslot2",
+	QUICKSLOT_PUSHED   = "Interface\\Buttons\\UI-Quickslot-Depress",
+	BUTTON_HIGHLIGHT   = "Interface\\Buttons\\ButtonHilight-Square",
+	BUTTON_CHECKED     = "Interface\\Buttons\\CheckButtonHilight",
 }
 
 -- Classic colours.
@@ -251,6 +256,60 @@ end
 
 function ns.Print(msg)
 	print("|cff33ccff" .. ns.TITLE .. "|r: " .. tostring(msg))
+end
+
+---------------------------------------------------------------------------
+-- The vanilla bar strip, shared by the action bar and bags bar art
+--
+-- UI-MainMenuBar-Dwarf (256x256) holds the 1024x43 vanilla bar as four
+-- 256px pieces, read left to right from the file's rows 213-256, 149-192,
+-- 85-128 and 21-64 (the rows in between are the XP bar's frame). The
+-- action slots are 42px cells separated by 3px metal columns; piece 2
+-- holds six whole cells, their columns centred 2px in.
+---------------------------------------------------------------------------
+
+local STRIP_CELL_WIDTH, STRIP_CELL_HEIGHT = 42, 43
+local STRIP_CELLS = {}
+do
+	local top = 149 -- piece 2
+	for k = 0, 5 do
+		STRIP_CELLS[k + 1] = { (2 + 42 * k) / 256, (44 + 42 * k) / 256, top / 256, (top + STRIP_CELL_HEIGHT) / 256 }
+	end
+end
+
+-- One strip cell behind a button (the cells differ slightly, so `index`
+-- walks through them); size it with ns.SizeStripCell.
+function ns.CreateStripCell(button, index)
+	local cell = button:CreateTexture(nil, "BACKGROUND", nil, -3)
+	ns.SetTexture(cell, ns.T.MAINMENUBAR_STRIP, unpack(STRIP_CELLS[(index - 1) % #STRIP_CELLS + 1]))
+	cell:SetPoint("CENTER", button, "CENTER", 0, 0)
+	return cell
+end
+
+-- Sizes a cell to its button's width (keeping the strip's 42:43
+-- proportion) plus the bar's padding along the bar, so neighbouring cells
+-- meet on their shared metal column instead of leaving a gap.
+function ns.SizeStripCell(cell, width, padding, vertical)
+	local height = width * STRIP_CELL_HEIGHT / STRIP_CELL_WIDTH
+	if vertical then
+		height = height + padding
+	else
+		width = width + padding
+	end
+	cell:SetSize(width, height)
+end
+
+-- Fades every divider frame Blizzard acquired between a bar's buttons (the
+-- pools are re-filled on each layout; alpha sticks to the pooled frames).
+function ns.HideBarDividers(bar)
+	for _, key in ipairs({ "HorizontalDividersPool", "VerticalDividersPool" }) do
+		local pool = bar[key]
+		if pool then
+			for divider in pool:EnumerateActive() do
+				divider:SetAlpha(0)
+			end
+		end
+	end
 end
 
 ---------------------------------------------------------------------------

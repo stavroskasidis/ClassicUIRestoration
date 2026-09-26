@@ -25,8 +25,9 @@ Brings back the Classic UI element for various elements (unit frames, cast bars,
 # Description
 
 **Classic UI Restoration** brings the Classic look back to the modern
-UI, one element at a time. Each element is its own option, so restore only the
-parts you miss and keep the rest modern.
+UI, one element at a time. It does not compromise between the two: you get the
+look of the classic UI with all the functionality of the new one. Each element
+is its own option, so restore only the parts you miss and keep the rest modern.
 
 ## What it restores
 
@@ -41,6 +42,7 @@ parts you miss and keep the rest modern.
 - **Action Bar Gryphons**
 - **Vendor Window** icons (repair buttons, buyback slot)
 - **Action Bar Art** (square classic button borders, vanilla slot art, page arrows)
+- **Bags** (square vanilla bag slots on the bags bar, vanilla bag and backpack windows, also for the combined backpack)
 
 ## How it works
 

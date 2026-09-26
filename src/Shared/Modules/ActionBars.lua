@@ -39,13 +39,10 @@ local _, ns = ...
 local T = ns.T
 local SetTexture = ns.SetTexture
 
-T.MAINMENUBAR_STRIP = "Interface\\MainMenuBar\\UI-MainMenuBar-Dwarf"
+-- The strip, UI-Quickslot2 and the pushed / highlight / checked art are in
+-- Core's T (shared with the bags bar).
 T.QUICKSLOT         = "Interface\\Buttons\\UI-Quickslot"
-T.QUICKSLOT2        = "Interface\\Buttons\\UI-Quickslot2"
-T.QUICKSLOT_PUSHED  = "Interface\\Buttons\\UI-Quickslot-Depress"
 T.QUICKSLOT_FLASH   = "Interface\\Buttons\\UI-QuickslotRed"
-T.BUTTON_HIGHLIGHT  = "Interface\\Buttons\\ButtonHilight-Square"
-T.BUTTON_CHECKED    = "Interface\\Buttons\\CheckButtonHilight"
 T.ACTION_BORDER     = "Interface\\Buttons\\UI-ActionButton-Border"
 T.PAGE_UP           = "Interface\\MainMenuBar\\UI-MainMenu-ScrollUpButton-"   -- + Up / Down / Disabled / Highlight
 T.PAGE_DOWN         = "Interface\\MainMenuBar\\UI-MainMenu-ScrollDownButton-" -- + Up / Down / Disabled / Highlight
@@ -58,45 +55,17 @@ local module = ns:RegisterModule({
 })
 
 ---------------------------------------------------------------------------
--- The vanilla bar strip
---
--- UI-MainMenuBar-Dwarf (256x256) holds the 1024x43 vanilla bar as four
--- 256px pieces, read left to right from the file's rows 213-256, 149-192,
--- 85-128 and 21-64 (the rows in between are the XP bar's frame). The
--- action slots are 42px cells separated by 3px metal columns; piece 2
--- holds six whole cells, their columns centred 2px in.
+-- The vanilla bar strip (see Core.lua for the cells in the file)
 ---------------------------------------------------------------------------
-
-local PIECE_TOP = { 213, 149, 85, 21 }
-local PIECE_HEIGHT = 43
-
-local function PieceCoords(piece, x1, x2)
-	local top = PIECE_TOP[piece]
-	return x1 / 256, x2 / 256, top / 256, (top + PIECE_HEIGHT) / 256
-end
-
-local CELL_WIDTH, CELLS = 42, {}
-for k = 0, 5 do
-	CELLS[k + 1] = { PieceCoords(2, 2 + 42 * k, 44 + 42 * k) }
-end
 
 local cells = setmetatable({}, { __mode = "k" }) -- button -> strip cell texture
 
--- Sizes a button's cell: the button's width (keeping the strip's 42:43
--- proportion) plus the bar's icon padding along the bar, so neighbouring
--- cells meet on their shared metal column instead of leaving a gap.
+-- The cell follows the bar's icon padding along the bar (see
+-- ns.SizeStripCell).
 local function LayoutCell(bar, button)
 	local cell = cells[button]
 	if not cell then return end
-	local padding = tonumber(bar.buttonPadding) or 0
-	local width = button:GetWidth()
-	local height = width * PIECE_HEIGHT / CELL_WIDTH
-	if bar.isHorizontal == false then
-		height = height + padding
-	else
-		width = width + padding
-	end
-	cell:SetSize(width, height)
+	ns.SizeStripCell(cell, button:GetWidth(), tonumber(bar.buttonPadding) or 0, bar.isHorizontal == false)
 end
 
 -- Padding and orientation are Edit Mode settings; Blizzard re-lays the
@@ -109,25 +78,8 @@ end
 
 -- One strip cell behind a button.
 local function CreateCell(bar, button, index)
-	local cell = button:CreateTexture(nil, "BACKGROUND", nil, -3)
-	SetTexture(cell, T.MAINMENUBAR_STRIP, unpack(CELLS[(index - 1) % #CELLS + 1]))
-	cell:SetPoint("CENTER", button, "CENTER", 0, 0)
-	cells[button] = cell
+	cells[button] = ns.CreateStripCell(button, index)
 	LayoutCell(bar, button)
-	return cell
-end
-
--- Fades every divider frame Blizzard acquired between the buttons (the
--- pools are re-filled on each layout; alpha sticks to the pooled frames).
-local function HideDividers(bar)
-	for _, key in ipairs({ "HorizontalDividersPool", "VerticalDividersPool" }) do
-		local pool = bar[key]
-		if pool then
-			for divider in pool:EnumerateActive() do
-				divider:SetAlpha(0)
-			end
-		end
-	end
 end
 
 ---------------------------------------------------------------------------
@@ -301,8 +253,8 @@ local function SkinMainBar()
 	local bar = MainActionBar
 	if bar.BorderArt then bar.BorderArt:SetAlpha(0) end
 	if bar.UpdateDividers then
-		ns.Hook(bar, "UpdateDividers", HideDividers)
-		HideDividers(bar)
+		ns.Hook(bar, "UpdateDividers", ns.HideBarDividers)
+		ns.HideBarDividers(bar)
 	end
 	local page = bar.ActionBarPageNumber
 	if page then
