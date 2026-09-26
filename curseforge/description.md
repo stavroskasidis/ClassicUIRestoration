@@ -10,7 +10,7 @@ Classic UI Restoration
 
 ## Summary (short field, under 250 characters)
 
-Brings back the Classic UI for various elements (unit frames, cast bars, nameplates, minimap, auction house etc) while keeping the new UI functionality. Every element can be switched back on its own. For Retail and Forever.
+Brings back the Classic UI for various elements (unit frames, cast bars, nameplates, minimap, auction house etc) while keeping the new UI functionality. Every element can be switched back on its own. For Forever and Retail.
 
 ## Categories
 
