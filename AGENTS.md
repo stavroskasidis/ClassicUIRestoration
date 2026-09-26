@@ -36,7 +36,9 @@ src/Retail/             retail WoW flavor (Interface 12.x)
 src/Forever/            WoW Forever flavor (Interface 16001, client 1.60.x)
   ClassicUIRestoration.toc
   Modules/ComboPoints.lua classic combo point layout on the target frame, Forever only (live toggle; retail's combo points are on the player frame)
+  Modules/PlayerSpellsPanel.lua PlayerSpellsFrame chrome / close button / mouse for the classic spellbook and talents pages (not a module)
   Modules/SpellBook.lua vanilla spellbook, Forever only (reload; re-skins PlayerSpellsFrame's spellbook page in place, 12 spells per page)
+  Modules/TalentFrame.lua vanilla talent frame, Forever only (reload; Blizzard's talent buttons moved onto the 1.12 grid, one tree per tab)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
 addon.json              addon name, version (single source; .toc files carry @project-version@)
                         and the flavors with the game folder each deploys to ("gameDir")
@@ -58,8 +60,9 @@ and `src/<Flavor>/` into one addon folder (flavor files win on equal paths), so 
 the same order, so add a new shared file to all of them. Flavor-specific code
 lives only in the flavor folder (Forever: `Modules/Forever.lua`, which hooks
 the same Blizzard functions *after* the shared modules, and
-`Modules/ComboPoints.lua` / `Modules/SpellBook.lua`, options only Forever
-has); never add runtime
+`Modules/ComboPoints.lua` / `Modules/SpellBook.lua` / `Modules/TalentFrame.lua`,
+options only Forever has, with `Modules/PlayerSpellsPanel.lua` shared by the
+last two); never add runtime
 flavor detection to `src/Shared/`, and never edit anything under `build/`.
 
 ## Workflow
@@ -177,7 +180,25 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
   panels' line, and the panel manager positions the panel by Blizzard's
   compact size); its mouse and that button's anchor are only changed out of
   combat. Forever has no panel tab system and one icon category tab per skill
-  line.
+  line. The panel's chrome, close button and mouse are owned by
+  `Modules/PlayerSpellsPanel.lua` (shared with the talents page), which sets
+  them from the pages' shown state, never from the page that triggered it.
+- Talents (Forever only): `PlayerSpellsFrame.TalentsFrame` is the retail
+  trait-tree frame (`Blizzard_SharedTalentUI`) with the camelot overlay: one
+  C_Traits tree holding the class's three trees side by side (node groups
+  from `C_Traits.GetGroupDisplayInfoByTreeID`), a Primary / Secondary tab per
+  spec group, staged changes committed by "Apply Changes". Its panel area is
+  "center" (it closes every other panel when opened). The node grid is 600
+  node units (60px) in both directions; a few nodes sit far off the grid in
+  the data (out of Blizzard's view) and a few edges point upwards. The
+  module reparents Blizzard's talent buttons into its own scroll frame:
+  `ClassTalentsFrameMixin:UpdateTalentButtonPosition` reparents a button to
+  `ButtonsParent` every time it positions it, so the module re-places it in a
+  hook on that method; edges (`AcquireEdge` parents them to the start
+  button's parent) and gates are reparented to a hidden frame. Button alpha
+  is Blizzard's (its "Invisible" state), so trees are hidden by parent, never
+  by alpha. The spec tabs reach `SetTab` through a closure taken at load
+  (hook the tab buttons' `SetTabSelected`, not `SetTab`).
 - Minimap: `MinimapCluster` is a `ResizeLayoutFrame` (sizes itself to its shown
   children) and an Edit Mode system; `MinimapContainer` is what the Size slider
   scales, so every classic piece lives inside it. `MinimapCompassTexture` is

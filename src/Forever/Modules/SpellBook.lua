@@ -36,15 +36,17 @@
 	    button is hidden,
 	  * while the spellbook page is shown the 384x512 vanilla book is drawn
 	    at the panel's left edge, at the height of the other panels,
-	    instead of its NineSlice, portrait and title; the talents page gets
-	    the retail chrome back. The panel keeps Blizzard's compact size
-	    (809x720), so it opens where Blizzard's compact spellbook does. It is
-	    not resized: the page holds a secure button (the assisted combat
-	    spell, UIPanelSpellButtonFrameTemplate), which makes the page and the
-	    panel protected, and in combat neither could be changed from here.
-	    Instead a frame of the book's size takes the clicks (the panel's own
-	    mouse is switched off, out of combat) and the spell list's frame,
-	    which takes the mouse wheel, is moved onto the book,
+	    instead of its NineSlice, portrait and title (PlayerSpellsPanel.lua,
+	    shared with the Talents option; the talents page gets the retail
+	    chrome back unless that option draws its own frame). The panel keeps
+	    Blizzard's compact size (809x720), so it opens where Blizzard's
+	    compact spellbook does. It is not resized: the page holds a secure
+	    button (the assisted combat spell, UIPanelSpellButtonFrameTemplate),
+	    which makes the page and the panel protected, and in combat neither
+	    could be changed from here. Instead a frame of the book's size takes
+	    the clicks (the panel's own mouse is switched off, out of combat) and
+	    the spell list's frame, which takes the mouse wheel, is moved onto
+	    the book,
 	  * the skill line tabs become the vanilla side tabs, the search box and
 	    the settings button go into the dark band under the title and the
 	    paging controls to their vanilla spots.
@@ -104,7 +106,6 @@ local book, page          -- PlayerSpellsFrame and its spellbook page (SpellBook
 local origin              -- the vanilla frame's top-left corner, which everything is placed from
 local originOffset = 0    -- origin's offset below the panel's top (see UpdateOrigin)
 local art = {}            -- regions this module draws on the panel
-local retail = {}         -- panel state put back on the other pages
 local skins = setmetatable({}, { __mode = "k" }) -- Blizzard frame -> what this module added to it
 local passiveHighlight
 
@@ -118,24 +119,13 @@ end
 -- Panel
 ---------------------------------------------------------------------------
 
--- The panel manager puts a panel's top TOP_OFFSET (-116) plus its yoffset
--- below UIParent's top, raised so that its bottom stays 140 above the
--- screen's bottom and its top at least 10 below the screen's top
--- (ClampUIPanelY). The compact spellbook panel is registered with yoffset 75
--- and is 720 tall, so it sits above the line the
--- other panels (the character frame: yoffset 0) share; the book is moved
--- down to where the manager would put a vanilla-sized panel.
+-- The compact spellbook panel is registered with yoffset 75 and is 720
+-- tall, so the panel manager puts it above the line the other panels (the
+-- character frame: yoffset 0) share; the book is moved down to where the
+-- manager would put a vanilla-sized panel (see PlayerSpellsPanel.Top).
 local STANDARD_PANEL_HEIGHT = 424 -- vanilla SpellBookFrame's panel height (the art without the tab shelf)
 
-local function PanelTop(yOffset, height, minYOffset, bottomClamp)
-	local y = (GetUIPanelLayoutAttribute and GetUIPanelLayoutAttribute("TOP_OFFSET") or -116) + yOffset
-	local bottom = UIParent:GetTop() + y - height
-	bottomClamp = bottomClamp or 140
-	if bottom < bottomClamp then
-		y = y + bottomClamp - bottom
-	end
-	return math.min(y, minYOffset or -10)
-end
+local PanelTop = ns.PlayerSpellsPanel.Top
 
 local function PanelAttribute(name)
 	return book:GetAttribute("UIPanelLayout-" .. name)
@@ -185,55 +175,13 @@ local function CreatePanelArt()
 	table.insert(art, title)
 
 	-- Clicks on the book, in place of the panel's own mouse (see
-	-- ApplyProtected). Below every other child of the panel.
+	-- PlayerSpellsPanel.lua). Below every other child of the panel.
 	local blocker = CreateFrame("Frame", nil, book)
 	blocker:SetFrameLevel(book:GetFrameLevel())
 	blocker:SetPoint("TOPLEFT", origin, "TOPLEFT", 0, 0)
 	blocker:SetSize(HIT_WIDTH, HIT_HEIGHT)
 	blocker:EnableMouse(true)
 	table.insert(art, blocker)
-end
-
--- The retail close button (the red X in the panel's corner) is swapped for
--- the round classic one inside the book's border and back.
-local BUTTON_STATES = { "Normal", "Pushed", "Disabled", "Highlight" }
-
-local function SaveCloseButton()
-	local close = book.CloseButton
-	-- ignoreRect: the set size (the panel is still hidden, nothing is laid out yet)
-	local saved = { width = close:GetWidth(true), height = close:GetHeight(true), points = {}, textures = {} }
-	for i = 1, close:GetNumPoints() do
-		saved.points[i] = { close:GetPoint(i) }
-	end
-	for _, state in ipairs(BUTTON_STATES) do
-		local texture = close["Get" .. state .. "Texture"](close)
-		if texture then
-			saved.textures[state] = { atlas = texture:GetAtlas(), file = texture:GetTexture() }
-		end
-	end
-	retail.close = saved
-end
-
-local function LayoutCloseButton(classic)
-	local close, saved = book.CloseButton, retail.close
-	if classic then
-		ns.SkinCloseButton(close)
-		Point(close, "CENTER", origin, "TOPLEFT", CLOSE_X, CLOSE_Y)
-		return
-	end
-	close:SetSize(saved.width, saved.height)
-	close:ClearAllPoints()
-	for _, point in ipairs(saved.points) do
-		close:SetPoint(unpack(point))
-	end
-	for state, texture in pairs(saved.textures) do
-		local blend = state == "Highlight" and "ADD" or nil
-		if texture.atlas then
-			close["Set" .. state .. "Atlas"](close, texture.atlas, blend)
-		elseif texture.file then
-			close["Set" .. state .. "Texture"](close, texture.file, blend)
-		end
-	end
 end
 
 ---------------------------------------------------------------------------
@@ -257,14 +205,11 @@ local function PlaceRotationButton()
 	end
 end
 
--- In the classic look the book's own frame takes the clicks, so the rest of
--- the panel does not block the world next to the book.
 local function ApplyProtected()
 	if InCombatLockdown() then
 		QueueProtected()
 		return
 	end
-	book:EnableMouse(retail.mouse and not IsClassic())
 	PlaceRotationButton()
 end
 
@@ -514,23 +459,17 @@ local function SkinPage()
 end
 
 ---------------------------------------------------------------------------
--- Classic <-> retail chrome
+-- Classic <-> retail look (the panel's chrome: PlayerSpellsPanel.lua)
 ---------------------------------------------------------------------------
-
-local RETAIL_CHROME = { "NineSlice", "Bg", "TopTileStreaks", "PortraitContainer", "TitleContainer" }
 
 local classicApplied = false -- the look UpdateMode last put on the panel
 
--- The classic look is (re)applied whenever the page is shown, since
--- Blizzard re-shows parts of the panel on tab changes; the retail look is
--- put back once, when the talents page takes over.
+-- The book is (re)drawn whenever the page is shown; it goes once, when
+-- another page takes over.
 local function UpdateMode()
 	local classic = IsClassic()
 	if not classic and not classicApplied then return end
 	classicApplied = classic
-	for _, key in ipairs(RETAIL_CHROME) do
-		if book[key] then book[key]:SetShown(not classic) end
-	end
 	for _, region in ipairs(art) do
 		region:SetShown(classic)
 	end
@@ -539,9 +478,8 @@ local function UpdateMode()
 		if book.MaximizeMinimizeButton then
 			book.MaximizeMinimizeButton:Hide()
 		end
+		ApplyProtected()
 	end
-	LayoutCloseButton(classic)
-	ApplyProtected()
 end
 
 local function Skin()
@@ -559,8 +497,6 @@ local function Skin()
 	end
 	passiveHighlight = ns.HasTexture(T.PASSIVE_HIGHLIGHT) and T.PASSIVE_HIGHLIGHT or T.BUTTON_HIGHLIGHT
 
-	retail.mouse = book:IsMouseEnabled()
-	SaveCloseButton()
 	origin = CreateFrame("Frame", nil, book)
 	origin:SetSize(1, 1)
 	origin:SetPoint("TOPLEFT", book, "TOPLEFT", 0, originOffset)
@@ -583,6 +519,10 @@ local function Skin()
 			if IsClassic() then self:Hide() end
 		end)
 	end
+	-- The round classic close button sits inside the book's border.
+	ns.PlayerSpellsPanel.Register(page, function(close)
+		Point(close, "CENTER", origin, "TOPLEFT", CLOSE_X, CLOSE_Y)
+	end)
 	UpdateMode()
 end
 
