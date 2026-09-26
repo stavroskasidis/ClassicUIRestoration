@@ -26,6 +26,7 @@ Classic UI Restoration**.
 | **Vendor Window** | The vanilla icons in the vendor window (the panel itself is still the classic one): the classic hammer / anvil / gold anvil repair buttons (`UI-Merchant-RepairIcons`), a matching classic-style icon for the retail Sell All Junk button, and the plain buyback item slot without the modern undo arrow. | Immediate |
 | **Action Bar Art** | The vanilla action bar art: the square `UI-Quickslot2` border with square icons on every action button (main bar, extra bars, pet / stance / possess bars), the `UI-Quickslot` empty-slot look while the grid is shown, the classic pushed / highlight / checked glows, red attack flash and green equipped border; the embossed gryphon slots of the vanilla `UI-MainMenuBar-Dwarf` strip behind the main bar's buttons in place of the modern plate and dividers; and the vanilla page arrows. Edit Mode's bar settings (rows, padding, orientation, icon size, "hide bar art") keep working. | UI reload |
 | **Bags** | The vanilla bags. On the bags bar: the backpack, bag and reagent bag slots as equal square buttons (instead of the modern round ones) with square icons in the classic `UI-Quickslot2` item frame, the classic pushed / highlight art and the checked glow while a bag is open, the vanilla backpack icon (`Button-Backpack-Up`) and empty bag slot icon, and an embossed gryphon slot of the vanilla bar strip behind each one, like the right end of the vanilla main bar (on Forever the modern plate and dividers behind the bags are removed and the key ring gets the vanilla key ring art; the retail arrow that collapses the bags is kept). The bag windows: each bag in the vanilla `UI-Bag-Components` frame (4 columns, the bag icon in the ring, white name, round close button, the key ring's gold frame on Forever), the backpack in the `UI-BackpackBackground` frame with the search box and sort button in the band under its name, the money in its money box, extra rows for the authenticator's slots and the watched currencies on the vanilla strip under it; the combined backpack gets the same backpack art widened to its 10 columns (a partly filled top row shows plain stone where it has no slots, as vanilla's bags did). Empty slots show the embossed slot of the art. Edit Mode's orientation, direction, size and padding of the bags bar keep working. | UI reload |
+| **Spellbook** (WoW Forever only) | The vanilla spellbook: the classic `UI-SpellbookPanel-*` book with the spellbook icon in its ring and the round close button, twelve spells per page (1-6 down the left column, 7-12 down the right) in the classic square `UI-Quickslot2` frame on the dark slot, the name in yellow with the rank in brown beside it (passives in the black frame, like 1.12), the school tabs (and the pet's) down the right edge of the book as the classic skill line tabs, "Page N" between the classic Prev / Next arrows, and the search box and settings button in the band under the title. The book opens at the left like Blizzard's compact spellbook, level with the other windows; the talents page keeps the retail look. Casting, dragging spells to the bars, flyouts, tooltips, the search and the settings keep working, in combat too. Uses the spellbook's single-page mode (the `spellBookMinimize` setting is switched on, and back when the option is turned off). | UI reload |
 
 The "UI reload" options are applied while the interface loads because
 Blizzard's frames cannot be safely un-skinned at runtime; changing them
@@ -86,8 +87,22 @@ at the metal between slots and repeated across and down.
 
 Forever's UI is the retail 12.x UI with a small "camelot" game-type overlay
 (`Blizzard_UnitFrame\Camelot\*`, `Blizzard_NamePlates\Camelot\*` in Blizzard's
-UI source, branch `forever`), so the Forever build is the same code plus one
-extra module, `Modules/Forever.lua`, which handles what the overlay adds:
+UI source, branch `forever`), so the Forever build is the same code plus two
+extra modules.
+
+`Modules/SpellBook.lua` is the Spellbook option. Forever's spellbook is the
+retail one laid out like the classic book (one tab per school, no
+specialization / talents tabs on it), which is what the vanilla book fits
+onto. It keeps Blizzard's spellbook page and its spell buttons (casting from
+them only works while Blizzard's own code drives the list, so the addon never
+changes the list's settings): the vanilla book is drawn at the left edge of
+the panel while that page is shown (the panel keeps Blizzard's compact size,
+so the book opens where Blizzard's compact spellbook does), the list's page
+frame is given a height that makes Blizzard's own paging put exactly twelve
+spells on each page, and after each layout the spells are moved into the
+vanilla two-column page.
+
+`Modules/Forever.lua` handles what the overlay adds to the other elements:
 
 - the level is shown in a small circle in the bottom corner of the
   player/target/focus/boss frames (`LevelBackgroundCircle`, large white font):
@@ -131,5 +146,6 @@ Modules/ActionBars.lua   vanilla action bar art (button borders, slot strip, pag
 Modules/BagsBar.lua      vanilla bag slots (square slots, backpack icon, slot strip)
 Modules/BagFrames.lua    vanilla bag / backpack windows (part of Bags)
 Textures/                the bundled Sell All Junk icon (vanilla style)
+Modules/SpellBook.lua    Forever only: vanilla spellbook
 Modules/Forever.lua      Forever only: adjustments for the "camelot" overlay
 ```

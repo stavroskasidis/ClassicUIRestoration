@@ -1,6 +1,6 @@
 {
 	"name": "ClassicUIRestoration",
-	"version": "1.9.0",
+	"version": "1.10.0",
 	"flavors": {
 		"Retail": {
 			"gameDir": "_retail_"

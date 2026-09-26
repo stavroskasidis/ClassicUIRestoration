@@ -76,12 +76,19 @@ local function TextureExists(path)
 	return fileExists[path]
 end
 
+-- In instances a unit's identity is secret and Blizzard sets its PvP icon
+-- from secret values (UnitFrameUtil: shown state and atlas), so neither can
+-- be tested here.
+local function IsSecret(value)
+	return issecretvalue ~= nil and issecretvalue(value)
+end
+
 -- Classic banner for the atlas Blizzard just put on a Camelot PvP icon, or
 -- nil when the icon is not carrying a Camelot atlas (already classic) or the
 -- banner file is missing.
 local function ClassicBannerFor(icon)
 	local atlas = icon:GetAtlas()
-	if type(atlas) ~= "string" then return nil, nil end
+	if IsSecret(atlas) or type(atlas) ~= "string" then return nil, nil end
 	local file = CLASSIC_PVP_FILES[atlas:lower()]
 	if file and TextureExists(file) then
 		return file, atlas
@@ -117,7 +124,15 @@ local function ClassicPlayerPvPIcon()
 	if not icon or not circle then return end
 
 	circle:Hide()
-	if not icon:IsShown() then return end
+	local shown = icon:IsShown()
+	if IsSecret(shown) then
+		-- The banner cannot be chosen; Blizzard's small icon, if shown, goes
+		-- to the classic spot.
+		icon:SetScale(1)
+		Point(icon, "CENTER", PlayerFrame, "TOPLEFT", 50 + PLAYER_OFFSET_X, -52 + PLAYER_OFFSET_Y)
+		return
+	end
+	if not shown then return end
 
 	local file, atlas = ClassicBannerFor(icon)
 	if not file and not atlas then return end -- already classic
@@ -155,7 +170,13 @@ local function ClassicTargetPvPIcon(frame)
 	if not icon or not circle then return end
 
 	circle:Hide()
-	if not icon:IsShown() then return end
+	local shown = icon:IsShown()
+	if IsSecret(shown) then
+		icon:SetScale(1)
+		Point(icon, "CENTER", frame, "TOPRIGHT", -29 + TARGET_OFFSET_X, -52 + TARGET_OFFSET_Y)
+		return
+	end
+	if not shown then return end
 
 	local file, atlas = ClassicBannerFor(icon)
 	if not file and not atlas then return end

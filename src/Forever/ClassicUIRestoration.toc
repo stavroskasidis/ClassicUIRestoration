@@ -26,5 +26,6 @@ Modules\MerchantFrame.lua
 Modules\ActionBars.lua
 Modules\BagsBar.lua
 Modules\BagFrames.lua
+Modules\SpellBook.lua
 Modules\Forever.lua
 Options.lua

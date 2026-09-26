@@ -34,6 +34,7 @@ src/Retail/             retail WoW flavor (Interface 12.x)
   ClassicUIRestoration.toc
 src/Forever/            WoW Forever flavor (Interface 16001, client 1.60.x)
   ClassicUIRestoration.toc
+  Modules/SpellBook.lua vanilla spellbook, Forever only (reload; re-skins PlayerSpellsFrame's spellbook page in place, 12 spells per page)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
 addon.json              addon name, version (single source; .toc files carry @project-version@)
                         and the flavors with the game folder each deploys to ("gameDir")
@@ -54,7 +55,8 @@ and `src/<Flavor>/` into one addon folder (flavor files win on equal paths), so 
 `Modules\UnitFrames.lua`); every `.toc` must list the same shared files in
 the same order, so add a new shared file to all of them. Flavor-specific code
 lives only in the flavor folder (Forever: `Modules/Forever.lua`, which hooks
-the same Blizzard functions *after* the shared modules); never add runtime
+the same Blizzard functions *after* the shared modules, and
+`Modules/SpellBook.lua`, an option only Forever has); never add runtime
 flavor detection to `src/Shared/`, and never edit anything under `build/`.
 
 ## Workflow
@@ -120,7 +122,10 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
   straight through to `StatusBar:SetValue/SetMinMaxValues` (allowed when
   tainted) but not to `SetPoint/SetSize/SetParent` (offset math is not allowed).
   `GetPoint/GetSize` on nameplate regions are restricted; wrap diagnostics in
-  `pcall`.
+  `pcall`. Region state that Blizzard set from secret values reads back
+  secret too: in instances the unit frames' PvP icons are set with
+  `SetShown/SetAtlas(secret)`, so their `IsShown()`/`GetAtlas()` must be
+  checked with `issecretvalue` before any test.
 - **Taint:** never write a Lua field on a Blizzard frame that Blizzard code
   later reads (e.g. cast bar `barType`, `casting`, `unit`). Writing such a field
   taints Blizzard's execution and produces "action blocked" / secret-value
@@ -149,6 +154,27 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
 - Nameplates: the built-in `nameplateStyle` CVar value `Enum.NamePlateStyle.Classic`
   is used as the base; the module fixes its texcoords/insets itself and restores
   the previous CVar value on disable.
+- Spellbook (Forever only; dropped for retail on 2026-09-26, whose spellbook
+  with its Class / General / Pet text tabs and Specialization / Talents bar
+  did not fit the vanilla book): the spell buttons of
+  `PlayerSpellsFrame.SpellBookFrame` cast
+  through the protected `C_SpellBook.CastSpellBookItem`, so the paged list
+  must only ever be driven by Blizzard's code: never call its
+  `SetViewsPerPage`/`SetDataProvider`/`SetMinimized`/`SetTab` or write its
+  fields (the item frames it builds afterwards carry the taint and casting is
+  blocked). Items per page are controlled only through the view frame's
+  height (see the header of `Modules/SpellBook.lua`); single-page mode comes
+  from the `spellBookMinimize` CVar, read when `Blizzard_PlayerSpells` loads.
+  Tab clicks reach `PlayerSpellsFrame:SetTab` through a closure taken at load,
+  so hooking `SetTab` misses them. The page holds a secure button (the
+  assisted combat spell, `UIPanelSpellButtonFrameTemplate`), so the page and
+  `PlayerSpellsFrame` are protected: no `SetSize`/`SetPoint`/`EnableMouse`/
+  `SetHitRectInsets` on them (or on that button) in combat. The module never
+  resizes the panel (the book is drawn at its left edge, lowered to the other
+  panels' line, and the panel manager positions the panel by Blizzard's
+  compact size); its mouse and that button's anchor are only changed out of
+  combat. Forever has no panel tab system and one icon category tab per skill
+  line.
 - Minimap: `MinimapCluster` is a `ResizeLayoutFrame` (sizes itself to its shown
   children) and an Edit Mode system; `MinimapContainer` is what the Size slider
   scales, so every classic piece lives inside it. `MinimapCompassTexture` is
