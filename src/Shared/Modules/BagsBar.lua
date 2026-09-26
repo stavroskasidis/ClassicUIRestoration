@@ -22,7 +22,10 @@
 	    gryphon cells as under the action slots, which are used here. On WoW
 	    Forever the modern action bar plate and dividers behind the bags are
 	    hidden.
-	  * Forever's key ring gets the vanilla UI-Button-KeyRing art.
+	  * Forever's key ring gets the vanilla UI-Button-KeyRing art, spaced
+	    from the bags like the bags from each other, on a narrow strip
+	    cell: vanilla's bar had a narrow slot for it (UI-MainMenuBar-KeyRing),
+	    but the client only ships the Cataclysm redraw of that file.
 
 	Retail's expand arrow between the backpack and the bags has no vanilla
 	counterpart; it is kept, since hiding it would leave collapsed bags with
@@ -72,6 +75,7 @@ local KEYRING_WIDTH, KEYRING_HEIGHT = 18, 39
 local KEYRING_COORDS = { 0, 18 / 32, 0, 39 / 64 }
 
 local cells = setmetatable({}, { __mode = "k" }) -- slot button -> strip cell texture
+local keyRingCell -- the key ring's narrow strip cell (Forever)
 
 local function Round(x)
 	return math.floor(x + 0.5)
@@ -166,12 +170,35 @@ local function SkinSlot(button, index)
 	ApplySlotArt(button)
 end
 
--- Forever's key ring: the vanilla 18x39 key ring button art, centred on
--- Blizzard's slot (which it sizes itself for the bar's orientation), in
--- place of its small slot frame and key icon. Blizzard turns its art
+-- Vanilla's 18x39 key ring sat beside 37px bag icons; it is scaled with
+-- the icons.
+local function KeyRingSize()
+	local scale = IconSize() / 37
+	return KEYRING_WIDTH * scale, KEYRING_HEIGHT * scale
+end
+
+-- Forever's key ring slot is 33px along the bar, so the narrow ring stood
+-- apart from the bags. Vanilla put it the same 5px from the last bag as
+-- the bags from each other; the slot is narrowed to the ring plus the
+-- bag slots' own margin around their icons, which gives the same spacing.
+-- Runs after Blizzard's UpdateOrientation, which re-sizes the slot on
+-- every bar layout before the bar measures its length.
+local function SizeKeyRing(button, isHorizontal)
+	local width, height = KeyRingSize()
+	local margin = SLOT_SIZE - IconSize()
+	if isHorizontal then
+		button:SetSize(width + margin, SLOT_SIZE)
+	else
+		button:SetSize(SLOT_SIZE, height + margin)
+	end
+end
+
+-- Forever's key ring: the vanilla key ring button art, centred on the slot,
+-- in place of its small slot frame and key icon. Blizzard turns its art
 -- sideways in a vertical bar; the vanilla ring stays upright.
 local function ApplyKeyRingArt(button)
 	if button.icon then button.icon:SetAlpha(0) end
+	local width, height = KeyRingSize()
 	local art = {
 		{ button:GetNormalTexture(), T.KEYRING },
 		{ button:GetPushedTexture(), T.KEYRING_PUSHED },
@@ -188,7 +215,7 @@ local function ApplyKeyRingArt(button)
 				texture:SetAlpha(1)
 			end
 			texture:ClearAllPoints()
-			texture:SetSize(KEYRING_WIDTH, KEYRING_HEIGHT)
+			texture:SetSize(width, height)
 			texture:SetPoint("CENTER", button, "CENTER", 0, 0)
 		end
 	end
@@ -205,6 +232,9 @@ local function LayoutCells()
 	local vertical = BagsBar.isHorizontal == false
 	for button, cell in pairs(cells) do
 		ns.SizeStripCell(cell, button:GetWidth(), padding, vertical)
+	end
+	if keyRingCell then
+		ns.SizeNarrowStripCell(keyRingCell, _G.KeyRingButton, padding, vertical)
 	end
 end
 
@@ -231,8 +261,14 @@ local function Skin()
 	for index, button in MainMenuBarBagManager:EnumerateBagButtons() do
 		if button == _G.KeyRingButton then
 			ns.Hook(button, "UpdateTextures", ApplyKeyRingArt)
-			ns.Hook(button, "UpdateOrientation", ApplyKeyRingArt)
+			ns.Hook(button, "UpdateOrientation", function(self, isHorizontal)
+				SizeKeyRing(self, isHorizontal)
+				ApplyKeyRingArt(self)
+			end)
+			-- Blizzard's slot is taller than wide in a horizontal bar.
+			SizeKeyRing(button, button:GetWidth() < button:GetHeight())
 			ApplyKeyRingArt(button)
+			keyRingCell = ns.CreateNarrowStripCell(button)
 		else
 			SkinSlot(button, index)
 		end

@@ -299,6 +299,59 @@ function ns.SizeStripCell(cell, width, padding, vertical)
 	cell:SetSize(width, height)
 end
 
+-- A narrow cell for a button narrower than the strip's cells along the bar
+-- (vanilla drew its key ring in its own narrow slot): the ends of a cell,
+-- with a plain slice of it (its border and dark inside, clear of the
+-- gryphon) stretched between them. The slices are cell pixels.
+local NARROW_CELL_END = 4
+local NARROW_CELL_SLICE_X, NARROW_CELL_SLICE_Y = 5, 3
+
+function ns.CreateNarrowStripCell(button)
+	local parts = {}
+	for i = 1, 3 do
+		parts[i] = button:CreateTexture(nil, "BACKGROUND", nil, -3)
+		parts[i]:SetTexture(ns.T.MAINMENUBAR_STRIP)
+	end
+	return parts
+end
+
+-- Sizes it like ns.SizeStripCell: its button's size plus the bar's padding
+-- along the bar, and a whole cell's size across it.
+function ns.SizeNarrowStripCell(parts, button, padding, vertical)
+	local left, right, top, bottom = unpack(STRIP_CELLS[1])
+	local first, middle, last = parts[1], parts[2], parts[3]
+	for _, part in ipairs(parts) do part:ClearAllPoints() end
+	if vertical then
+		local width = button:GetWidth()
+		local height = button:GetHeight() + padding
+		local cap = NARROW_CELL_END * width / STRIP_CELL_WIDTH
+		local slice = top + (NARROW_CELL_SLICE_Y + 0.5) / 256
+		first:SetTexCoord(left, right, top, top + NARROW_CELL_END / 256)
+		middle:SetTexCoord(left, right, slice, slice)
+		last:SetTexCoord(left, right, bottom - NARROW_CELL_END / 256, bottom)
+		first:SetSize(width, cap)
+		last:SetSize(width, cap)
+		first:SetPoint("TOP", button, "CENTER", 0, height / 2)
+		last:SetPoint("BOTTOM", button, "CENTER", 0, -height / 2)
+		middle:SetPoint("TOPLEFT", first, "BOTTOMLEFT")
+		middle:SetPoint("BOTTOMRIGHT", last, "TOPRIGHT")
+	else
+		local height = button:GetHeight() * STRIP_CELL_HEIGHT / STRIP_CELL_WIDTH
+		local width = button:GetWidth() + padding
+		local cap = NARROW_CELL_END * height / STRIP_CELL_HEIGHT
+		local slice = left + (NARROW_CELL_SLICE_X + 0.5) / 256
+		first:SetTexCoord(left, left + NARROW_CELL_END / 256, top, bottom)
+		middle:SetTexCoord(slice, slice, top, bottom)
+		last:SetTexCoord(right - NARROW_CELL_END / 256, right, top, bottom)
+		first:SetSize(cap, height)
+		last:SetSize(cap, height)
+		first:SetPoint("LEFT", button, "CENTER", -width / 2, 0)
+		last:SetPoint("RIGHT", button, "CENTER", width / 2, 0)
+		middle:SetPoint("TOPLEFT", first, "TOPRIGHT")
+		middle:SetPoint("BOTTOMRIGHT", last, "BOTTOMLEFT")
+	end
+end
+
 -- Fades every divider frame Blizzard acquired between a bar's buttons (the
 -- pools are re-filled on each layout; alpha sticks to the pooled frames).
 function ns.HideBarDividers(bar)

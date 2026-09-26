@@ -76,6 +76,10 @@ local BACKPACK_PORTRAIT_Y = -24
 
 local BAG_WIDTH = 192
 local BAG_SLOT_BOTTOM = 9  -- the bottom row's offset from the frame's bottom
+-- Vanilla put the slots 12px in from the right like the backpack's, but in
+-- game this art's wells are drawn a pixel further left than that, so the
+-- items stood a pixel right of them.
+local BAG_SLOT_RIGHT = 13
 local BAG_ROWS_PER_MIDDLE = 6
 local BAG_MIDDLE_TOP = 181 -- file row where the middle piece's first slot row starts
 local BAG_TEXTURE_HEIGHT = 512
@@ -152,7 +156,7 @@ end
 local GRID_X = { first = { 64, 121 }, inner = { { 121, 163 }, { 163, 205 } }, last = { 205, 256 } }
 local GRID_Y = { first = { 0, 103 }, inner = { { 103, 144 }, { 144, 185 } }, last = { 185, 256 } }
 local GRID_TEXTURE_SIZE = 256
-local GRID_SLOT_BOTTOM = 32 -- the bottom row's offset from the art's bottom
+local GRID_SLOT_BOTTOM = 31 -- the bottom row's offset from the art's bottom (its 35px well is rows 189-223)
 local GRID_MONEY_Y = 19     -- the money box's middle, from the art's bottom
 
 local function Slices(spec, count)
@@ -355,11 +359,17 @@ local function HideEmptySlotArt(item, texture)
 	end
 end
 
+-- The quality border's line is drawn a pixel inside its 37px texture, so it
+-- stood a pixel inside the slot's metal ring, while the gold quest border
+-- sits on the ring; it is grown a pixel each way to sit there too.
+local QUALITY_BORDER_SIZE = 39
+
 local function SkinItem(item)
 	-- The combined window's own per-slot backdrop (a cut of the vanilla art).
 	if item.ItemSlotBackground then item.ItemSlotBackground:SetAlpha(0) end
 	if skinnedItems[item] then return end
 	skinnedItems[item] = true
+	if item.IconBorder then item.IconBorder:SetSize(QUALITY_BORDER_SIZE, QUALITY_BORDER_SIZE) end
 	ns.Hook(item, "SetItemButtonTexture", HideEmptySlotArt)
 end
 
@@ -392,7 +402,7 @@ local function PlaceItems(frame)
 			if layout.grid then
 				item:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", -SLOT_RIGHT - column * PITCH_X, -(layout.height - GRID_SLOT_BOTTOM) + row * PITCH_Y)
 			else
-				item:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -SLOT_RIGHT - column * PITCH_X, BAG_SLOT_BOTTOM + row * PITCH_Y)
+				item:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -BAG_SLOT_RIGHT - column * PITCH_X, BAG_SLOT_BOTTOM + row * PITCH_Y)
 			end
 		end
 		SkinItem(item)
