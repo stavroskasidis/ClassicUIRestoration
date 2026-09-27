@@ -609,6 +609,13 @@ end
 -- A stat is left out (and the rows close up) when its function fails,
 -- returns its hideAt, hides the row or writes no value: some return early
 -- when the stat does not apply (no ranged weapon, no off hand).
+-- In combat the stat functions work on secret values (12.x): what they
+-- return and the text / shown state they set read back secret, and addon
+-- code may not compare or test those. A secret stat is shown as is.
+local function IsSecret(value)
+	return issecretvalue ~= nil and issecretvalue(value)
+end
+
 local function UpdateStatBox(side)
 	local box = statBoxes[side]
 	local category = GetCategory(side)
@@ -623,7 +630,12 @@ local function UpdateStatBox(side)
 			row.Value:SetText("")
 			row:Show()
 			local ok, value = pcall(info.updateFunc, row, "player")
-			if ok and (stat[2] == nil or value ~= stat[2]) and row:IsShown() and (row.Value:GetText() or "") ~= "" then
+			local hidden = stat[2] ~= nil and not IsSecret(value) and value == stat[2]
+			local rowShown = row:IsShown()
+			rowShown = IsSecret(rowShown) or rowShown
+			local text = row.Value:GetText()
+			local hasValue = IsSecret(text) or (text or "") ~= ""
+			if ok and not hidden and rowShown and hasValue then
 				if stat[3] then
 					row.Label:SetFormattedText(STAT_FORMAT or "%s:", stat[3])
 				end
@@ -640,12 +652,16 @@ local function UpdateResistances()
 	for _, resistance in ipairs(resistances) do
 		local id = resistance:GetID()
 		local _, total, positive, negative = UnitResistance("player", id)
-		total, positive, negative = total or 0, positive or 0, negative or 0
 		local color = HIGHLIGHT_FONT_COLOR
-		if math.abs(negative) > positive then
-			color = RED_FONT_COLOR
-		elseif math.abs(negative) < positive then
-			color = GREEN_FONT_COLOR
+		if IsSecret(total) or IsSecret(positive) or IsSecret(negative) then
+			-- Shown as is (white); the colour needs a comparison.
+		else
+			total, positive, negative = total or 0, positive or 0, negative or 0
+			if math.abs(negative) > positive then
+				color = RED_FONT_COLOR
+			elseif math.abs(negative) < positive then
+				color = GREEN_FONT_COLOR
+			end
 		end
 		resistance.text:SetText(total)
 		resistance.text:SetTextColor(color:GetRGB())
@@ -656,10 +672,22 @@ local function UpdateResistances()
 	end
 end
 
-local function UpdateStats()
-	if not PaperDollFrame:IsShown() then return end
-	UpdateStatBox("left")
-	UpdateStatBox("right")
+-- The stat functions only work on combat's secret values when Blizzard's
+-- own code calls them (called from here, most fail), so the stat boxes keep
+-- what they show during combat and are filled again when it ends. They are
+-- also filled out of combat while the window is closed (`always`), so that
+-- a window first opened in combat is not empty. The resistances are shown
+-- as they come (secret ones in white, see UpdateResistances).
+local statsPending = false
+local function UpdateStats(always)
+	if not (always or PaperDollFrame:IsShown()) then return end
+	if InCombatLockdown() then
+		statsPending = true
+	else
+		statsPending = false
+		UpdateStatBox("left")
+		UpdateStatBox("right")
+	end
 	UpdateResistances()
 end
 
@@ -765,11 +793,19 @@ local function CreateStats()
 	column:SetAllPoints(frame)
 	CreateResistances(column)
 
-	ns.Hook("PaperDollFrame_UpdateStats", UpdateStats)
+	ns.Hook("PaperDollFrame_UpdateStats", function() UpdateStats() end)
 	local events = CreateFrame("Frame", nil, attributes)
 	events:RegisterUnitEvent("UNIT_RESISTANCES", "player")
-	events:SetScript("OnEvent", UpdateResistances)
-	UpdateStats()
+	events:RegisterEvent("PLAYER_ENTERING_WORLD")
+	events:RegisterEvent("PLAYER_REGEN_ENABLED")
+	events:SetScript("OnEvent", function(_, event)
+		if event == "UNIT_RESISTANCES" then
+			UpdateResistances()
+		elseif event == "PLAYER_ENTERING_WORLD" or statsPending then
+			UpdateStats(true)
+		end
+	end)
+	UpdateStats(true)
 end
 
 ---------------------------------------------------------------------------
@@ -786,8 +822,7 @@ end
 -- offsets are enlarged by the same factor instead.
 ---------------------------------------------------------------------------
 
-T.PLUS_BUTTON  = "Interface\\Buttons\\UI-PlusButton-"  -- + Up / Down / Hilight
-T.MINUS_BUTTON = "Interface\\Buttons\\UI-MinusButton-" -- + Up / Down
+-- T.PLUS_BUTTON / T.MINUS_BUTTON (+ Up / Down / Hilight) come from TrainerFrame.lua.
 T.SKILLS_BAR   = "Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar"
 
 local list = {}

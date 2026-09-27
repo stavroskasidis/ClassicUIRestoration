@@ -15,8 +15,7 @@ The addon was renamed from *Classic UI Restoration* (folder
 old folder is still installed; it is temporary (remove it once the beta
 testers have moved over). Still named after the old name: the `CUIR_` prefix
 of addon-private keys (internal) and the `/cuir` and `/classicui` slash
-aliases next to `/fmcui` / `/forevermore` (never `/fcui`: the ClassicUI Forever
-addon registers it).
+aliases next to `/fmcui` / `/forevermore` (never `/fcui`: other addons use it).
 
 ## Repository layout
 
@@ -55,6 +54,7 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/CharacterFrame.lua vanilla character window, Forever only (reload; vanilla art on CharacterFrame, left pane moved into it, right pane docked, mode tabs as bottom tabs)
   Modules/CharacterReputation.lua its Reputation tab, Forever only   (part of Character Window; rows re-skinned after Blizzard initializes them)
   Modules/CharacterSkills.lua its Skills tab, Forever only           (part of Character Window; same row skinning, own 1.12 detail pane)
+  Modules/ProfessionsFrame.lua vanilla trade skill window, Forever only (reload; crafting page re-skinned in place, Blizzard's recipe list scaled with its row heights overridden, own detail pane / rank bar / "All" tab / proxy create buttons)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
   README.md             user-facing description of every option (both flavors)
 addon.json              addon name, version (single source; the .toc carries @project-version@)
@@ -75,7 +75,8 @@ flavor's Interface version, and the zip is uploaded once, tagged with every
 game version. Forever-only code lives in its own files (`Modules/Forever.lua`,
 which hooks the same Blizzard functions *after* the other modules, and
 `Modules/ComboPoints.lua` / `Modules/SpellBook.lua` / `Modules/TalentFrame.lua` /
-`Modules/CharacterFrame.lua` / `Modules/CharacterReputation.lua` / `Modules/CharacterSkills.lua`, options only Forever has, with
+`Modules/CharacterFrame.lua` / `Modules/CharacterReputation.lua` / `Modules/CharacterSkills.lua` /
+`Modules/ProfessionsFrame.lua`, options only Forever has, with
 `Modules/PlayerSpellsPanel.lua` shared by the spellbook and talents), each starting with `if not ns.IS_FOREVER then return end` right
 after `local _, ns = ...`, so on retail they register nothing.
 `ns.IS_FOREVER` (set in `Core.lua` from the Interface version) is the only
@@ -139,6 +140,11 @@ anything under `build/`.
   but never loads them back, so options reset every session on Forever; this is
   a client bug (reported 2026-09-18, reproduces with a minimal addon, retail is
   fine) with no addon-side fix — do not chase it in `InitializeDB`.
+  Taint logging is unusable on the 1.60.1 client: with `/console taintLog 2`
+  every call of a method this addon hooks with `hooksecurefunc` (micro buttons'
+  `SetNormalAtlas`, action buttons' `Update`, ...) fails with "attempt to call
+  a nil value" in Blizzard's code (seen 2026-09-27). Test taint questions in
+  game instead (e.g. open protected panels in combat) and turn it back off.
 - The legacy textures (`Interface\TargetingFrame\UI-TargetingFrame`,
   `UI-StatusBar`, `Interface\CastingBar\*`, `Interface\Tooltips\Nameplate-Border`
   etc.) still ship with the retail client, so the addon references them by path
@@ -154,7 +160,11 @@ anything under `build/`.
   `pcall`. Region state that Blizzard set from secret values reads back
   secret too: in instances the unit frames' PvP icons are set with
   `SetShown/SetAtlas(secret)`, so their `IsShown()`/`GetAtlas()` must be
-  checked with `issecretvalue` before any test.
+  checked with `issecretvalue` before any test. On Forever the player's stats
+  and resistances are secret in combat too: Blizzard's stat functions
+  (`PAPERDOLL_STATINFO[...].updateFunc`) fail when addon code calls them
+  then, so the character window's stat boxes keep their values through
+  combat and refresh after it.
 - **Taint:** never write a Lua field on a Blizzard frame that Blizzard code
   later reads (e.g. cast bar `barType`, `casting`, `unit`). Writing such a field
   taints Blizzard's execution and produces "action blocked" / secret-value
@@ -173,6 +183,20 @@ anything under `build/`.
   moves or resizes a protected frame.
 - Anything that must touch a protected frame outside combat goes through
   `ns:RunOutOfCombat`.
+- Never call `ShowUIPanel` / `HideUIPanel` from addon code: in combat the
+  panel manager refuses tainted calls ("Interface action failed because of
+  an AddOn"). A template's script on a button the addon created runs as
+  addon code too, so `ns.CreatePanelCloseTextButton` (a `UIPanelCloseButton`
+  on the panel) still only closes out of combat. A close button that must
+  work in combat is a `SecureActionButtonTemplate` with `type` "click" and
+  `clickbutton` the panel's own `CloseButton` (created out of combat; it is
+  protected and makes its parent protected): see the professions window.
+- A panel with a secure descendant is protected: no `SetSize` / `SetPoint`
+  / `EnableMouse` / `SetHitRectInsets` on it in combat, and hooks that run
+  when it shows (a keybinding can show it in combat) must defer those with
+  `ns:RunOutOfCombat`. Forever's `ProfessionsFrame` is one (its overview
+  page's profession spell buttons are secure): setting its hit rect on show
+  made the K binding fail in combat ("Interface action failed", 2026-09-27).
 - Hooks go through `ns.Hook(global, fn)` / `ns.Hook(frame, "Method", fn)`: a
   guarded `hooksecurefunc` whose callback runs in `xpcall`, because an error in
   one hook silently drops every later hook in the chain. Use `HookScript` for

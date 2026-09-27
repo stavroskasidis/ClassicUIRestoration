@@ -55,8 +55,8 @@ T.TRAINER_ART        = "Interface\\ClassTrainerFrame\\UI-ClassTrainer-" -- + Top
 T.TRADESKILL_ART     = "Interface\\TradeSkillFrame\\UI-TradeSkill-"     -- same pieces (the classic trade skill panel), fallback
 T.LISTBOX_HIGHLIGHT  = "Interface\\Buttons\\UI-Listbox-Highlight2"
 T.LISTBOX_HIGHLIGHT1 = "Interface\\Buttons\\UI-Listbox-Highlight"
-T.PLUS_BUTTON        = "Interface\\Buttons\\UI-PlusButton-Up"
-T.MINUS_BUTTON       = "Interface\\Buttons\\UI-MinusButton-Up"
+T.PLUS_BUTTON        = "Interface\\Buttons\\UI-PlusButton-"  -- + Up / Down / Hilight
+T.MINUS_BUTTON       = "Interface\\Buttons\\UI-MinusButton-" -- + Up / Down
 T.PLUS_HILIGHT       = "Interface\\Buttons\\UI-PlusButton-Hilight"
 T.EMPTY_SLOT         = "Interface\\Buttons\\UI-EmptySlot"
 
@@ -228,11 +228,8 @@ local function ApplyFrameArt(frame)
 		train:SetSize(80, 22)
 		Point(train, "CENTER", frame, "TOPLEFT", 224, -420)
 	end
-	art.exit = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-	art.exit:SetSize(80, 22)
-	art.exit:SetText(EXIT or "Exit")
+	art.exit = ns.CreatePanelCloseTextButton(frame, EXIT or "Exit")
 	art.exit:SetPoint("CENTER", frame, "TOPLEFT", 305, -420)
-	art.exit:SetScript("OnClick", function() HideUIPanel(frame) end)
 
 	local money = frame.money or ClassTrainerFrameMoneyFrame
 	if money then
@@ -266,16 +263,21 @@ end
 
 -- The scroll trough art (UI-ClassTrainer-ScrollBar) that vanilla drew behind
 -- both scroll bars: a top and a bottom piece that overlap in the middle.
-local function CreateTrough(frame, topInset)
-	local file = artPrefix .. "ScrollBar"
+-- Returns the two textures (on `parent`) for the caller to anchor; the
+-- professions window (ProfessionsFrame.lua) uses it too.
+function ns.CreateScrollTrough(parent, file, topInset)
 	if not ns.HasTexture(file) then return end
-	local top = frame:CreateTexture(nil, "ARTWORK")
+	local top = parent:CreateTexture(nil, "ARTWORK")
 	SetTexture(top, file, 0, 0.46875, topInset, 0.9609375)
 	top:SetSize(30, 123 * (0.9609375 - topInset) / 0.9609375)
-	local bottom = frame:CreateTexture(nil, "ARTWORK")
+	local bottom = parent:CreateTexture(nil, "ARTWORK")
 	SetTexture(bottom, file, 0.53125, 1, 0.03125, 1)
 	bottom:SetSize(30, 123)
 	return top, bottom
+end
+
+local function CreateTrough(frame, topInset)
+	return ns.CreateScrollTrough(frame, artPrefix .. "ScrollBar", topInset)
 end
 
 ---------------------------------------------------------------------------
@@ -388,13 +390,13 @@ local function OnCategoryInit(button, node)
 		end
 		if button.CollapseIcon then
 			ns.Hook(button.CollapseIcon, "SetAtlas", function(_, atlas)
-				SetTexture(state.icon, (type(atlas) == "string" and atlas:find("expand")) and T.PLUS_BUTTON or T.MINUS_BUTTON)
+				SetTexture(state.icon, ((type(atlas) == "string" and atlas:find("expand")) and T.PLUS_BUTTON or T.MINUS_BUTTON) .. "Up")
 			end)
 		end
 	end
 
 	local collapsed = node and node.IsCollapsed and node:IsCollapsed()
-	SetTexture(state.icon, collapsed and T.PLUS_BUTTON or T.MINUS_BUTTON)
+	SetTexture(state.icon, (collapsed and T.PLUS_BUTTON or T.MINUS_BUTTON) .. "Up")
 	if button.Label then
 		button.Label:SetFontObject(GameFontNormal)
 		button:HookScript("OnEnter", function(self) self.Label:SetFontObject(GameFontHighlight) end)

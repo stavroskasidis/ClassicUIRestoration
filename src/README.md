@@ -37,6 +37,7 @@ Forevermore Classic UI**.
 | **Spellbook** (WoW Forever only) | The vanilla spellbook: the classic `UI-SpellbookPanel-*` book with the spellbook icon in its ring and the round close button, twelve spells per page (1-6 down the left column, 7-12 down the right) in the classic square `UI-Quickslot2` frame on the dark slot, the name in yellow with the rank in brown beside it (passives in the black frame, like 1.12), the school tabs (and the pet's) down the right edge of the book as the classic skill line tabs, "Page N" between the classic Prev / Next arrows, and the search box and settings button in the band under the title. The book opens where the character window opens, level with the other windows (beside another open window, it opens next to it); the talents have their own option (Talents). Casting, dragging spells to the bars, flyouts, tooltips, the search and the settings keep working, in combat too. Uses the spellbook's single-page mode (the `spellBookMinimize` setting is switched on, and back when the option is turned off). | UI reload |
 | **Talents** (WoW Forever only) | The vanilla talent frame: the classic frame with your portrait in its ring, one tree at a time on that tree's classic painted background (`Interface\TalentFrame\<tree>-*`), picked with the classic tabs under the frame, the talents on the classic four-column grid in the square slot that is green while a point can go in, gold when maxed and grey when out of reach, the rank in the classic box on its corner, the classic branches and arrows between prerequisites, a classic scroll bar for the lower tiers, the tree's spent points in the box under the title and the unspent points in the bar at the bottom. The frame opens where the classic spellbook opens, at the same size. With a second specialization the Primary / Secondary tabs become 3.x's spec tabs down the right edge of the frame (the active one gilded, "Activate" in the box under the title for the other one). Blizzard's staged changes keep working: "Apply Changes" is 3.x's **Learn** button in the box at the bottom right, and the undo / reset button sits at the end of the box under the title; the search box is in the bottom bar (its results drop down below it). Tooltips, right-click refunds and inspecting keep working. | UI reload |
 | **Character Window** (WoW Forever only) | The vanilla character window: the classic frame with your portrait in its ring, your name on the title bar and the level and guild lines under it, the round close button and the classic tabs under the frame (Character, Reputation, Skills, Honor, Currency, Statistics). The Character tab is the vanilla paperdoll (`UI-Character-CharacterTab-*`): the equipment slots in the classic `UI-Quickslot2` frames down both sides and along the bottom with the ammo slot, the model between them on the dark page, the five resistances down the model's right edge and two classic stat boxes under it, each with a classic dropdown to pick base stats, melee, ranged, spell or defenses (2.x's boxes, with Blizzard's own stat values and tooltips). The Reputation tab is the vanilla reputation page: the Faction / Standing labels, one row per faction in the classic `UI-Character-ReputationBar` art with the standing on the classic bar (the progress on mouse over), the classic row highlight, the faction groups as +/- header rows and the classic scroll bar in its trough; a faction you are at war with has its name in red. The client only ships a later redraw of that row art, so the vanilla file is bundled with the addon. The Skills tab is the vanilla skills page: one classic bar per skill in the `UI-Character-Skills-BarBorder` frame with the name and rank on it (blue, or grey and full for a proficiency), the border lit while hovered or selected, the skill groups as +/- header rows, and under the list the selected skill's bar and description, as 1.12 showed it. The other tabs keep Blizzard's content inside the plain classic frame (`UI-Character-General-*`) for now. The details pane (stats, gear sets, titles, pet, and the details of reputation, skills and currency) is still there: the arrow in the band under the title docks it to the window's right side in the classic dialog border. The window opens with the pane closed. Equipping, gear sets, the flyouts, tooltips and turning the model keep working. | UI reload |
+| **Professions Window** (WoW Forever only) | The vanilla trade skill window: the classic panel (`UI-ClassTrainer-*` with the trade skill's `UI-TradeSkill-BotLeft`) with your portrait in its ring, the profession's rank on the classic skill bar under the title, the search box and the filter in the classic dropdown box, a compact list of 16px recipe rows coloured by difficulty (orange, yellow, green, grey) with the craftable count after the name and the selected row on a tinted highlight bar, the categories as +/- header rows with no gaps between them and the classic "All" tab above the list to collapse or expand them all, and under the list the selected recipe's icon (with the number made), name, required tools (missing ones in red), cooldown and reagents in the classic item buttons with "have / need" (greyed out while you are short); a recipe that makes no item (an enchant) shows its description there, as 1.12's craft window did. Create All, the - n + quantity box, Create and Exit sit along the bottom, with the classic knob scroll bars. The recipe list is Blizzard's own, so selecting, collapsing categories, favourites (right click), links and tracking keep working; Create and Create All craft through Blizzard's own code. The professions overview page (the book icon among the side tabs) keeps its modern look, and the side tabs stay on the window's right edge. | UI reload |
 
 The "UI reload" options are applied while the interface loads because
 Blizzard's frames cannot be safely un-skinned at runtime; changing them
@@ -106,7 +107,7 @@ are drawn behind them in place of the faded metal border.
 Forever's UI is the retail 12.x UI with a small "camelot" game-type overlay
 (`Blizzard_UnitFrame\Camelot\*`, `Blizzard_NamePlates\Camelot\*` in Blizzard's
 UI source, branch `forever`), so the addon runs the same code on both, plus
-five extra modules that only load on Forever.
+extra modules that only load on Forever.
 
 `Modules/ComboPoints.lua` is the Combo Points option. Forever keeps vanilla's
 combo points on the target, shown on the target frame with the classic art,
@@ -167,6 +168,21 @@ list down and each row's content back up.
 rows' name moved onto the vanilla bar) and adds 1.12's detail pane under
 the list, filled from the skill data whenever Blizzard refreshes its own.
 
+`Modules/ProfessionsFrame.lua` is the Professions Window option. Forever's
+professions window is the retail one without specializations, crafting
+orders or quality: a crafting page (recipe list, recipe details, create
+buttons) and an overview page, switched by icon tabs down its right side.
+While the crafting page is shown the addon draws the vanilla trade skill
+window at the frame's top left, keeps Blizzard's recipe list (so its clicks
+stay Blizzard's; the list is scaled down, every row, category rows too, is
+given 1.12's 16px with Blizzard's spacer rows between the categories taken
+out, and each row's text is enlarged back and re-coloured by difficulty),
+adds 1.12's "All" tab to collapse or expand every category, and moves Blizzard's recipe details, rank bar,
+tool slots and create buttons out of sight. The vanilla detail pane, rank
+bar and buttons are the addon's, filled from the recipe Blizzard's details
+hold whenever Blizzard checks its create buttons; the buttons call
+Blizzard's own Create / Create All.
+
 `Modules/Forever.lua` handles what the overlay adds to the other elements:
 
 - the level is shown in a small circle in the bottom corner of the
@@ -225,5 +241,6 @@ Modules/TalentFrame.lua  Forever only: vanilla talent frame
 Modules/CharacterFrame.lua Forever only: vanilla character window
 Modules/CharacterReputation.lua Forever only: its Reputation tab (part of Character Window)
 Modules/CharacterSkills.lua Forever only: its Skills tab (part of Character Window)
+Modules/ProfessionsFrame.lua Forever only: vanilla trade skill window
 Modules/Forever.lua      Forever only: adjustments for the "camelot" overlay
 ```

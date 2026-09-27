@@ -64,6 +64,7 @@ the rest modern.
 - **Spellbook** (WoW Forever: the vanilla book, twelve spells per page, skill line tabs on the side)
 - **Talents** (WoW Forever: the vanilla talent frame, one tree at a time with the classic branches and tabs)
 - **Character Window** (WoW Forever: the vanilla paperdoll with the classic tabs, resistances and stat boxes, and the vanilla reputation and skills pages; the details pane docks to its side)
+- **Professions Window** (WoW Forever: the vanilla trade skill window, recipes coloured by difficulty, reagents with "have / need", Create All / Create)
 
 ## How it works
 

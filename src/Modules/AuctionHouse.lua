@@ -545,9 +545,7 @@ local function ApplyFrameChrome(frame)
 	end
 
 	-- Vanilla had a Close button in the rightmost bottom slot on every tab.
-	art.close = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-	art.close:SetText(CLOSE or "Close")
-	art.close:SetScript("OnClick", function() HideUIPanel(frame) end)
+	art.close = ns.CreatePanelCloseTextButton(frame, CLOSE or "Close")
 	ToSlot(art.close, 3)
 
 	-- The Browse art for buying and the Auction art for selling.

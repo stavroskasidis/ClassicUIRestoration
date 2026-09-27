@@ -493,6 +493,54 @@ function ns.SkinDropdownBox(dropdown, width)
 		text:SetJustifyH("RIGHT")
 		ns.Point(text, "RIGHT", right, "RIGHT", -43, 2)
 	end
+
+	-- A filter dropdown's reset button (the red x, shown while a filter is
+	-- off its default) sits on the button's top-right corner, over whatever
+	-- is next to the box; it goes into the box's empty left end instead
+	-- (the text is right-aligned before the arrow).
+	if dropdown.ResetButton then
+		ns.Point(dropdown.ResetButton, "CENTER", dropdown, "LEFT", 42, 1)
+	end
+end
+
+-- The classic red panel button look (UI-Panel-Button-*: the 80x22 button in
+-- the corner of the 128x32 files, white text) on a plain button.
+function ns.SkinPanelTextButton(button, text)
+	button:SetSize(80, 22)
+	local file = "Interface\\Buttons\\UI-Panel-Button-"
+	for _, state in ipairs({
+		{ "SetNormalTexture", "GetNormalTexture", "Up" },
+		{ "SetPushedTexture", "GetPushedTexture", "Down" },
+		{ "SetDisabledTexture", "GetDisabledTexture", "Disabled" },
+		{ "SetHighlightTexture", "GetHighlightTexture", "Highlight", "ADD" },
+	}) do
+		button[state[1]](button, file .. state[3], state[4])
+		local texture = button[state[2]](button)
+		if texture then
+			texture:ClearAllPoints()
+			texture:SetAllPoints(button)
+			texture:SetTexCoord(0, 0.625, 0, 0.6875)
+		end
+	end
+	button:SetFontString(button:CreateFontString(nil, "OVERLAY"))
+	button:SetNormalFontObject(GameFontHighlight)
+	button:SetHighlightFontObject(GameFontHighlight)
+	button:SetDisabledFontObject(GameFontDisable)
+	button:SetText(text)
+end
+
+-- A classic red panel button that closes the panel it is created on
+-- (vanilla's Exit / Close buttons), through Blizzard's UIPanelCloseButton
+-- click script. Addon code may not hide a UI panel in combat ("Interface
+-- action failed because of an AddOn"), and a template script on a button
+-- the addon created runs as addon code, so this one only works out of
+-- combat; a panel that must close in combat forwards a secure click to its
+-- own close button instead (see ProfessionsFrame.lua). `panel` must be the
+-- UI panel itself; the caller positions the button.
+function ns.CreatePanelCloseTextButton(panel, text)
+	local button = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
+	ns.SkinPanelTextButton(button, text)
+	return button
 end
 
 -- The classic round close button (UI-Panel-MinimizeButton, 32x32) on a
