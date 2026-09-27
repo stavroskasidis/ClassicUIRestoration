@@ -13,6 +13,9 @@
 	    (ui-hud-actionbar-iconframe-bags) on the action bar plate, the
 	    ui-hud-actionbar-bag backpack and the narrow key ring
 	    (MainMenuBarBagButtons.xml / .lua);
+	  * XP & reputation bars: the full-width bars with twenty segments
+	    (StatusTrackingBarConstants.lua), which the classic frame is fitted
+	    to as well;
 	  * micro menu: the retail buttons on the action bar plate
 	    (MainMenuBarMicroMenu.xml), with Forever's spellbook button;
 	  * minimap: the UI-HUD-Minimap-Frame art around the map cut by its
@@ -152,6 +155,15 @@ Previews.bags.modern = function(c)
 	end
 	BagSlot(c, x, y, SLOT, "Interface\\Icons\\ui-hud-actionbar-bag", "ui-hud-actionbar-iconframe-bags")
 end
+
+---------------------------------------------------------------------------
+-- XP & reputation bars
+---------------------------------------------------------------------------
+
+-- Camelot\StatusTrackingBarConstants.lua: 1192px containers with 1189x14
+-- bars, twenty segments, the rested tick level with the bar's middle. Both
+-- looks change, since the classic frame is fitted to the bar.
+Previews.xpbar.classic, Previews.xpbar.modern = K.StatusBarPictures({ width = 1192, barWidth = 1189, barHeight = 14, tickOffset = 0, segments = 20 })
 
 ---------------------------------------------------------------------------
 -- Micro menu

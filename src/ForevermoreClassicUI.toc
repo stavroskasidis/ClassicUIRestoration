@@ -1,6 +1,6 @@
 ## Interface: 120100, 16001
 ## Title: Forevermore Classic UI
-## Notes: The classic look on the modern UI, with nothing lost: Blizzard's own frames are reskinned in place, so every feature and Edit Mode keep working. Unit frames, cast bars, nameplates, minimap, action bars, bags, auction house and more, each switchable on its own. For Forever and Retail.
+## Notes: The classic look on the modern UI, with nothing lost: Blizzard's own frames are reskinned in place, so every feature and Edit Mode keep working. Unit frames, cast bars, nameplates, minimap, action bars, XP bar, bags, auction house and more, each switchable on its own. For Forever and Retail.
 ## Version: @project-version@
 ## Author: Akira GTX
 ## IconTexture: Interface\AddOns\ForevermoreClassicUI\Icon.png
@@ -23,6 +23,7 @@ Modules\LootFrame.lua
 Modules\TrainerFrame.lua
 Modules\AuctionHouse.lua
 Modules\EndCaps.lua
+Modules\ExperienceBar.lua
 Modules\MerchantFrame.lua
 Modules\ActionBars.lua
 Modules\BagsBar.lua

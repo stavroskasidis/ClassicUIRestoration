@@ -59,6 +59,7 @@ with a picture of the modern and the classic look side by side.
 - **Trainer Windows**
 - **Auction House**
 - **Action Bar Gryphons**
+- **XP & Reputation Bars** (the segmented vanilla XP bar with the rest marker, the reputation bar in its standing's colour)
 - **Vendor Window** icons (repair buttons, buyback slot)
 - **Action Bar Art** (square classic button borders, vanilla slot art, page arrows)
 - **Bags** (square vanilla bag slots on the bags bar, vanilla bag and backpack windows, also for the combined backpack)

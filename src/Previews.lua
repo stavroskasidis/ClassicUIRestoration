@@ -824,6 +824,98 @@ Previews.bags = {
 }
 
 ---------------------------------------------------------------------------
+-- XP & reputation bars
+---------------------------------------------------------------------------
+
+-- The left end of the reputation bar and of the XP bar under it (rested,
+-- with its tick), at the real bars' scale; the canvas cuts off the rest.
+-- Blizzard's containers are 17px tall and stacked, their bars 1px in from
+-- the left and top edges. The fills end at the same distance from the left
+-- on every layout.
+local STATUS_HEIGHT, STATUS_X = 17, 4
+local STATUS_REP_TOP, STATUS_XP_TOP = -12, -29
+local REP_END, XP_END, RESTED_END = 52, 80, 112
+
+-- StatusTrackingBar.xml / StatusTrackingManagerOverrides.lua (Mainline):
+-- 571px containers with 565x11 bars, the rested tick 2px above the bar's
+-- middle, one segment. Forever's is in PreviewsForever.lua.
+local STATUS_LAYOUT = { width = 571, barWidth = 565, barHeight = 11, tickOffset = 2, segments = 1 }
+
+local function BarCenter(layout, top)
+	return top - 1 - layout.barHeight / 2
+end
+
+-- ExperienceBar.lua: the frame spans the bar, centred on it, at the
+-- container's height for the XP frame's rows; the fill fills its window.
+local function ClassicStatusBar(c, layout, name, top, fillEnd, color, restedEnd)
+	local art = ns.StatusBarArt
+	local style = art.STYLES[name]
+	local scale = STATUS_HEIGHT / art.STYLES.xp.height
+	local x, center = STATUS_X + 1, BarCenter(layout, top)
+	local frameHeight, fillHeight = style.height * scale, style.fill * scale
+	local fillTop = center + fillHeight / 2
+	Color(c, 0, 0, 0, 0.5, layout.barWidth, fillHeight, x, fillTop, "BACKGROUND")
+	if restedEnd then
+		local rested = Fill(c, T.STATUS_BAR, restedEnd, fillHeight, 1, nil, "BORDER")
+		rested:SetVertexColor(color[1], color[2], color[3], art.RESTED_FILL_ALPHA)
+		rested:SetPoint("TOPLEFT", c, "TOPLEFT", x, fillTop)
+	end
+	Fill(c, T.STATUS_BAR, fillEnd, fillHeight, 1, color, "ARTWORK"):SetPoint("TOPLEFT", c, "TOPLEFT", x, fillTop)
+	local pieceWidth = layout.barWidth / 4
+	for i, row in ipairs(style.rows) do
+		File(c, style.file, pieceWidth, frameHeight, x + (i - 1) * pieceWidth, center + frameHeight / 2, "OVERLAY", 0,
+			{ 0, 1, row / style.fileHeight, (row + style.height) / style.fileHeight })
+	end
+	if restedEnd then
+		local size = art.TICK_SIZE * scale
+		File(c, T.EXHAUSTION_TICK, size, size, x + restedEnd - size / 2, center + size / 2, "OVERLAY", 1)
+	end
+end
+
+-- The retail bar: the background, rested prediction and fill atlases on the
+-- bar, the frame atlas over the container, Forever's dividers between its
+-- segments and the pip at the end of the rested stretch.
+local function ModernStatusBar(c, layout, top, fillAtlas, fillEnd, restedEnd)
+	local x, barTop = STATUS_X + 1, top - 1
+	local function OnBar(atlas, width, layer)
+		At(Fill(c, atlas, layout.barWidth, layout.barHeight, width / layout.barWidth, nil, layer), "TOPLEFT", x, barTop)
+	end
+	OnBar("UI-HUD-ExperienceBar-Background", layout.barWidth, "BACKGROUND")
+	if restedEnd then
+		OnBar("UI-HUD-ExperienceBar-Fill-Prediction", restedEnd, "BORDER")
+	end
+	OnBar(fillAtlas, fillEnd, "ARTWORK")
+	At(Atlas(c, "UI-HUD-ExperienceBar-Frame", "OVERLAY", 0, layout.width, STATUS_HEIGHT), "TOPLEFT", STATUS_X, top)
+	for i = 1, layout.segments - 1 do
+		local divider = Atlas(c, "ui-hud-experiencebar-divider", "OVERLAY", 1, 3, 10)
+		divider:SetPoint("LEFT", c, "TOPLEFT", STATUS_X + layout.width / layout.segments * i, top - STATUS_HEIGHT / 2)
+	end
+	if restedEnd then
+		local pip = Atlas(c, "UI-HUD-ExperienceBar-Frame-Pip", "OVERLAY", 2, 10, 14)
+		pip:SetPoint("CENTER", c, "TOPLEFT", x + restedEnd, BarCenter(layout, top) + layout.tickOffset)
+	end
+end
+
+-- Both looks of a layout: a Friendly reputation bar over a rested XP bar.
+local function StatusBarPictures(layout)
+	local function classic(c)
+		local art = ns.StatusBarArt
+		ClassicStatusBar(c, layout, "watch", STATUS_REP_TOP, REP_END, art.STANDING_COLORS[5])
+		ClassicStatusBar(c, layout, "xp", STATUS_XP_TOP, XP_END, art.RESTED_COLOR, RESTED_END)
+	end
+	local function modern(c)
+		ModernStatusBar(c, layout, STATUS_REP_TOP, "UI-HUD-ExperienceBar-Fill-Reputation-Faction-Green", REP_END)
+		ModernStatusBar(c, layout, STATUS_XP_TOP, "UI-HUD-ExperienceBar-Fill-Rested", XP_END, RESTED_END)
+	end
+	return classic, modern
+end
+
+do
+	local classic, modern = StatusBarPictures(STATUS_LAYOUT)
+	Previews.xpbar = { width = 150, height = 64, classic = classic, modern = modern }
+end
+
+---------------------------------------------------------------------------
 -- Micro menu
 ---------------------------------------------------------------------------
 
@@ -1247,7 +1339,7 @@ ns.PreviewKit = {
 	Portrait = Portrait, EnemyPortrait = EnemyPortrait, Mask = Mask, RoundIcon = RoundIcon, Layer = Layer,
 	MapDisc = MapDisc, ZoneText = ZoneText, ActionIcons = ActionIcons, BagIcon = BagIcon,
 	PlayerName = PlayerName, PlayerLevel = PlayerLevel, PlayerSpells = PlayerSpells,
-	ModernActionButton = ModernActionButton, EndCapBar = EndCapBar,
+	ModernActionButton = ModernActionButton, EndCapBar = EndCapBar, StatusBarPictures = StatusBarPictures,
 	ACTION_SIZE = ACTION_SIZE, ACTION_PADDING = ACTION_PADDING, ENDCAP_BAR_WIDTH = ENDCAP_BAR_WIDTH,
 	NAMEPLATE_NAME = NAMEPLATE_NAME, MODERN_MICRO = MODERN_MICRO,
 }

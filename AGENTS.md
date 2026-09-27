@@ -44,6 +44,7 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/TrainerFrame.lua vanilla trainer window (reload; re-skins Blizzard_TrainerUI in place)
   Modules/AuctionHouse.lua vanilla auction house (reload; resizes Blizzard_AuctionHouseUI to 832x447, classic art per tab, sub-frames re-anchored into it)
   Modules/EndCaps.lua      vanilla action bar gryphons (live toggle)
+  Modules/ExperienceBar.lua vanilla XP / reputation bars (live toggle; classic frame over Blizzard's status tracking bars, mirror fill)
   Modules/MerchantFrame.lua vanilla vendor window icons: repair/junk buttons, buyback slot (live toggle)
   Modules/ActionBars.lua   vanilla action bar art (reload; button borders, per-button strip cells, page arrows)
   Modules/BagsBar.lua      "Bags" option, bags bar (reload; square equal-size slots, backpack icon, strip cells, Forever key ring)
@@ -286,6 +287,15 @@ anything under `build/`.
   Forever's `Blizzard_Minimap\Camelot\Skin.lua` re-sizes the container/backdrop
   and swaps the compass atlas on every rotate change; `Diel.lua` adds a day/night
   frame (`MinimapCluster.DielFrame`) and replaces `MinimapCluster.SetEditModeScale`.
+- XP / reputation bars: `StatusTrackingBarManager` holds two containers
+  (`MainStatusTrackingBarContainer`, `SecondaryStatusTrackingBarContainer`,
+  Edit Mode systems), each with one bar per kind (`container.bars[barIndex]`,
+  created at load) of which it shows one. Retail 12.1 has them in
+  `Blizzard_ActionBar`, Forever in its own `Blizzard_StatusTrackingBar`
+  (1192px containers with 20 segment dividers; XP has the lowest priority
+  there, so reputation takes the main container). Their fill is a
+  `GradualAnimatedStatusBar` (animated values, flipbook flares, atlases
+  re-applied on every rest / standing change).
 
 ## Module conventions
 
