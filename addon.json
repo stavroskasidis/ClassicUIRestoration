@@ -1,6 +1,6 @@
 {
 	"name": "ForevermoreClassicUI",
-	"version": "1.14.1",
+	"version": "1.15.0",
 	"flavors": {
 		"Retail": {
 			"gameDir": "_retail_"
