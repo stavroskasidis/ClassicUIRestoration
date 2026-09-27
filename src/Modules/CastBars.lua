@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Cast Bars
+	Forevermore Classic UI - Cast Bars
 
 	Restores the classic cast bar look (Interface\CastingBar\UI-CastingBar-*)
 	on the player, pet, target, focus and boss cast bars.

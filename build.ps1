@@ -4,8 +4,8 @@
 
 .DESCRIPTION
 	Copies <repo>\src\ (the addon folder: one .toc for every game flavor)
-	into <repo>\build\ClassicUIRestoration\, stamps the version into it and
-	zips that folder as <repo>\build\ClassicUIRestoration-<version>.zip, the
+	into <repo>\build\ForevermoreClassicUI\, stamps the version into it and
+	zips that folder as <repo>\build\ForevermoreClassicUI-<version>.zip, the
 	layout CurseForge expects (the addon folder is the zip's root entry).
 
 	The same build runs on every flavor: the .toc lists each flavor's
@@ -101,7 +101,7 @@ $count = (Get-ChildItem $output -Recurse -File).Count
 Write-Host "Built $AddonName $Version -> $output ($count files)"
 
 # CurseForge upload: a zip whose root is the addon folder itself
-# (ClassicUIRestoration/ClassicUIRestoration.toc, ...). Old zips of other
+# (ForevermoreClassicUI/ForevermoreClassicUI.toc, ...). Old zips of other
 # versions are removed so the folder holds only the current one.
 Get-ChildItem $BuildRoot -File -Filter "$AddonName-*.zip" | Remove-Item -Force
 $zip = Join-Path $BuildRoot "$AddonName-$Version.zip"

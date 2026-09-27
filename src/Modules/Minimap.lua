@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Minimap
+	Forevermore Classic UI - Minimap
 
 	Restores the pre-Dragonflight minimap: the 140px map inside the
 	UI-Minimap-Border ring with the zone text bar on top, the round tracking

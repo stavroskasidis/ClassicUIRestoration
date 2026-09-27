@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Action Bar Art
+	Forevermore Classic UI - Action Bar Art
 
 	Puts the vanilla art back on the action bars (the main bar, the extra
 	MultiBars and the pet / stance / possess bars); the legacy files still

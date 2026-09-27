@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Vendor Window
+	Forevermore Classic UI - Vendor Window
 
 	Blizzard's merchant window still draws the vanilla panel (the
 	UI-Merchant-* art with the portrait ring), so only what Dragonflight

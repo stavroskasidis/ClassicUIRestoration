@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Micro Menu
+	Forevermore Classic UI - Micro Menu
 
 	Puts the classic micro button art back on the micro menu in place of the
 	retail UI-HUD-MicroMenu-* atlases; the legacy files still ship with the

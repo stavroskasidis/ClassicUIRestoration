@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Mirror Timers (breath, fatigue, feign death)
+	Forevermore Classic UI - Mirror Timers (breath, fatigue, feign death)
 
 	Restores the classic look of the mirror timer bars: the 195x13 bar on the
 	black backdrop with the label drawn on the bar, framed by the large

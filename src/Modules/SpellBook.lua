@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Spellbook (WoW Forever only)
+	Forevermore Classic UI - Spellbook (WoW Forever only)
 
 	Restores the vanilla spellbook (1.12 SpellBookFrame.xml): the 384x512
 	book made of the four Interface\Spellbook\UI-SpellbookPanel-* pieces with

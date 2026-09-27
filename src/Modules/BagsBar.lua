@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Bags (bags bar; the windows are in BagFrames.lua)
+	Forevermore Classic UI - Bags (bags bar; the windows are in BagFrames.lua)
 
 	Puts the vanilla bag slots back on the bags bar (the backpack, the four
 	bag slots, the reagent bag slot and, on WoW Forever, the key ring); the

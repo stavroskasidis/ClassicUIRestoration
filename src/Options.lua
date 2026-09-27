@@ -1,16 +1,16 @@
 --[[
-	Classic UI Restoration - Options
+	Forevermore Classic UI - Options
 
 	Registers the addon's page in the game's Settings > AddOns panel. Each
 	module gets a checkbox; live modules (cast bars, nameplates) toggle at once,
 	the others prompt for a UI reload.
 
-	Slash commands: /cuir, /classicui  (and "/cuir reload").
+	Slash commands: /fcui, /cuir, /classicui  (and "/fcui reload").
 ]]
 
 local _, ns = ...
 
-local RELOAD_POPUP = "CLASSICUIRESTORATION_RELOAD"
+local RELOAD_POPUP = "FOREVERMORECLASSICUI_RELOAD"
 
 StaticPopupDialogs[RELOAD_POPUP] = {
 	text = ns.TITLE .. "\n\nThis change takes effect after the interface is reloaded.\nReload now?",

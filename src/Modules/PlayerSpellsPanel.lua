@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Player spells panel (WoW Forever only)
+	Forevermore Classic UI - Player spells panel (WoW Forever only)
 
 	Forever's spellbook and talents are two pages of one panel,
 	PlayerSpellsFrame (Blizzard_PlayerSpells, load-on-demand), shown one at a

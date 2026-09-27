@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Talents (WoW Forever only)
+	Forevermore Classic UI - Talents (WoW Forever only)
 
 	Restores the vanilla talent frame (1.12 Blizzard_TalentUI): the 384x512
 	frame (the character frame's top over UI-TalentFrame-BotLeft / -BotRight)

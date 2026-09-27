@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Action Bar End Caps
+	Forevermore Classic UI - Action Bar End Caps
 
 	Puts the vanilla stone gryphons (Interface\MainMenuBar\UI-MainMenuBar-
 	EndCap-Dwarf) back at the two ends of the main action bar in place of the

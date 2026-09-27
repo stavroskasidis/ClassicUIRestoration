@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Bag Windows (part of the Bags option)
+	Forevermore Classic UI - Bag Windows (part of the Bags option)
 
 	Puts the vanilla art on the bag windows, whether the bags open one by one
 	or as the combined backpack; the legacy files still ship with the client:

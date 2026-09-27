@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Nameplates
+	Forevermore Classic UI - Nameplates
 
 	The 12.x client ships a built-in "Classic" nameplate style (the pre-
 	Dragonflight look: Interface\Tooltips\Nameplate-Border with the flat

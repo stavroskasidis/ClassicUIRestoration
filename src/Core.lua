@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Core
+	Forevermore Classic UI - Core
 
 	Shared state, module registry, saved variables and small helpers used by
 	every module. Each module registers itself with ns:RegisterModule() and is
@@ -15,10 +15,10 @@
 ]]
 
 local ADDON_NAME, ns = ...
-_G.ClassicUIRestoration = ns
+_G.ForevermoreClassicUI = ns
 
 ns.ADDON_NAME = ADDON_NAME
-ns.TITLE = "Classic UI Restoration"
+ns.TITLE = "Forevermore Classic UI"
 ns.VERSION = C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version") or "dev" -- stamped into the .toc by build.ps1
 
 -- One build serves retail (Interface 12xxxx) and WoW Forever (1.60.x, 16001).
@@ -645,8 +645,46 @@ ns.Hook("UnitFrameManaCostPredictionBars_Update", RetargetManaCostPrediction)
 -- Saved variables & lifecycle
 ---------------------------------------------------------------------------
 
--- The options are account-wide (ClassicUIRestorationDB). The same table is
--- also declared per character (ClassicUIRestorationCharDB): both globals point
+-- Temporary migration from the addon's old name; remove once the beta
+-- testers have moved over. Until 2026-09-27 the addon was the
+-- ClassicUIRestoration folder with ClassicUIRestorationDB /
+-- ClassicUIRestorationCharDB. The client loads saved variables per addon
+-- folder, so the old settings can only be read while the old folder is still
+-- installed and enabled: it then loads before this one (addons load in folder
+-- name order), its settings are copied into an empty table here, and it is
+-- disabled (for every character) so the two never run side by side again.
+local OLD_ADDON_NAME = "ClassicUIRestoration"
+
+local function MigrateFromOldName(db)
+	if not C_AddOns.IsAddOnLoaded(OLD_ADDON_NAME) then
+		return false
+	end
+	local old = ClassicUIRestorationDB
+	if type(old) ~= "table" or next(old) == nil then
+		old = ClassicUIRestorationCharDB
+	end
+	if next(db) == nil and type(old) == "table" then
+		for key, value in pairs(old) do
+			db[key] = value
+		end
+	end
+	C_AddOns.DisableAddOn(OLD_ADDON_NAME)
+	return true
+end
+
+StaticPopupDialogs["FOREVERMORECLASSICUI_MIGRATED"] = {
+	text = ns.TITLE .. "\n\nClassic UI Restoration is now Forevermore Classic UI. Your settings were copied over and the old addon has been disabled; you can delete its ClassicUIRestoration folder from Interface\\AddOns.\n\nBoth ran this session. Reload now?",
+	button1 = RELOADUI or "Reload UI",
+	button2 = CANCEL or "Cancel",
+	OnAccept = function() ReloadUI() end,
+	timeout = 0,
+	whileDead = true,
+	hideOnEscape = true,
+	preferredIndex = 3,
+}
+
+-- The options are account-wide (ForevermoreClassicUIDB). The same table is
+-- also declared per character (ForevermoreClassicUICharDB): both globals point
 -- at one table, the client serialises it into both files, and at load the
 -- per-character copy is used whenever the account copy comes back empty. On a
 -- working client the account copy wins. The mirror was added for the WoW
@@ -654,14 +692,15 @@ ns.Hook("UnitFrameManaCostPredictionBars_Update", RetargetManaCostPrediction)
 -- (client bug, 1.60.1, reported 2026-09-18); options reset every session there
 -- until Blizzard fixes it, and nothing on the addon side can help.
 local function InitializeDB()
-	local account = ClassicUIRestorationDB
-	local character = ClassicUIRestorationCharDB
+	local account = ForevermoreClassicUIDB
+	local character = ForevermoreClassicUICharDB
 	local db = account
 	if type(db) ~= "table" or next(db) == nil then
 		db = (type(character) == "table" and next(character) ~= nil) and character or {}
 	end
-	ClassicUIRestorationDB = db
-	ClassicUIRestorationCharDB = db
+	ns.migrated = MigrateFromOldName(db)
+	ForevermoreClassicUIDB = db
+	ForevermoreClassicUICharDB = db
 	ns.db = db
 	for _, module in ipairs(ns.modules) do
 		if module.parent then
@@ -712,6 +751,9 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
 		end
 	elseif event == "PLAYER_LOGIN" then
 		ActivateModules()
+		if ns.migrated then
+			StaticPopup_Show("FOREVERMORECLASSICUI_MIGRATED")
+		end
 	elseif event == "PLAYER_REGEN_ENABLED" then
 		if #pendingOutOfCombat > 0 then
 			local queue = pendingOutOfCombat
@@ -814,9 +856,10 @@ end
 -- Slash command
 ---------------------------------------------------------------------------
 
-SLASH_CLASSICUIRESTORATION1 = "/cuir"
-SLASH_CLASSICUIRESTORATION2 = "/classicui"
-SlashCmdList.CLASSICUIRESTORATION = function(msg)
+SLASH_FOREVERMORECLASSICUI1 = "/fcui"
+SLASH_FOREVERMORECLASSICUI2 = "/cuir"
+SLASH_FOREVERMORECLASSICUI3 = "/classicui"
+SlashCmdList.FOREVERMORECLASSICUI = function(msg)
 	msg = strtrim((msg or ""):lower())
 	if msg == "reload" or msg == "rl" then
 		ReloadUI()

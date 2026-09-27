@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Loot Window
+	Forevermore Classic UI - Loot Window
 
 	Restores the vanilla loot panel (1.12 LootFrame.xml): the
 	Interface\LootFrame\UI-LootPanel artwork with the skull (fishing bobber

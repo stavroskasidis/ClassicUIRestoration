@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Power Bars
+	Forevermore Classic UI - Power Bars
 
 	Draws every unit frame power bar (mana, rage, energy, focus, runic power,
 	etc.) with the flat classic status bar texture and the classic solid power

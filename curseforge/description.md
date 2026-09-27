@@ -6,11 +6,14 @@ image is ever needed. Regenerate both with `python curseforge\make_logo.py`.
 
 ## Project name
 
-Classic UI Restoration
+Forevermore Classic UI - Forever & Retail
+
+(The in-game title, `## Title:` in the `.toc`, is the short "Forevermore Classic
+UI"; the addon folder is `ForevermoreClassicUI`.)
 
 ## Summary (short field, under 250 characters)
 
-Brings back the Classic UI for various elements (unit frames, cast bars, nameplates, minimap, auction house etc) while keeping the new UI functionality. Every element can be switched back on its own. For Forever and Retail.
+The vanilla look on the modern UI, nothing lost: Blizzard's own frames are reskinned in place, so every feature and Edit Mode keep working. Classic unit frames, action bars, minimap, bags, nameplates and more, each switchable. Forever & Retail.
 
 ## Categories
 
@@ -19,7 +22,7 @@ Brings back the Classic UI for various elements (unit frames, cast bars, namepla
 
 ## Game versions
 
-One file for both: upload `build\ClassicUIRestoration-<version>.zip` and tick
+One file for both: upload `build\ForevermoreClassicUI-<version>.zip` and tick
 every supported version in the file's Game Version field:
 
 - WoW Retail: 12.1.x
@@ -27,10 +30,18 @@ every supported version in the file's Game Version field:
 
 # Description
 
-**Classic UI Restoration** brings the Classic look back to the modern
-UI, one element at a time. It does not compromise between the two: you get the
-look of the classic UI with all the functionality of the new one. Each element
-is its own option, so restore only the parts you miss and keep the rest modern.
+**Forevermore Classic UI** brings the classic look to the modern UI of
+WoW Forever and Retail, without breaking it.
+
+It is a **reskin, not a replacement**. Instead of rebuilding the old frames
+from scratch, Forevermore keeps Blizzard's own frames and only changes how
+they look, so **no functionality is lost**: Edit Mode, heal prediction, absorbs,
+auras, vehicles, the search boxes, the sort buttons, the auction house
+commodity market, staged talent changes, casting from the spellbook in combat,
+all of it keeps working, now wearing the vanilla art.
+
+Each element is its own option, so restore only the parts you miss and keep
+the rest modern.
 
 ## What it restores
 
@@ -54,15 +65,26 @@ is its own option, so restore only the parts you miss and keep the rest modern.
 
 ## How it works
 
-Blizzard's frames are re-skinned in place, not replaced: Edit Mode, heal
-prediction, absorbs, vehicles, role icons, threat and auras all keep working;
-only textures, positions and colours change. No libraries, nothing to
-configure or position.
+Blizzard's frames are reskinned in place, not replaced: only textures,
+positions and colours change. The buttons you click, the bars you watch and
+the windows you open are still Blizzard's own, driven by Blizzard's own code,
+so Edit Mode, heal prediction, absorbs, vehicles, role icons, threat, auras,
+tooltips and keybinds all keep working, and new features Blizzard adds keep
+showing up. The classic look follows the modern UI, not the other way
+around. No libraries, nothing to configure or position; turn an element off
+and it goes back to the modern look.
 
 ## Options
 
-`/cuir` (or `/classicui`), or **Game Menu > Options > AddOns > Classic UI
-Restoration**. One checkbox per element.
+`/fcui` (or `/cuir`, `/classicui`), or **Game Menu > Options > AddOns > Forevermore
+Classic UI**. One checkbox per element.
+
+## Upgrading from Classic UI Restoration
+
+This addon used to be called **Classic UI Restoration**. If its old
+`ClassicUIRestoration` folder is still in `Interface\AddOns`, the first login
+copies its settings over and disables it; delete that folder afterwards.
+Without the old folder the options start from their defaults.
 
 ## Feedback
 

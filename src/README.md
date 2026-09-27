@@ -1,16 +1,20 @@
-# Classic UI Restoration
+# Forevermore Classic UI
 
-Restores the classic (pre-Dragonflight) look of the default UI, one element at
-a time. Every element has its own option and can be switched back to the
-modern look.
+Brings the classic (vanilla / pre-Dragonflight) look to the modern default UI,
+one element at a time, without breaking it. The addon is a reskin, not a
+replacement: it keeps Blizzard's own frames and only changes their art, layout
+and colours, so no functionality is lost. Edit Mode, heal prediction, absorbs,
+auras, vehicles, the search boxes and sort buttons, the modern auction house,
+staged talent changes and casting from the spellbook all keep working. Every
+element has its own option and can be switched back to the modern look.
 
 Ships for retail 12.1 (`## Interface: 120100`) and for World of Warcraft:
 Forever 1.60 (`## Interface: 16001`). No external libraries.
 
 ## Options
 
-Open with `/cuir` (or `/classicui`), or via **Game Menu > Options > AddOns >
-Classic UI Restoration**.
+Open with `/fcui` (or `/cuir`, `/classicui`), or via **Game Menu > Options > AddOns >
+Forevermore Classic UI**.
 
 | Option | What it does | Toggle |
 | --- | --- | --- |
@@ -35,7 +39,7 @@ Classic UI Restoration**.
 The "UI reload" options are applied while the interface loads because
 Blizzard's frames cannot be safely un-skinned at runtime; changing them
 prompts for a reload (there is also a Reload button on the options page and
-`/cuir reload`).
+`/fcui reload`).
 
 ## How it works
 
@@ -164,7 +168,7 @@ way and its close button becomes the round classic one on the page's frame.
 ## Files
 
 ```
-ClassicUIRestoration.toc Interface versions (retail and Forever), file list
+ForevermoreClassicUI.toc Interface versions (retail and Forever), file list
 Core.lua                 saved variables, module registry, helpers
 Options.lua              Settings panel + slash commands
 Modules/UnitFrames.lua   frame art & layout

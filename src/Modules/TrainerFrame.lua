@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Trainer Window
+	Forevermore Classic UI - Trainer Window
 
 	Restores the vanilla class / profession trainer window (1.12
 	Blizzard_TrainerUI.xml): the 384x512 panel assembled from the four

@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Auction House
+	Forevermore Classic UI - Auction House
 
 	Restores the vanilla auction house window (1.12 Blizzard_AuctionUI.xml):
 	the 832x447 panel assembled from the six Interface\AuctionFrame\

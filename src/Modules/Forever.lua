@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - WoW Forever adjustments
+	Forevermore Classic UI - WoW Forever adjustments
 
 	WoW Forever (client 1.60.x, Interface 16001) runs the retail "mainline" UI
 	code with a "camelot" game-type overlay (wow-ui-source branch `forever`:

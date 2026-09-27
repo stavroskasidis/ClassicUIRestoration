@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Portraits
+	Forevermore Classic UI - Portraits
 
 	Restores the classic portrait treatment:
 	  * the classic circular portrait mask on every unit frame portrait

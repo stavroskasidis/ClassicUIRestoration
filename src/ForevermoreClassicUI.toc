@@ -1,11 +1,11 @@
 ## Interface: 120100, 16001
-## Title: Classic UI Restoration
-## Notes: Brings back the Classic UI for various elements (unit frames, cast bars, nameplates, minimap, auction house etc) while keeping the new UI functionality. Every element can be switched back on its own. For Forever and Retail.
+## Title: Forevermore Classic UI
+## Notes: The classic look on the modern UI, with nothing lost: Blizzard's own frames are reskinned in place, so every feature and Edit Mode keep working. Unit frames, cast bars, nameplates, minimap, action bars, bags, auction house and more, each switchable on its own. For Forever and Retail.
 ## Version: @project-version@
-## Author: Stavros
-## IconTexture: Interface\AddOns\ClassicUIRestoration\Icon.png
-## SavedVariables: ClassicUIRestorationDB
-## SavedVariablesPerCharacter: ClassicUIRestorationCharDB
+## Author: Akira GTX
+## IconTexture: Interface\AddOns\ForevermoreClassicUI\Icon.png
+## SavedVariables: ForevermoreClassicUIDB
+## SavedVariablesPerCharacter: ForevermoreClassicUICharDB
 ## Category: User Interface
 ## X-License: MIT
 

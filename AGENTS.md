@@ -1,17 +1,28 @@
-# Agent instructions for Classic UI Restoration
+# Agent instructions for Forevermore Classic UI
 
-This repository contains *Classic UI Restoration*, a World of Warcraft addon
-that restores pre-Dragonflight UI elements (unit frames, cast bars, nameplates,
-minimap, loot window, vendor window)
-on the modern client, with each element individually switchable back to the
-retail look.
+This repository contains *Forevermore Classic UI* (published as "Forevermore
+Classic UI - Forever & Retail"), a World of Warcraft addon that reskins the
+modern UI with the pre-Dragonflight look (unit frames, cast bars, nameplates,
+minimap, loot window, vendor window, ...) on the modern client, with each
+element individually switchable back to the retail look. It is a reskin, not
+a replacement: Blizzard's frames keep all their functionality, and the docs
+stress that.
+
+The addon was renamed from *Classic UI Restoration* (folder
+`ClassicUIRestoration`, saved variables `ClassicUIRestorationDB` /
+`ClassicUIRestorationCharDB`) on 2026-09-27. `MigrateFromOldName` in
+`Core.lua` copies the old settings over and disables the old addon when the
+old folder is still installed; it is temporary (remove it once the beta
+testers have moved over). Still named after the old name: the `CUIR_` prefix
+of addon-private keys (internal) and the `/cuir` and `/classicui` slash
+aliases next to `/fcui`.
 
 ## Repository layout
 
 ```
-src/                    the addon folder, one build for every flavor (copied as is into build\ClassicUIRestoration\)
-  ClassicUIRestoration.toc  the one .toc for every flavor (## Interface: 120100, 16001)
-  Core.lua              namespace, textures/colours, module registry, mirror bars, lifecycle, /cuir
+src/                    the addon folder, one build for every flavor (copied as is into build\ForevermoreClassicUI\)
+  ForevermoreClassicUI.toc  the one .toc for every flavor (## Interface: 120100, 16001)
+  Core.lua              namespace, textures/colours, module registry, mirror bars, lifecycle, /fcui
   Options.lua           Settings panel (one checkbox per top-level module) + reload prompt
   Modules/UnitFrames.lua   classic frame art & layout (player/target/focus/ToT/pet/party/boss)
   Modules/Portraits.lua    portrait masks, rest/combat indicators   (part of Unit Frames)
@@ -42,8 +53,8 @@ src/                    the addon folder, one build for every flavor (copied as 
   README.md             user-facing description of every option (both flavors)
 addon.json              addon name, version (single source; the .toc carries @project-version@)
                         and the flavors with the game folder each deploys to ("gameDir")
-build.ps1               copies src\ into build\ClassicUIRestoration\ and zips it as
-                        build\ClassicUIRestoration-<version>.zip (CurseForge layout, one file for every flavor)
+build.ps1               copies src\ into build\ForevermoreClassicUI\ and zips it as
+                        build\ForevermoreClassicUI-<version>.zip (CurseForge layout, one file for every flavor)
 build/                  build output (git-ignored); what deploy.ps1 copies into the game
 deploy.ps1              builds once + mirrors the build into every installed flavor (-Flavor X for one)
 deploy.config.json      machine-specific WoW path (git-ignored, never commit)
@@ -74,8 +85,8 @@ anything under `build/`.
   folders are outputs; never edit them directly and never touch anything else
   in the game install.
 - Deploy with `.\deploy.ps1` (PowerShell): it runs `build.ps1` once and
-  mirrors `build\ClassicUIRestoration\` into
-  `<WoW>\<gameDir>\Interface\AddOns\ClassicUIRestoration\` of every flavor
+  mirrors `build\ForevermoreClassicUI\` into
+  `<WoW>\<gameDir>\Interface\AddOns\ForevermoreClassicUI\` of every flavor
   whose game folder exists (skipping uninstalled clients); `-Flavor X`
   deploys to one flavor. The user then runs `/reload` in game; the addon
   cannot be tested outside the game client. A change outside the
@@ -84,7 +95,7 @@ anything under `build/`.
 - There is no automated test suite in the repo. Before handing over, at least
   check Lua syntax (e.g. with a Lua parser) and re-read the changed code for
   the taint rules below. In-game verification is done by the user; ask for a
-  `/reload` and, when useful, a screenshot or the output of `/cuir`.
+  `/reload` and, when useful, a screenshot or the output of `/fcui`.
 - Keep every user-facing description in sync with the options and behaviour
   whenever a module is added, removed or renamed: `src/README.md` (the
   option table, "How it works" and the file list), the `## Notes:` line of
@@ -227,11 +238,11 @@ anything under `build/`.
   all-or-nothing. Do not re-introduce separate options for them.
 - Options use the modern Settings API (`Settings.RegisterVerticalLayoutCategory`,
   `RegisterProxySetting`, `CreateCheckbox`). Reload-type changes prompt via the
-  `CLASSICUIRESTORATION_RELOAD` StaticPopup.
+  `FOREVERMORECLASSICUI_RELOAD` StaticPopup.
 - Match the existing style: tabs, `local _, ns = ...` header, a doc comment
   block at the top of each file explaining *why*, short comments on non-obvious
-  client behaviour, no globals except the saved variables (`ClassicUIRestorationDB`
-  account-wide, mirrored into `ClassicUIRestorationCharDB` per character; both
+  client behaviour, no globals except the saved variables (`ForevermoreClassicUIDB`
+  account-wide, mirrored into `ForevermoreClassicUICharDB` per character; both
   globals reference the same table, see `InitializeDB` in `Core.lua`) and the
   slash command tables.
 - Diagnostic slash sub-commands are temporary: remove them once the issue they

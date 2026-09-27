@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Health Bars
+	Forevermore Classic UI - Health Bars
 
 	Swaps the retail health bar artwork for the flat classic status bar
 	texture (Interface\TargetingFrame\UI-StatusBar) on the player, target,

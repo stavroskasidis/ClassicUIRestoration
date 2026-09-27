@@ -3,9 +3,9 @@
 	Deploys the addon into the World of Warcraft AddOns folder(s).
 
 .DESCRIPTION
-	Runs build.ps1 (src\ copied into <repo>\build\ClassicUIRestoration\) and
+	Runs build.ps1 (src\ copied into <repo>\build\ForevermoreClassicUI\) and
 	mirrors that one build output into
-	<WoW>\<gameDir>\Interface\AddOns\ClassicUIRestoration\ of each flavor being
+	<WoW>\<gameDir>\Interface\AddOns\ForevermoreClassicUI\ of each flavor being
 	deployed; every flavor gets the same files.
 
 	Without -Flavor, every flavor declared in addon.json whose game folder

@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Unit Frames
+	Forevermore Classic UI - Unit Frames
 
 	Restores the pre-Dragonflight frame art and layout of the player, target,
 	focus, target-of-target, pet, party and boss frames. Blizzard's frames are

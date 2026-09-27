@@ -1,5 +1,5 @@
 --[[
-	Classic UI Restoration - Combo Points (WoW Forever only)
+	Forevermore Classic UI - Combo Points (WoW Forever only)
 
 	Forever keeps vanilla's combo points, which belong to the target, so they
 	are drawn on the target frame (ComboFrame, with the classic ComboPoint
