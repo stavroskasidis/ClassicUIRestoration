@@ -122,6 +122,18 @@ local function IsStepPinned()
 	return scrollBox:FindElementDataByPredicate(IsStep) == nil
 end
 
+-- The selected service's skill index. Retail keeps it in selectedService;
+-- Forever sorts the list and keeps a display index there instead (the step
+-- service is display index 0), mapped back through displayIndexToSkillIndex
+-- like Blizzard's ClassTrainer_GetSkillIndexForDisplayIndex.
+local function SelectedSkillIndex()
+	local frame = ClassTrainerFrame
+	local selected = frame.selectedService
+	if not selected then return nil end
+	local map = frame.displayIndexToSkillIndex
+	return map and map[selected] or selected
+end
+
 local function IsPetTrainer()
 	return C_Trainer ~= nil and C_Trainer.GetTrainerType ~= nil and Enum.TrainerType ~= nil
 		and C_Trainer.GetTrainerType() == Enum.TrainerType.Pet
@@ -272,14 +284,21 @@ end
 
 -- Name / sub text colours: white while hovered or selected (the vanilla
 -- button's highlight font), the service type's colour otherwise; the
--- highlight bar is shown under the selected row.
+-- highlight bar is shown under the selected row. Blizzard's Init shows the
+-- (faded) selectedTex on the selected row, which works with both the skill
+-- and the display index selection.
 local function ColorRow(row, hovered)
 	local state = rows[row]
 	if not state then return end
 	local id = row:GetID()
 	local _, serviceType = GetTrainerServiceInfo(id)
 	local colors = TYPE_COLORS[serviceType] or TYPE_COLORS.available
-	local selected = ClassTrainerFrame.selectedService == id
+	local selected
+	if row.selectedTex then
+		selected = row.selectedTex:IsShown()
+	else
+		selected = SelectedSkillIndex() == id
+	end
 	if hovered or selected then
 		row.name:SetTextColor(HIGHLIGHT_FONT_COLOR:GetRGB())
 		if row.nameSubText then row.nameSubText:SetTextColor(HIGHLIGHT_FONT_COLOR:GetRGB()) end
@@ -411,7 +430,7 @@ local function CreateDetailPane(frame)
 	slot:SetSize(64, 64)
 	slot:SetPoint("TOPLEFT", icon, "TOPLEFT", -13, 13)
 	icon:SetScript("OnEnter", function(self)
-		local id = ClassTrainerFrame.selectedService
+		local id = SelectedSkillIndex()
 		if not id then return end
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 		GameTooltip:SetTrainerService(id)
@@ -419,7 +438,7 @@ local function CreateDetailPane(frame)
 	end)
 	icon:SetScript("OnLeave", GameTooltip_Hide)
 	icon:SetScript("OnClick", function()
-		local id = ClassTrainerFrame.selectedService
+		local id = SelectedSkillIndex()
 		if id and GetTrainerServiceItemLink then
 			HandleModifiedItemClick(GetTrainerServiceItemLink(id))
 		end
@@ -547,7 +566,7 @@ local function UpdateDetails()
 	local frame = ClassTrainerFrame
 	if not art.detail or not frame:IsShown() then return end
 
-	local id = frame.selectedService
+	local id = SelectedSkillIndex()
 	local name, serviceType, texture, reqLevel, subText
 	if id then
 		name, serviceType, texture, reqLevel, subText = GetTrainerServiceInfo(id)
