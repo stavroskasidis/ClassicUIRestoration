@@ -418,10 +418,23 @@ function ns.SkinScrollBar(scrollBar)
 				if thumb[key] then thumb[key]:SetAlpha(0) end
 			end
 			-- The classic knob is a fixed 18x24 whatever the thumb's extent.
+			-- The thumb covers the visible part of the list (long in a short
+			-- list), so the knob runs along it with the scroll position:
+			-- flush with its top at the start and its bottom at the end,
+			-- which moves it evenly over the whole track like a classic knob.
 			local knob = thumb:CreateTexture(nil, "ARTWORK")
 			ns.SetTexture(knob, ns.T.SCROLL_KNOB, 0.2, 0.8, 0.125, 0.875)
 			knob:SetSize(18, 24)
 			knob:SetPoint("CENTER", thumb, "CENTER", 0, 0)
+			local function PlaceKnob()
+				local percentage = scrollBar.GetScrollPercentage and scrollBar:GetScrollPercentage() or 0
+				local travel = math.max(0, thumb:GetHeight() - knob:GetHeight())
+				ns.Point(knob, "TOP", thumb, "TOP", 0, -travel * percentage)
+			end
+			if not scrollBar.isHorizontal and ns.Hook(scrollBar, "Update", PlaceKnob) then
+				thumb:HookScript("OnSizeChanged", PlaceKnob)
+				PlaceKnob()
+			end
 		end
 	end
 	SkinStepper(scrollBar.Back, ns.T.SCROLL_UP)
@@ -856,9 +869,11 @@ end
 -- Slash command
 ---------------------------------------------------------------------------
 
-SLASH_FOREVERMORECLASSICUI1 = "/fcui"
-SLASH_FOREVERMORECLASSICUI2 = "/cuir"
-SLASH_FOREVERMORECLASSICUI3 = "/classicui"
+-- Not /fcui: ClassicUI Forever (another addon) registers it, and the last one loaded wins.
+SLASH_FOREVERMORECLASSICUI1 = "/fmcui"
+SLASH_FOREVERMORECLASSICUI2 = "/forevermore"
+SLASH_FOREVERMORECLASSICUI3 = "/cuir"
+SLASH_FOREVERMORECLASSICUI4 = "/classicui"
 SlashCmdList.FOREVERMORECLASSICUI = function(msg)
 	msg = strtrim((msg or ""):lower())
 	if msg == "reload" or msg == "rl" then

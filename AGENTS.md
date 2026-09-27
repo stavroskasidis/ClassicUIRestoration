@@ -15,14 +15,15 @@ The addon was renamed from *Classic UI Restoration* (folder
 old folder is still installed; it is temporary (remove it once the beta
 testers have moved over). Still named after the old name: the `CUIR_` prefix
 of addon-private keys (internal) and the `/cuir` and `/classicui` slash
-aliases next to `/fcui`.
+aliases next to `/fmcui` / `/forevermore` (never `/fcui`: the ClassicUI Forever
+addon registers it).
 
 ## Repository layout
 
 ```
 src/                    the addon folder, one build for every flavor (copied as is into build\ForevermoreClassicUI\)
   ForevermoreClassicUI.toc  the one .toc for every flavor (## Interface: 120100, 16001)
-  Core.lua              namespace, textures/colours, module registry, mirror bars, lifecycle, /fcui
+  Core.lua              namespace, textures/colours, module registry, mirror bars, lifecycle, /fmcui
   Options.lua           Settings panel (one checkbox per top-level module) + reload prompt
   Modules/UnitFrames.lua   classic frame art & layout (player/target/focus/ToT/pet/party/boss)
   Modules/Portraits.lua    portrait masks, rest/combat indicators   (part of Unit Frames)
@@ -43,12 +44,16 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/BagFrames.lua    vanilla bag / backpack / combined windows   (part of Bags; slots re-anchored from Blizzard's grid)
   Modules/MicroMenu.lua    classic micro buttons (reload; UI-MicroButton-* files re-applied from hooks on the buttons' Set*Atlas)
   Textures/                bundled art (UI-Merchant-SellJunk.tga, the vanilla-style Sell All Junk icon;
+                           UI-Character-ReputationBar.tga, the 1.12 reputation row art;
                            UI-MicroButton-MainMenu/Quest/Socials-*.tga, the vanilla micro buttons from the
                            Classic Era client, which retail/Forever only ship as Cataclysm redraws)
   Modules/ComboPoints.lua classic combo point layout on the target frame, Forever only (live toggle; retail's combo points are on the player frame)
   Modules/PlayerSpellsPanel.lua PlayerSpellsFrame chrome / close button / mouse for the classic spellbook and talents pages (not a module)
   Modules/SpellBook.lua vanilla spellbook, Forever only (reload; re-skins PlayerSpellsFrame's spellbook page in place, 12 spells per page)
   Modules/TalentFrame.lua vanilla talent frame, Forever only (reload; Blizzard's talent buttons moved onto the 1.12 grid, one tree per tab)
+  Modules/CharacterFrame.lua vanilla character window, Forever only (reload; vanilla art on CharacterFrame, left pane moved into it, right pane docked, mode tabs as bottom tabs)
+  Modules/CharacterReputation.lua its Reputation tab, Forever only   (part of Character Window; rows re-skinned after Blizzard initializes them)
+  Modules/CharacterSkills.lua its Skills tab, Forever only           (part of Character Window; same row skinning, own 1.12 detail pane)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
   README.md             user-facing description of every option (both flavors)
 addon.json              addon name, version (single source; the .toc carries @project-version@)
@@ -68,9 +73,9 @@ CurseForge zip serve every flavor: the `.toc`'s `## Interface:` line lists each
 flavor's Interface version, and the zip is uploaded once, tagged with every
 game version. Forever-only code lives in its own files (`Modules/Forever.lua`,
 which hooks the same Blizzard functions *after* the other modules, and
-`Modules/ComboPoints.lua` / `Modules/SpellBook.lua` / `Modules/TalentFrame.lua`,
-options only Forever has, with `Modules/PlayerSpellsPanel.lua` shared by the
-last two), each starting with `if not ns.IS_FOREVER then return end` right
+`Modules/ComboPoints.lua` / `Modules/SpellBook.lua` / `Modules/TalentFrame.lua` /
+`Modules/CharacterFrame.lua` / `Modules/CharacterReputation.lua` / `Modules/CharacterSkills.lua`, options only Forever has, with
+`Modules/PlayerSpellsPanel.lua` shared by the spellbook and talents), each starting with `if not ns.IS_FOREVER then return end` right
 after `local _, ns = ...`, so on retail they register nothing.
 `ns.IS_FOREVER` (set in `Core.lua` from the Interface version) is the only
 flavor check: never branch on it inside the modules both flavors run (they
@@ -95,7 +100,7 @@ anything under `build/`.
 - There is no automated test suite in the repo. Before handing over, at least
   check Lua syntax (e.g. with a Lua parser) and re-read the changed code for
   the taint rules below. In-game verification is done by the user; ask for a
-  `/reload` and, when useful, a screenshot or the output of `/fcui`.
+  `/reload` and, when useful, a screenshot or the output of `/fmcui`.
 - Keep every user-facing description in sync with the options and behaviour
   whenever a module is added, removed or renamed: `src/README.md` (the
   option table, "How it works" and the file list), the `## Notes:` line of
@@ -137,7 +142,8 @@ anything under `build/`.
   `UI-StatusBar`, `Interface\CastingBar\*`, `Interface\Tooltips\Nameplate-Border`
   etc.) still ship with the retail client, so the addon references them by path
   and does not bundle copies (exception: files the client only ships redrawn,
-  like the three vanilla micro buttons in `Textures/`). Note the retail `Nameplate-Border` is 256x32 with
+  like the three vanilla micro buttons and Forever's redrawn
+  `UI-Character-ReputationBar` in `Textures/`). Note the retail `Nameplate-Border` is 256x32 with
   the art in the left 136 px.
 - **Secrets:** unit health/power/cast values may be "secret" (12.x). Addon code
   must not compare, do arithmetic on, or format them. They may be passed
@@ -215,6 +221,27 @@ anything under `build/`.
   is Blizzard's (its "Invisible" state), so trees are hidden by parent, never
   by alpha. The spec tabs reach `SetTab` through a closure taken at load
   (hook the tab buttons' `SetTabSelected`, not `SetTab`).
+- Character window (Forever only): `CharacterFrame` is Forever's own
+  (`Blizzard_UIPanels_Game\Camelot\CharacterFrame.*`), not retail's: a
+  631x484 PortraitFrame (398 wide with the right pane collapsed), six
+  `LargeSideTabButtonTemplate` mode tabs (Frames; clicks arrive through
+  `OnMouseUp`, selection through the mixin's `SetChecked`), and every page
+  (paperdoll, reputation, skills, PvP rank, currency) anchors its content to
+  `CharacterFrame.LeftPaneHost`; the stats, gear sets, titles, pet view and
+  the pages' detail panes live in `RightPaneHost`. Blizzard re-sizes the
+  frame in `UpdateSize` on every refresh and reads the collapsed state from
+  the `characterFrameCollapsed` CVar at load only (it never writes it). The
+  frame holds no secure widgets, so it can be re-anchored in combat, but
+  never change its collapsed state from addon code (the state feeds the
+  panel manager's width attribute). Retail's character frame is a different
+  frame (`Mainline\CharacterFrame.*`, three bottom tabs).
+  The pages' lists are ScrollBoxes: never change their view's extents or
+  padding (Lua fields; a row click reaches `SetRightPaneCollapsed`), scale
+  the list instead (`ns.CharacterList` in `CharacterFrame.lua`). A ScrollBox's
+  acquired-frame callback runs before the row's first Initialize, the
+  initialized-frame callback after every one.
+- A texture's `SetAlpha` is its vertex alpha: `GetVertexColor()` on a faded
+  texture returns alpha 0, so copy only r, g, b from it.
 - Minimap: `MinimapCluster` is a `ResizeLayoutFrame` (sizes itself to its shown
   children) and an Edit Mode system; `MinimapContainer` is what the Size slider
   scales, so every classic piece lives inside it. `MinimapCompassTexture` is

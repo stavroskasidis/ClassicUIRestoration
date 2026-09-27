@@ -52,6 +52,15 @@ function panel.Top(yOffset, height, minYOffset, bottomClamp)
 	return math.min(y, minYOffset or -10)
 end
 
+-- The left edge of a "left" area panel (the character frame): LEFT_OFFSET
+-- from UIParent's left, in UIParent units. The classic spellbook and talent
+-- frames open there when the spellbook panel is on its own (the manager
+-- centres the compact panel then), so all the classic windows open at the
+-- same spot.
+function panel.Left()
+	return GetUIPanelLayoutAttribute and GetUIPanelLayoutAttribute("LEFT_OFFSET") or 16
+end
+
 local function SaveRetail()
 	local close = book.CloseButton
 	-- ignoreRect: the set size (the panel is still hidden, nothing is laid out yet)

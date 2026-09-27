@@ -13,7 +13,7 @@ Forever 1.60 (`## Interface: 16001`). No external libraries.
 
 ## Options
 
-Open with `/fcui` (or `/cuir`, `/classicui`), or via **Game Menu > Options > AddOns >
+Open with `/fmcui` (or `/forevermore`, `/cuir`, `/classicui`), or via **Game Menu > Options > AddOns >
 Forevermore Classic UI**.
 
 | Option | What it does | Toggle |
@@ -33,13 +33,14 @@ Forevermore Classic UI**.
 | **Action Bar Art** | The vanilla action bar art: the square `UI-Quickslot2` border with square icons on every action button (main bar, extra bars, pet / stance / possess bars), the `UI-Quickslot` empty-slot look while the grid is shown, the classic pushed / highlight / checked glows, red attack flash and green equipped border; the embossed gryphon slots of the vanilla `UI-MainMenuBar-Dwarf` strip behind the main bar's buttons in place of the modern plate and dividers; and the vanilla page arrows. Edit Mode's bar settings (rows, padding, orientation, icon size, "hide bar art") keep working. | UI reload |
 | **Bags** | The vanilla bags. On the bags bar: the backpack, bag and reagent bag slots as equal square buttons (instead of the modern round ones) with square icons in the classic `UI-Quickslot2` item frame, the classic pushed / highlight art and the checked glow while a bag is open, the vanilla backpack icon (`Button-Backpack-Up`) and empty bag slot icon, and an embossed gryphon slot of the vanilla bar strip behind each one, like the right end of the vanilla main bar (on Forever the modern plate and dividers behind the bags are removed and the key ring gets the vanilla key ring art on its own narrow bar slot; the retail arrow that collapses the bags is kept). The bag windows: each bag in the vanilla `UI-Bag-Components` frame (4 columns, the bag icon in the ring, white name, round close button, the key ring's gold frame on Forever), the backpack in the `UI-BackpackBackground` frame with the search box and sort button in the band under its name, the money in its money box, extra rows for the authenticator's slots and the watched currencies on the vanilla strip under it; the combined backpack gets the same backpack art widened to its 10 columns (a partly filled top row shows plain stone where it has no slots, as vanilla's bags did). Empty slots show the embossed slot of the art. Edit Mode's orientation, direction, size and padding of the bags bar keep working. | UI reload |
 | **Micro Menu** | The classic micro buttons (`UI-MicroButton-*`) instead of the modern ones: the player's portrait in the classic character button, the classic spellbook, talents, achievements, quest log, socials (guild), group finder eye, mounts (collections), dungeon journal, shop, help and main menu buttons, with the classic highlight glow and the classic alert flash. Professions and housing, which never had a micro button, get the empty classic portrait frame with an icon in it. The client only ships the Cataclysm versions of the main menu, quest log and socials pictures, so the vanilla ones (the computer, the goblet and the speech bubble) are bundled with the addon. The buttons sit on the flat stone panel of the vanilla bar strip (`UI-MainMenuBar-Dwarf`), closed by its metal column at both ends, in place of Forever's modern plate; the panel is hidden while a vehicle or pet battle bar shows the menu. Edit Mode's orientation, order and size settings keep working. | UI reload |
-| **Spellbook** (WoW Forever only) | The vanilla spellbook: the classic `UI-SpellbookPanel-*` book with the spellbook icon in its ring and the round close button, twelve spells per page (1-6 down the left column, 7-12 down the right) in the classic square `UI-Quickslot2` frame on the dark slot, the name in yellow with the rank in brown beside it (passives in the black frame, like 1.12), the school tabs (and the pet's) down the right edge of the book as the classic skill line tabs, "Page N" between the classic Prev / Next arrows, and the search box and settings button in the band under the title. The book opens at the left like Blizzard's compact spellbook, level with the other windows; the talents have their own option (Talents). Casting, dragging spells to the bars, flyouts, tooltips, the search and the settings keep working, in combat too. Uses the spellbook's single-page mode (the `spellBookMinimize` setting is switched on, and back when the option is turned off). | UI reload |
+| **Spellbook** (WoW Forever only) | The vanilla spellbook: the classic `UI-SpellbookPanel-*` book with the spellbook icon in its ring and the round close button, twelve spells per page (1-6 down the left column, 7-12 down the right) in the classic square `UI-Quickslot2` frame on the dark slot, the name in yellow with the rank in brown beside it (passives in the black frame, like 1.12), the school tabs (and the pet's) down the right edge of the book as the classic skill line tabs, "Page N" between the classic Prev / Next arrows, and the search box and settings button in the band under the title. The book opens where the character window opens, level with the other windows (beside another open window, it opens next to it); the talents have their own option (Talents). Casting, dragging spells to the bars, flyouts, tooltips, the search and the settings keep working, in combat too. Uses the spellbook's single-page mode (the `spellBookMinimize` setting is switched on, and back when the option is turned off). | UI reload |
 | **Talents** (WoW Forever only) | The vanilla talent frame: the classic frame with your portrait in its ring, one tree at a time on that tree's classic painted background (`Interface\TalentFrame\<tree>-*`), picked with the classic tabs under the frame, the talents on the classic four-column grid in the square slot that is green while a point can go in, gold when maxed and grey when out of reach, the rank in the classic box on its corner, the classic branches and arrows between prerequisites, a classic scroll bar for the lower tiers, the tree's spent points in the box under the title and the unspent points in the bar at the bottom. The frame opens where the classic spellbook opens, at the same size. With a second specialization the Primary / Secondary tabs become 3.x's spec tabs down the right edge of the frame (the active one gilded, "Activate" in the box under the title for the other one). Blizzard's staged changes keep working: "Apply Changes" is 3.x's **Learn** button in the box at the bottom right, and the undo / reset button sits at the end of the box under the title; the search box is in the bottom bar (its results drop down below it). Tooltips, right-click refunds and inspecting keep working. | UI reload |
+| **Character Window** (WoW Forever only) | The vanilla character window: the classic frame with your portrait in its ring, your name on the title bar and the level and guild lines under it, the round close button and the classic tabs under the frame (Character, Reputation, Skills, Honor, Currency, Statistics). The Character tab is the vanilla paperdoll (`UI-Character-CharacterTab-*`): the equipment slots in the classic `UI-Quickslot2` frames down both sides and along the bottom with the ammo slot, the model between them on the dark page, the five resistances down the model's right edge and two classic stat boxes under it, each with a classic dropdown to pick base stats, melee, ranged, spell or defenses (2.x's boxes, with Blizzard's own stat values and tooltips). The Reputation tab is the vanilla reputation page: the Faction / Standing labels, one row per faction in the classic `UI-Character-ReputationBar` art with the standing on the classic bar (the progress on mouse over), the classic row highlight, the faction groups as +/- header rows and the classic scroll bar in its trough; a faction you are at war with has its name in red. The client only ships a later redraw of that row art, so the vanilla file is bundled with the addon. The Skills tab is the vanilla skills page: one classic bar per skill in the `UI-Character-Skills-BarBorder` frame with the name and rank on it (blue, or grey and full for a proficiency), the border lit while hovered or selected, the skill groups as +/- header rows, and under the list the selected skill's bar and description, as 1.12 showed it. The other tabs keep Blizzard's content inside the plain classic frame (`UI-Character-General-*`) for now. The details pane (stats, gear sets, titles, pet, and the details of reputation, skills and currency) is still there: the arrow in the band under the title docks it to the window's right side in the classic dialog border. The window opens with the pane closed. Equipping, gear sets, the flyouts, tooltips and turning the model keep working. | UI reload |
 
 The "UI reload" options are applied while the interface loads because
 Blizzard's frames cannot be safely un-skinned at runtime; changing them
 prompts for a reload (there is also a Reload button on the options page and
-`/fcui reload`).
+`/fmcui reload`).
 
 ## How it works
 
@@ -100,7 +101,7 @@ overlap like vanilla's).
 Forever's UI is the retail 12.x UI with a small "camelot" game-type overlay
 (`Blizzard_UnitFrame\Camelot\*`, `Blizzard_NamePlates\Camelot\*` in Blizzard's
 UI source, branch `forever`), so the addon runs the same code on both, plus
-four extra modules that only load on Forever.
+five extra modules that only load on Forever.
 
 `Modules/ComboPoints.lua` is the Combo Points option. Forever keeps vanilla's
 combo points on the target, shown on the target frame with the classic art,
@@ -138,6 +139,28 @@ own line-drawing rules.
 talents are pages of one Blizzard panel, and while either classic page is
 shown the panel's border, portrait, title and mouse are taken out of the
 way and its close button becomes the round classic one on the page's frame.
+
+`Modules/CharacterFrame.lua` is the Character Window option. Forever's
+character window is its own: a wide frame with icon tabs down its side, a
+left pane that every tab anchors its content to and a collapsible right
+pane with the stats, gear sets, titles, pet view and the tabs' details.
+The addon draws the vanilla frame at its top left and moves the left pane
+into the vanilla content area (so every tab's content moves with it), puts
+the paperdoll's slots and model on the 1.12 spots, docks the right pane to
+the vanilla frame's side in the 1.12 dialog border, and turns Blizzard's
+own tab frames into the vanilla tabs under the frame, so clicks stay
+Blizzard's. The stat boxes and resistances are the addon's frames, filled
+by Blizzard's own stat functions whenever Blizzard updates its stats.
+`Modules/CharacterReputation.lua` (part of the same option) re-skins the
+reputation page's rows after Blizzard initializes them: the bar is resized
+to the vanilla bar and its fill redrawn from the bar's own fill updates,
+in the vanilla row art. The list's layout settings stay Blizzard's (clicking
+a row opens the character window's details pane, which must stay
+untainted), so the rows are brought to 1.12's spacing by scaling the whole
+list down and each row's content back up.
+`Modules/CharacterSkills.lua` does the same for the skills page (its
+rows' name moved onto the vanilla bar) and adds 1.12's detail pane under
+the list, filled from the skill data whenever Blizzard refreshes its own.
 
 `Modules/Forever.lua` handles what the overlay adds to the other elements:
 
@@ -188,10 +211,13 @@ Modules/ActionBars.lua   vanilla action bar art (button borders, slot strip, pag
 Modules/BagsBar.lua      vanilla bag slots (square slots, backpack icon, slot strip)
 Modules/BagFrames.lua    vanilla bag / backpack windows (part of Bags)
 Modules/MicroMenu.lua    classic micro menu buttons
-Textures/                bundled art: the Sell All Junk icon (vanilla style), the vanilla main menu / quest log / socials micro buttons
+Textures/                bundled art: the Sell All Junk icon (vanilla style), the vanilla main menu / quest log / socials micro buttons, the vanilla reputation row art
 Modules/ComboPoints.lua  Forever only: classic combo point layout (live toggle)
 Modules/PlayerSpellsPanel.lua Forever only: the spellbook / talents panel's chrome for the classic pages
 Modules/SpellBook.lua    Forever only: vanilla spellbook
 Modules/TalentFrame.lua  Forever only: vanilla talent frame
+Modules/CharacterFrame.lua Forever only: vanilla character window
+Modules/CharacterReputation.lua Forever only: its Reputation tab (part of Character Window)
+Modules/CharacterSkills.lua Forever only: its Skills tab (part of Character Window)
 Modules/Forever.lua      Forever only: adjustments for the "camelot" overlay
 ```

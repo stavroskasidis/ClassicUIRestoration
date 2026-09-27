@@ -1014,22 +1014,19 @@ local function Layout()
 	ShowTree()
 end
 
--- The spot and scale of the classic spellbook (SpellBook.lua draws it at
--- the left edge of Blizzard's compact spellbook panel, on the other panels'
--- line). The panel manager scales a panel down to fit the screen with its
--- checkFit margins (FrameUtil.UpdateScaleForFitSpecific) and puts the
--- compact panel, alone, centred with centerXOffset -405
--- (PlayerSpellsFrameMixin:SetMinimized), in panel units.
-local COMPACT_CENTER_OFFSET = -405
-
+-- The spot and scale of the classic spellbook when it is open on its own
+-- (the talents close the other panels): where a left panel, the character
+-- frame, opens (SpellBook.lua moves the book there from the centred
+-- compact panel), on the other panels' line. The panel manager scales a
+-- panel down to fit the screen with its checkFit margins
+-- (FrameUtil.UpdateScaleForFitSpecific).
 local function SpellBookSpot()
 	local width = book.spellBookMinimizedWidth or 809
 	local height = book.spellBookHeight or 720
 	local extraWidth = GetUIPanelAttribute and GetUIPanelAttribute(book, "checkFitExtraWidth") or 200
 	local extraHeight = GetUIPanelAttribute and GetUIPanelAttribute(book, "checkFitExtraHeight") or 140
 	local scale = math.min(1, UIParent:GetWidth() / (width + extraWidth), UIParent:GetHeight() / (height + extraHeight))
-	local left = UIParent:GetWidth() / 2 + (COMPACT_CENTER_OFFSET - width / 2) * scale
-	return left, ns.PlayerSpellsPanel.Top(0, STANDARD_PANEL_HEIGHT), scale
+	return ns.PlayerSpellsPanel.Left(), ns.PlayerSpellsPanel.Top(0, STANDARD_PANEL_HEIGHT), scale
 end
 
 -- On every show of the page: the frame goes where the classic spellbook

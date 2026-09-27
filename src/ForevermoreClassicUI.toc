@@ -31,5 +31,8 @@ Modules\MicroMenu.lua
 Modules\PlayerSpellsPanel.lua
 Modules\SpellBook.lua
 Modules\TalentFrame.lua
+Modules\CharacterFrame.lua
+Modules\CharacterReputation.lua
+Modules\CharacterSkills.lua
 Modules\Forever.lua
 Options.lua

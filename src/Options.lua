@@ -5,7 +5,7 @@
 	module gets a checkbox; live modules (cast bars, nameplates) toggle at once,
 	the others prompt for a UI reload.
 
-	Slash commands: /fcui, /cuir, /classicui  (and "/fcui reload").
+	Slash commands: /fmcui, /forevermore, /cuir, /classicui  (and "/fmcui reload").
 ]]
 
 local _, ns = ...

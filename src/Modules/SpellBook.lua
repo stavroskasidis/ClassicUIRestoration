@@ -39,8 +39,10 @@
 	    instead of its NineSlice, portrait and title (PlayerSpellsPanel.lua,
 	    shared with the Talents option; the talents page gets the retail
 	    chrome back unless that option draws its own frame). The panel keeps
-	    Blizzard's compact size (809x720), so it opens where Blizzard's
-	    compact spellbook does. It is not resized: the page holds a secure
+	    Blizzard's compact size (809x720). On its own the manager centres
+	    it; the book is then drawn where the character frame opens (see
+	    OriginX), next to other panels at the panel's left edge. It is not
+	    resized: the page holds a secure
 	    button (the assisted combat spell, UIPanelSpellButtonFrameTemplate),
 	    which makes the page and the panel protected, and in combat neither
 	    could be changed from here. Instead a frame of the book's size takes
@@ -106,6 +108,7 @@ local PASSIVE_COLOR = PASSIVE_SPELL_FONT_COLOR or { r = 0.77, g = 0.64, b = 0 } 
 local book, page          -- PlayerSpellsFrame and its spellbook page (SpellBookFrame)
 local origin              -- the vanilla frame's top-left corner, which everything is placed from
 local originOffset = 0    -- origin's offset below the panel's top (see UpdateOrigin)
+local originX = 0         -- and right of the panel's left edge
 local art = {}            -- regions this module draws on the panel
 local skins = setmetatable({}, { __mode = "k" }) -- Blizzard frame -> what this module added to it
 local passiveHighlight
@@ -132,14 +135,25 @@ local function PanelAttribute(name)
 	return book:GetAttribute("UIPanelLayout-" .. name)
 end
 
+-- On its own the compact panel is centred (anchored by its top); the book
+-- then goes where a left panel (the character frame) opens instead. Next to
+-- other panels the manager lines the panel up with them (by its top left)
+-- and the book stays at its left edge.
+local function OriginX()
+	local left = book:GetLeft()
+	if book:GetPoint(1) ~= "TOP" or not left then return 0 end
+	return ns.PlayerSpellsPanel.Left() * UIParent:GetEffectiveScale() / book:GetEffectiveScale() - left
+end
+
 local function UpdateOrigin()
 	local scale = book:GetScale()
 	local height = book.GetDesiredMinimizedHeight and book:GetDesiredMinimizedHeight(book:GetTab()) or book:GetHeight(true)
 	local panelTop = PanelTop(PanelAttribute("yoffset") or 0, height * scale, PanelAttribute("minYOffset"), PanelAttribute("bottomClampOverride"))
 	local offset = math.min(0, (PanelTop(0, STANDARD_PANEL_HEIGHT) - panelTop) / scale)
-	if offset ~= originOffset then
-		originOffset = offset
-		Point(origin, "TOPLEFT", book, "TOPLEFT", 0, offset)
+	local x = OriginX()
+	if offset ~= originOffset or x ~= originX then
+		originOffset, originX = offset, x
+		Point(origin, "TOPLEFT", book, "TOPLEFT", x, offset)
 	end
 end
 
@@ -190,7 +204,7 @@ end
 ---------------------------------------------------------------------------
 
 local protectedQueued = false
-local rotationOffset -- the origin offset the assisted combat spell was placed for (nil: not placed yet)
+local rotationOffset, rotationX -- the origin offsets the assisted combat spell was placed for (nil: not placed yet)
 local LayoutBand, QueueProtected
 
 -- The assisted combat spell (if offered) goes to the right end of the band. It
@@ -199,9 +213,9 @@ local LayoutBand, QueueProtected
 -- it, so it is only placed again when the origin moved.
 local function PlaceRotationButton()
 	local rotation = page.AssistedCombatRotationSpellFrame
-	if rotation and rotationOffset ~= originOffset then
-		Point(rotation, "RIGHT", book, "TOPLEFT", BAND_RIGHT, BAND_Y + originOffset)
-		rotationOffset = originOffset
+	if rotation and (rotationOffset ~= originOffset or rotationX ~= originX) then
+		Point(rotation, "RIGHT", book, "TOPLEFT", originX + BAND_RIGHT, BAND_Y + originOffset)
+		rotationOffset, rotationX = originOffset, originX
 		LayoutBand()
 	end
 end
@@ -524,6 +538,18 @@ local function Skin()
 	ns.PlayerSpellsPanel.Register(page, function(close)
 		Point(close, "CENTER", origin, "TOPLEFT", CLOSE_X, CLOSE_Y)
 	end)
+	-- The panel manager moves the panel (centred on its own, lined up next to
+	-- other panels) when a panel opens or closes; its own frame cannot be
+	-- hooked, these are the calls that start it.
+	local function Reposition()
+		if classicApplied and book:IsShown() then
+			UpdateOrigin()
+			ApplyProtected()
+		end
+	end
+	for _, name in ipairs({ "ShowUIPanel", "HideUIPanel", "UpdateUIPanelPositions" }) do
+		ns.Hook(name, Reposition)
+	end
 	UpdateMode()
 end
 
