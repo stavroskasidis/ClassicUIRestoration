@@ -23,7 +23,14 @@ aliases next to `/fmcui` / `/forevermore` (never `/fcui`: other addons use it).
 src/                    the addon folder, one build for every flavor (copied as is into build\ForevermoreClassicUI\)
   ForevermoreClassicUI.toc  the one .toc for every flavor (## Interface: 120100, 16001)
   Core.lua              namespace, textures/colours, module registry, mirror bars, lifecycle, /fmcui
-  Options.lua           Settings panel (one checkbox per top-level module) + reload prompt
+  Options.lua           Settings panel page (canvas: every top-level module by group, with a picture of its set look
+                        and a Modern / Classic switch; reload banner)
+  Wizard.lua            setup wizard (first login, "/fmcui setup"); ns.UI: widgets, option groups
+                        (GROUPS) and short descriptions (SUMMARIES) shared with Options.lua
+  Previews.lua          ns.Previews: the modern / classic picture of each option, drawn from the client's art;
+                        ns.PreviewImages: screenshots used instead for whole windows
+  PreviewsForever.lua   Forever only: its modern pictures (camelot art) and its window screenshots
+  Textures/Previews/    the window screenshots (made by tools/make_previews.py)
   Modules/UnitFrames.lua   classic frame art & layout (player/target/focus/ToT/pet/party/boss)
   Modules/Portraits.lua    portrait masks, rest/combat indicators   (part of Unit Frames)
   Modules/HealthBars.lua   health bar textures/colours              (part of Unit Frames)
@@ -64,6 +71,7 @@ build.ps1               copies src\ into build\ForevermoreClassicUI\ and zips it
 build/                  build output (git-ignored); what deploy.ps1 copies into the game
 deploy.ps1              builds once + mirrors the build into every installed flavor (-Flavor X for one)
 deploy.config.json      machine-specific WoW path (git-ignored, never commit)
+tools/make_previews.py  crops in-game screenshots into src/Textures/Previews (see its header)
 curseforge/             project page material: logo.png (+ make_logo.py to regenerate it), description.md
 ```
 
@@ -106,9 +114,12 @@ anything under `build/`.
 - Keep every user-facing description in sync with the options and behaviour
   whenever a module is added, removed or renamed: `src/README.md` (the
   option table, "How it works" and the file list), the `## Notes:` line of
-  the `.toc`, the reload-section texts in `Options.lua`, and
-  `curseforge/description.md` (the "What it restores" list and the summary,
-  which must stay under 250 characters).
+  the `.toc`, and `curseforge/description.md` (the "What it restores" list and the summary,
+  which must stay under 250 characters). A new top-level module also goes
+  into a group of `GROUPS` and gets a line in `SUMMARIES` (`Wizard.lua`; a
+  module no group lists lands in "Other") and a picture in `Previews.lua`
+  (`classic` / `modern` builders drawing the same files, coordinates and
+  atlases the module and Blizzard's frame use).
 - For a user-visible release bump `"version"` in `addon.json` (`x.y.z`);
   never write a literal version into the `.toc` — it contains
   `## Version: @project-version@`, which `build.ps1` replaces (in `.toc`,
@@ -136,10 +147,9 @@ anything under `build/`.
   bar, `PetFrameHappiness`, `ComboFrame_ApplyOverrides`, minimap `DielFrame`
   (day/night) and `MinimapContainer.PlayerCoords`. To find the installed
   client's interface version in game: `/run print((select(4, GetBuildInfo())))`.
-  The 1.60.1 beta client writes SavedVariables (account-wide and per-character)
-  but never loads them back, so options reset every session on Forever; this is
-  a client bug (reported 2026-09-18, reproduces with a minimal addon, retail is
-  fine) with no addon-side fix — do not chase it in `InitializeDB`.
+  An early 1.60.1 beta client wrote SavedVariables but never loaded them back
+  (options reset every session); Blizzard fixed it (confirmed 2026-09-28), so
+  saved options and `setupDone` persist on Forever like on retail.
   Taint logging is unusable on the 1.60.1 client: with `/console taintLog 2`
   every call of a method this addon hooks with `hooksecurefunc` (micro buttons'
   `SetNormalAtlas`, action buttons' `Update`, ...) fails with "attempt to call
@@ -288,9 +298,20 @@ anything under `build/`.
   checkbox, no saved variable, follows the parent's state. Portraits, Health
   Bars and Power Bars are such parts — the user wants the unit frames to be
   all-or-nothing. Do not re-introduce separate options for them.
-- Options use the modern Settings API (`Settings.RegisterVerticalLayoutCategory`,
-  `RegisterProxySetting`, `CreateCheckbox`). Reload-type changes prompt via the
-  `FOREVERMORECLASSICUI_RELOAD` StaticPopup.
+- Options are changed only through `ns:SetModuleEnabled(key, value)` (Core.lua):
+  it saves the value, enables / disables a live module and notifies the
+  listeners registered with `ns:OnSettingsChanged` (the options page and the
+  wizard refresh from it). The options page is a canvas category
+  (`Settings.RegisterCanvasLayoutCategory`, built on its first show); a
+  reload-type change shows its reload banner (no popup). The setup wizard
+  opens at login until it has been closed once (`db.setupDone`, set when it
+  closes), for new installs and existing users alike (not in the session that
+  shows the rename migration popup), and is the addon's own frame, never a UI panel:
+  it closes on Esc through its own keyboard handler, not `UISpecialFrames`.
+- Previews never touch Blizzard's frames: they are drawn with the addon's
+  own textures and frames. Only instantiate Blizzard templates without
+  `$parent`-named children (they would create globals) and without secure
+  or event-registering behaviour.
 - Match the existing style: tabs, `local _, ns = ...` header, a doc comment
   block at the top of each file explaining *why*, short comments on non-obvious
   client behaviour, no globals except the saved variables (`ForevermoreClassicUIDB`

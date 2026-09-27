@@ -41,7 +41,10 @@ commodity market, staged talent changes, casting from the spellbook in combat,
 all of it keeps working, now wearing the vanilla art.
 
 Each element is its own option, so restore only the parts you miss and keep
-the rest modern.
+the rest modern. On the first login (after installing or updating) a **setup wizard** asks how you want it:
+one-click presets (everything classic, or a classic HUD with modern windows
+or the reverse), or going through the elements one by one
+with a picture of the modern and the classic look side by side.
 
 ## What it restores
 
@@ -80,7 +83,9 @@ and it goes back to the modern look.
 ## Options
 
 `/fmcui` (or `/forevermore`, `/cuir`, `/classicui`), or **Game Menu > Options > AddOns > Forevermore
-Classic UI**. One checkbox per element.
+Classic UI**: every element with a picture of its current look and a
+Modern / Classic switch, plus All Classic / All Modern. `/fmcui setup` (or the
+Setup Wizard button there) opens the setup wizard again.
 
 ## Upgrading from Classic UI Restoration
 

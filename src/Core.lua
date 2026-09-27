@@ -149,6 +149,31 @@ function ns:NeedsReload()
 	return false
 end
 
+-- Functions called after any option changed (the options page and the
+-- setup wizard refresh themselves from them).
+local changeListeners = {}
+function ns:OnSettingsChanged(fn)
+	table.insert(changeListeners, fn)
+end
+
+-- Turns a top-level option on or off. Live modules are switched at once;
+-- the others take effect after a reload (see ns:NeedsReload).
+function ns:SetModuleEnabled(key, value)
+	local module = self.moduleByKey[key]
+	value = (value == true)
+	if not module or module.parent or self.db[key] == value then
+		return
+	end
+	self.db[key] = value
+	if self.activated and module.live then
+		local method = value and module.Enable or module.Disable
+		if method then xpcall(method, geterrorhandler(), module) end
+	end
+	for _, fn in ipairs(changeListeners) do
+		xpcall(fn, geterrorhandler())
+	end
+end
+
 ---------------------------------------------------------------------------
 -- Helpers
 ---------------------------------------------------------------------------
@@ -748,10 +773,9 @@ StaticPopupDialogs["FOREVERMORECLASSICUI_MIGRATED"] = {
 -- also declared per character (ForevermoreClassicUICharDB): both globals point
 -- at one table, the client serialises it into both files, and at load the
 -- per-character copy is used whenever the account copy comes back empty. On a
--- working client the account copy wins. The mirror was added for the WoW
--- Forever beta, which turned out to write both files but load neither back
--- (client bug, 1.60.1, reported 2026-09-18); options reset every session there
--- until Blizzard fixes it, and nothing on the addon side can help.
+-- working client the account copy wins. The mirror was added for an early
+-- WoW Forever beta client that wrote both files but loaded neither back (a
+-- client bug, fixed by Blizzard by 2026-09-28).
 local function InitializeDB()
 	local account = ForevermoreClassicUIDB
 	local character = ForevermoreClassicUICharDB
@@ -759,6 +783,8 @@ local function InitializeDB()
 	if type(db) ~= "table" or next(db) == nil then
 		db = (type(character) == "table" and next(character) ~= nil) and character or {}
 	end
+	-- The setup wizard opens at login until it has been closed once
+	-- (db.setupDone), for new installs and existing users alike.
 	ns.migrated = MigrateFromOldName(db)
 	ForevermoreClassicUIDB = db
 	ForevermoreClassicUICharDB = db
@@ -814,6 +840,15 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
 		ActivateModules()
 		if ns.migrated then
 			StaticPopup_Show("FOREVERMORECLASSICUI_MIGRATED")
+		elseif not ns.db.setupDone and ns.OpenSetup then
+			-- PLAYER_LOGIN fires under the loading screen; the wizard opens
+			-- as it goes away.
+			self:RegisterEvent("LOADING_SCREEN_DISABLED")
+		end
+	elseif event == "LOADING_SCREEN_DISABLED" then
+		self:UnregisterEvent("LOADING_SCREEN_DISABLED")
+		if not ns.db.setupDone then
+			ns:OpenSetup()
 		end
 	elseif event == "PLAYER_REGEN_ENABLED" then
 		if #pendingOutOfCombat > 0 then
@@ -926,6 +961,9 @@ SlashCmdList.FOREVERMORECLASSICUI = function(msg)
 	msg = strtrim((msg or ""):lower())
 	if msg == "reload" or msg == "rl" then
 		ReloadUI()
+		return
+	elseif (msg == "setup" or msg == "wizard") and ns.OpenSetup then
+		ns:OpenSetup()
 		return
 	elseif msg == "debug" then
 		xpcall(ns.DebugTarget, geterrorhandler(), ns)

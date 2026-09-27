@@ -11,10 +11,34 @@ element has its own option and can be switched back to the modern look.
 Ships for retail 12.1 (`## Interface: 120100`) and for World of Warcraft:
 Forever 1.60 (`## Interface: 16001`). No external libraries.
 
+## Setup wizard
+
+The first time you log in with this version (a new install or an update), a
+setup wizard opens as the loading screen goes away. Pick one of three presets
+(**Everything classic**, **Classic HUD, modern windows** or **Classic windows,
+modern HUD**), or **Custom** to go
+through the elements a few at a time: each one shows
+a picture of its modern and its classic look side by side, and the look you
+click is the one used. The last page lists your choices and offers a reload
+when one of them needs it. Open the wizard again at any time with
+`/fmcui setup` or the **Setup Wizard** button on the options page. Closing it
+keeps what you chose so far.
+
+The pictures are drawn from the game's own art (the classic files the addon
+puts on Blizzard's frames, and the modern atlases and templates those frames
+use; on WoW Forever, the art of its own versions of those frames), with your
+own portrait, name, zone map, action bar icons, bags and gear where the frame
+shows them. On WoW Forever the windows (character, spellbook, talents,
+trainer, auction house, professions, loot) are shown as screenshots.
+
 ## Options
 
 Open with `/fmcui` (or `/forevermore`, `/cuir`, `/classicui`), or via **Game Menu > Options > AddOns >
-Forevermore Classic UI**.
+Forevermore Classic UI**. The page lists the options by group, each with a
+picture of the look it is set to, a short description (hover it for the full one)
+and a **Modern / Classic** switch; **All Classic** / **All Modern** set every
+option at once, and a banner with a Reload button appears while a change is
+waiting for a reload.
 
 | Option | What it does | Toggle |
 | --- | --- | --- |
@@ -40,9 +64,9 @@ Forevermore Classic UI**.
 | **Professions Window** (WoW Forever only) | The vanilla trade skill window: the classic panel (`UI-ClassTrainer-*` with the trade skill's `UI-TradeSkill-BotLeft`) with your portrait in its ring, the profession's rank on the classic skill bar under the title, the search box and the filter in the classic dropdown box, a compact list of 16px recipe rows coloured by difficulty (orange, yellow, green, grey) with the craftable count after the name and the selected row on a tinted highlight bar, the categories as +/- header rows with no gaps between them and the classic "All" tab above the list to collapse or expand them all, and under the list the selected recipe's icon (with the number made), name, required tools (missing ones in red), cooldown and reagents in the classic item buttons with "have / need" (greyed out while you are short); a recipe that makes no item (an enchant) shows its description there, as 1.12's craft window did. Create All, the - n + quantity box, Create and Exit sit along the bottom, with the classic knob scroll bars. The recipe list is Blizzard's own, so selecting, collapsing categories, favourites (right click), links and tracking keep working; Create and Create All craft through Blizzard's own code. The professions overview page (the book icon among the side tabs) keeps its modern look, and the side tabs stay on the window's right edge. | UI reload |
 
 The "UI reload" options are applied while the interface loads because
-Blizzard's frames cannot be safely un-skinned at runtime; changing them
-prompts for a reload (there is also a Reload button on the options page and
-`/fmcui reload`).
+Blizzard's frames cannot be safely un-skinned at runtime; after changing
+them, reload with the button on the options page's banner or the wizard's last
+page, or with `/fmcui reload`.
 
 ## How it works
 
@@ -214,7 +238,11 @@ Blizzard's own Create / Create All.
 ```
 ForevermoreClassicUI.toc Interface versions (retail and Forever), file list
 Core.lua                 saved variables, module registry, helpers
-Options.lua              Settings panel + slash commands
+Previews.lua             the modern / classic pictures of every option (wizard and options page)
+PreviewsForever.lua      Forever only: its own modern pictures and window screenshots
+Textures/Previews/       screenshots of the windows in both looks (Forever)
+Wizard.lua               setup wizard; widgets and option groups shared with the options page
+Options.lua              Settings panel page (canvas)
 Modules/UnitFrames.lua   frame art & layout
 Modules/Portraits.lua    portrait masks, rest/combat indicators
 Modules/HealthBars.lua   health bar textures/colours

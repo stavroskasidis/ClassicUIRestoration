@@ -37,4 +37,7 @@ Modules\CharacterReputation.lua
 Modules\CharacterSkills.lua
 Modules\ProfessionsFrame.lua
 Modules\Forever.lua
+Previews.lua
+PreviewsForever.lua
+Wizard.lua
 Options.lua
