@@ -40,6 +40,7 @@
 ]]
 
 local _, ns = ...
+if not ns.IS_FOREVER then return end
 local T = ns.T
 local Point, SetTexture = ns.Point, ns.SetTexture
 

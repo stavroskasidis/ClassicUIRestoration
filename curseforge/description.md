@@ -19,8 +19,11 @@ Brings back the Classic UI for various elements (unit frames, cast bars, namepla
 
 ## Game versions
 
-- World of Warcraft (retail): 12.1.x  -> upload `build\Retail\ClassicUIRestoration-<version>-retail.zip`
-- WoW Forever: 1.60.x               -> upload `build\Forever\ClassicUIRestoration-<version>-forever.zip`
+One file for both: upload `build\ClassicUIRestoration-<version>.zip` and tick
+every supported version in the file's Game Version field:
+
+- WoW Retail: 12.1.x
+- WoW Forever: 1.60.x
 
 # Description
 

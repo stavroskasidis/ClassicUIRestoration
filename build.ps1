@@ -1,45 +1,40 @@
 <#
 .SYNOPSIS
-	Assembles the deployable addon folder(s) and CurseForge zips into <repo>\build\.
+	Assembles the deployable addon folder and the CurseForge zip into <repo>\build\.
 
 .DESCRIPTION
-	For each flavor, merges <repo>\src\Shared\ (code common to every flavor)
-	with <repo>\src\<Flavor>\ (the flavor's .toc and flavor-only files) into
-	<repo>\build\<Flavor>\ClassicUIRestoration\ and zips that folder as
-	<repo>\build\<Flavor>\ClassicUIRestoration-<version>-<flavor>.zip, the
-	layout CurseForge expects (the addon folder is the zip's root entry). A
-	flavor file with the same relative path as a shared file wins.
+	Copies <repo>\src\ (the addon folder: one .toc for every game flavor)
+	into <repo>\build\ClassicUIRestoration\, stamps the version into it and
+	zips that folder as <repo>\build\ClassicUIRestoration-<version>.zip, the
+	layout CurseForge expects (the addon folder is the zip's root entry).
 
-	The build folder is git-ignored; it is what deploy.ps1 copies into the game
-	and what gets uploaded to CurseForge. Each flavor's output is recreated
-	from scratch on every run.
+	The same build runs on every flavor: the .toc lists each flavor's
+	Interface version and the Forever-only files return early on retail
+	(ns.IS_FOREVER in Core.lua). Upload the one zip to CurseForge tagged with
+	every game version it supports.
 
-	The addon name, version and the list of flavors come from <repo>\addon.json.
+	The build folder is git-ignored; it is what deploy.ps1 copies into the
+	game(s) and what gets uploaded to CurseForge. It is recreated from scratch
+	on every run.
 
-.PARAMETER Flavor
-	Build only this flavor (a folder name such as Retail or Forever). Builds
-	every flavor when omitted.
+	The addon name and version come from <repo>\addon.json.
 
 .EXAMPLE
 	.\build.ps1
-	.\build.ps1 -Flavor Forever
 #>
 [CmdletBinding()]
-param(
-	[string]$Flavor
-)
+param()
 
 $ErrorActionPreference = "Stop"
 
-$RepoRoot     = $PSScriptRoot
-$SrcRoot      = Join-Path $RepoRoot "src"
-$SharedSource = Join-Path $SrcRoot "Shared"
-$BuildRoot    = Join-Path $RepoRoot "build"
+$RepoRoot  = $PSScriptRoot
+$SrcRoot   = Join-Path $RepoRoot "src"
+$BuildRoot = Join-Path $RepoRoot "build"
 
-# addon.json is the single place for the addon name, version and flavors
-# (deploy.ps1 reads it too for the flavor -> game folder mapping).
+# addon.json is the single place for the addon name and version (deploy.ps1
+# reads it too for the flavor -> game folder mapping).
 $Addon = Get-Content (Join-Path $RepoRoot "addon.json") -Raw | ConvertFrom-Json
-foreach ($key in "name", "version", "flavors") {
+foreach ($key in "name", "version") {
 	if (-not $Addon.$key) {
 		throw "addon.json is missing '$key'."
 	}
@@ -50,11 +45,11 @@ if ($Version -notmatch '^\d+\.\d+\.\d+(\S*)$') {
 	throw "addon.json version must look like 1.2.3 (optionally with a suffix), got '$Version'."
 }
 
-if (-not (Test-Path $SharedSource)) {
-	throw "Shared source folder '$SharedSource' is missing."
+if (-not (Test-Path (Join-Path $SrcRoot "$AddonName.toc"))) {
+	throw "src\$AddonName.toc does not exist."
 }
 
-# The .toc files (and any other .toc/.lua/.md file) carry the
+# The .toc (and any other .toc/.lua/.md file) carries the
 # @project-version@ placeholder, which is replaced in the build output.
 $VersionPlaceholder = "@project-version@"
 
@@ -91,47 +86,26 @@ function New-AddonZip([string]$Folder, [string]$Zip) {
 	}
 }
 
-# Flavors are declared in addon.json; each needs a src\<Flavor>\<name>.toc.
-$flavors = @($Addon.flavors.PSObject.Properties.Name)
-foreach ($name in $flavors) {
-	if (-not (Test-Path (Join-Path $SrcRoot "$name\$AddonName.toc"))) {
-		throw "Flavor '$name' is declared in addon.json but src\$name\$AddonName.toc does not exist."
-	}
+$output = Join-Path $BuildRoot $AddonName
+
+if (Test-Path $output) {
+	Remove-Item $output -Recurse -Force
 }
+New-Item -ItemType Directory -Force $output | Out-Null
 
-if ($Flavor) {
-	if ($flavors -notcontains $Flavor) {
-		throw "Unknown flavor '$Flavor'. Known flavors: $($flavors -join ', ')"
-	}
-	$flavors = @($Flavor)
-}
+# src\ is the addon folder as it lands in the game (Core.lua, Modules\, ...).
+Copy-Item (Join-Path $SrcRoot "*") $output -Recurse -Force
+Set-BuildVersion $output
 
-foreach ($name in $flavors) {
-	$flavorSource = Join-Path $SrcRoot $name
-	$output       = Join-Path (Join-Path $BuildRoot $name) $AddonName
+$count = (Get-ChildItem $output -Recurse -File).Count
+Write-Host "Built $AddonName $Version -> $output ($count files)"
 
-	if (Test-Path $output) {
-		Remove-Item $output -Recurse -Force
-	}
-	New-Item -ItemType Directory -Force $output | Out-Null
-
-	# The .toc files list shared files by their path inside the addon folder
-	# (Core.lua, Modules\UnitFrames.lua, ...), so both trees are flattened into
-	# the same output folder: shared first, then the flavor on top.
-	Copy-Item (Join-Path $SharedSource "*") $output -Recurse -Force
-	Copy-Item (Join-Path $flavorSource "*") $output -Recurse -Force
-	Set-BuildVersion $output
-
-	$count = (Get-ChildItem $output -Recurse -File).Count
-	Write-Host "Built $name $Version -> $output ($count files)"
-
-	# CurseForge upload: a zip whose root is the addon folder itself
-	# (ClassicUIRestoration/ClassicUIRestoration.toc, ...), one per flavor.
-	# Old zips of other versions are removed so the folder holds one per flavor.
-	Get-ChildItem (Join-Path $BuildRoot $name) -File -Filter "$AddonName-*.zip" | Remove-Item -Force
-	$zip = Join-Path (Join-Path $BuildRoot $name) "$AddonName-$Version-$($name.ToLower()).zip"
-	New-AddonZip -Folder $output -Zip $zip
-	Write-Host "Zipped $name -> $zip"
-}
+# CurseForge upload: a zip whose root is the addon folder itself
+# (ClassicUIRestoration/ClassicUIRestoration.toc, ...). Old zips of other
+# versions are removed so the folder holds only the current one.
+Get-ChildItem $BuildRoot -File -Filter "$AddonName-*.zip" | Remove-Item -Force
+$zip = Join-Path $BuildRoot "$AddonName-$Version.zip"
+New-AddonZip -Folder $output -Zip $zip
+Write-Host "Zipped -> $zip"
 
 exit 0

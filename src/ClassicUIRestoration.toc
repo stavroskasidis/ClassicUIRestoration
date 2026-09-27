@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120100, 16001
 ## Title: Classic UI Restoration
 ## Notes: Brings back the Classic UI for various elements (unit frames, cast bars, nameplates, minimap, auction house etc) while keeping the new UI functionality. Every element can be switched back on its own. For Forever and Retail.
 ## Version: @project-version@
@@ -14,6 +14,7 @@ Modules\UnitFrames.lua
 Modules\Portraits.lua
 Modules\HealthBars.lua
 Modules\PowerBars.lua
+Modules\ComboPoints.lua
 Modules\CastBars.lua
 Modules\MirrorTimers.lua
 Modules\Nameplates.lua
@@ -27,4 +28,8 @@ Modules\ActionBars.lua
 Modules\BagsBar.lua
 Modules\BagFrames.lua
 Modules\MicroMenu.lua
+Modules\PlayerSpellsPanel.lua
+Modules\SpellBook.lua
+Modules\TalentFrame.lua
+Modules\Forever.lua
 Options.lua

@@ -3,9 +3,10 @@
 	Deploys the addon into the World of Warcraft AddOns folder(s).
 
 .DESCRIPTION
-	Runs build.ps1 for each flavor being deployed (src\Shared + src\<Flavor>
-	merged into <repo>\build\<Flavor>\ClassicUIRestoration\) and mirrors that
-	build output into <WoW>\<gameDir>\Interface\AddOns\ClassicUIRestoration\.
+	Runs build.ps1 (src\ copied into <repo>\build\ClassicUIRestoration\) and
+	mirrors that one build output into
+	<WoW>\<gameDir>\Interface\AddOns\ClassicUIRestoration\ of each flavor being
+	deployed; every flavor gets the same files.
 
 	Without -Flavor, every flavor declared in addon.json whose game folder
 	exists in the WoW install is deployed; flavors whose client is not
@@ -124,14 +125,14 @@ if ($Flavor) {
 
 # --- Build + deploy ---------------------------------------------------------
 
-foreach ($name in $targets.Keys) {
-	$buildOutput = Join-Path $RepoRoot "build\$name\$AddonName"
-	$target      = $targets[$name]
+$buildOutput = Join-Path $RepoRoot "build\$AddonName"
+& $BuildScript
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $buildOutput "$AddonName.toc"))) {
+	throw "build.ps1 did not produce '$buildOutput'."
+}
 
-	& $BuildScript -Flavor $name
-	if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $buildOutput "$AddonName.toc"))) {
-		throw "build.ps1 did not produce '$buildOutput'."
-	}
+foreach ($name in $targets.Keys) {
+	$target = $targets[$name]
 
 	Write-Host "Deploying $buildOutput -> $target"
 	New-Item -ItemType Directory -Force (Split-Path $target -Parent) | Out-Null

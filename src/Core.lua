@@ -21,6 +21,11 @@ ns.ADDON_NAME = ADDON_NAME
 ns.TITLE = "Classic UI Restoration"
 ns.VERSION = C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version") or "dev" -- stamped into the .toc by build.ps1
 
+-- One build serves retail (Interface 12xxxx) and WoW Forever (1.60.x, 16001).
+-- The Forever-only files return early when this is false; the client ignores
+-- [AllowLoadGameType camelot] on addon .toc lines, so the .toc cannot do it.
+ns.IS_FOREVER = (select(4, GetBuildInfo())) < 20000
+
 -- Legacy textures that still ship with the retail client.
 ns.T = {
 	STATUS_BAR         = "Interface\\TargetingFrame\\UI-StatusBar",

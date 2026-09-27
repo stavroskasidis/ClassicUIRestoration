@@ -95,8 +95,8 @@ overlap like vanilla's).
 
 Forever's UI is the retail 12.x UI with a small "camelot" game-type overlay
 (`Blizzard_UnitFrame\Camelot\*`, `Blizzard_NamePlates\Camelot\*` in Blizzard's
-UI source, branch `forever`), so the Forever build is the same code plus four
-extra modules.
+UI source, branch `forever`), so the addon runs the same code on both, plus
+four extra modules that only load on Forever.
 
 `Modules/ComboPoints.lua` is the Combo Points option. Forever keeps vanilla's
 combo points on the target, shown on the target frame with the classic art,
@@ -164,7 +164,7 @@ way and its close button becomes the round classic one on the page's frame.
 ## Files
 
 ```
-ClassicUIRestoration.toc per flavor (Interface version, file list)
+ClassicUIRestoration.toc Interface versions (retail and Forever), file list
 Core.lua                 saved variables, module registry, helpers
 Options.lua              Settings panel + slash commands
 Modules/UnitFrames.lua   frame art & layout

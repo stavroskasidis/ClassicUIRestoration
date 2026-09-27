@@ -9,7 +9,8 @@ retail look.
 ## Repository layout
 
 ```
-src/Shared/             addon code common to every flavor (lands in the addon root when built)
+src/                    the addon folder, one build for every flavor (copied as is into build\ClassicUIRestoration\)
+  ClassicUIRestoration.toc  the one .toc for every flavor (## Interface: 120100, 16001)
   Core.lua              namespace, textures/colours, module registry, mirror bars, lifecycle, /cuir
   Options.lua           Settings panel (one checkbox per top-level module) + reload prompt
   Modules/UnitFrames.lua   classic frame art & layout (player/target/focus/ToT/pet/party/boss)
@@ -33,65 +34,65 @@ src/Shared/             addon code common to every flavor (lands in the addon ro
   Textures/                bundled art (UI-Merchant-SellJunk.tga, the vanilla-style Sell All Junk icon;
                            UI-MicroButton-MainMenu/Quest/Socials-*.tga, the vanilla micro buttons from the
                            Classic Era client, which retail/Forever only ship as Cataclysm redraws)
-  README.md             user-facing description of every option (both flavors)
-src/Retail/             retail WoW flavor (Interface 12.x)
-  ClassicUIRestoration.toc
-src/Forever/            WoW Forever flavor (Interface 16001, client 1.60.x)
-  ClassicUIRestoration.toc
   Modules/ComboPoints.lua classic combo point layout on the target frame, Forever only (live toggle; retail's combo points are on the player frame)
   Modules/PlayerSpellsPanel.lua PlayerSpellsFrame chrome / close button / mouse for the classic spellbook and talents pages (not a module)
   Modules/SpellBook.lua vanilla spellbook, Forever only (reload; re-skins PlayerSpellsFrame's spellbook page in place, 12 spells per page)
   Modules/TalentFrame.lua vanilla talent frame, Forever only (reload; Blizzard's talent buttons moved onto the 1.12 grid, one tree per tab)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
-addon.json              addon name, version (single source; .toc files carry @project-version@)
+  README.md             user-facing description of every option (both flavors)
+addon.json              addon name, version (single source; the .toc carries @project-version@)
                         and the flavors with the game folder each deploys to ("gameDir")
-build.ps1               assembles src\Shared + each flavor into build\<Flavor>\ClassicUIRestoration\
-                        and zips it as build\<Flavor>\ClassicUIRestoration-<version>-<flavor>.zip (CurseForge layout)
+build.ps1               copies src\ into build\ClassicUIRestoration\ and zips it as
+                        build\ClassicUIRestoration-<version>.zip (CurseForge layout, one file for every flavor)
 build/                  build output (git-ignored); what deploy.ps1 copies into the game
-deploy.ps1              builds + mirrors every installed flavor into the game (-Flavor X for one)
+deploy.ps1              builds once + mirrors the build into every installed flavor (-Flavor X for one)
 deploy.config.json      machine-specific WoW path (git-ignored, never commit)
 curseforge/             project page material: logo.png (+ make_logo.py to regenerate it), description.md
 ```
 
 Flavors: `Retail` -> `_retail_`, `Forever` -> `_classic_beta_` (declared in
 `addon.json`; Forever currently ships as the `wow_classic_beta` product and
-will need a new `gameDir` once it gets its own). Every flavor in `addon.json`
-must have a `src/<Flavor>/ClassicUIRestoration.toc`. The build flattens `src/Shared/`
-and `src/<Flavor>/` into one addon folder (flavor files win on equal paths), so the
-`.toc` files list shared files by their plain path (`Core.lua`,
-`Modules\UnitFrames.lua`); every `.toc` must list the same shared files in
-the same order, so add a new shared file to all of them. Flavor-specific code
-lives only in the flavor folder (Forever: `Modules/Forever.lua`, which hooks
-the same Blizzard functions *after* the shared modules, and
+will need a new `gameDir` once it gets its own). One build, one `.toc` and one
+CurseForge zip serve every flavor: the `.toc`'s `## Interface:` line lists each
+flavor's Interface version, and the zip is uploaded once, tagged with every
+game version. Forever-only code lives in its own files (`Modules/Forever.lua`,
+which hooks the same Blizzard functions *after* the other modules, and
 `Modules/ComboPoints.lua` / `Modules/SpellBook.lua` / `Modules/TalentFrame.lua`,
 options only Forever has, with `Modules/PlayerSpellsPanel.lua` shared by the
-last two); never add runtime
-flavor detection to `src/Shared/`, and never edit anything under `build/`.
+last two), each starting with `if not ns.IS_FOREVER then return end` right
+after `local _, ns = ...`, so on retail they register nothing.
+`ns.IS_FOREVER` (set in `Core.lua` from the Interface version) is the only
+flavor check: never branch on it inside the modules both flavors run (they
+stay flavor-agnostic by hooking whatever exists), and do not rely on
+`[AllowLoadGameType ...]` on `.toc` file lines, which the client ignores for
+addons (tested 2026-09-27: retail loaded `camelot`-tagged files). Never edit
+anything under `build/`.
 
 ## Workflow
 
 - Edit files under `src/` only. `build/` and the copies inside the game
   folders are outputs; never edit them directly and never touch anything else
   in the game install.
-- Deploy with `.\deploy.ps1` (PowerShell): it runs `build.ps1` for every
-  flavor whose game folder exists (skipping uninstalled clients) and mirrors
-  `build\<Flavor>\ClassicUIRestoration\` into
-  `<WoW>\<gameDir>\Interface\AddOns\ClassicUIRestoration\`; `-Flavor X`
-  deploys one flavor. The user then runs `/reload` in game; the addon cannot
-  be tested outside the game client. A change under `src/Shared/` affects
-  both flavors: say so, since the user will typically test one of them.
+- Deploy with `.\deploy.ps1` (PowerShell): it runs `build.ps1` once and
+  mirrors `build\ClassicUIRestoration\` into
+  `<WoW>\<gameDir>\Interface\AddOns\ClassicUIRestoration\` of every flavor
+  whose game folder exists (skipping uninstalled clients); `-Flavor X`
+  deploys to one flavor. The user then runs `/reload` in game; the addon
+  cannot be tested outside the game client. A change outside the
+  Forever-only files affects both flavors: say so, since the user will
+  typically test one of them.
 - There is no automated test suite in the repo. Before handing over, at least
   check Lua syntax (e.g. with a Lua parser) and re-read the changed code for
   the taint rules below. In-game verification is done by the user; ask for a
   `/reload` and, when useful, a screenshot or the output of `/cuir`.
 - Keep every user-facing description in sync with the options and behaviour
-  whenever a module is added, removed or renamed: `src/Shared/README.md` (the
+  whenever a module is added, removed or renamed: `src/README.md` (the
   option table, "How it works" and the file list), the `## Notes:` line of
-  every `.toc`, the reload-section texts in `Options.lua`, and
+  the `.toc`, the reload-section texts in `Options.lua`, and
   `curseforge/description.md` (the "What it restores" list and the summary,
   which must stay under 250 characters).
 - For a user-visible release bump `"version"` in `addon.json` (`x.y.z`);
-  never write a literal version into a `.toc` — they contain
+  never write a literal version into the `.toc` — it contains
   `## Version: @project-version@`, which `build.ps1` replaces (in `.toc`,
   `.lua` and `.md` files) and uses for the zip name. `ns.VERSION` in
   `Core.lua` reads it back from the TOC.
@@ -103,7 +104,7 @@ flavor detection to `src/Shared/`, and never edit anything under `build/`.
   https://github.com/Gethe/wow-ui-source (branch `live`); use the 9.2.x tag for
   classic coordinates/texture coords. Read the real source before hooking or
   re-anchoring anything — names and hierarchies change between patches.
-- **WoW Forever** (`src/Forever/`): `## Interface: 16001` (client 1.60.1, product
+- **WoW Forever** (`ns.IS_FOREVER`): `## Interface: 16001` (client 1.60.1, product
   `wow_classic_beta`, exe `WowB.exe`; interface version = `%d%02d%02d` of the
   client version, so 1.60.1 -> 16001). Its UI is the *mainline* (12.x) code
   loaded with game type `camelot`: Blizzard's source is the `forever` branch of
