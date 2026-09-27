@@ -60,6 +60,7 @@ the rest modern.
 - **Action Bar Art** (square classic button borders, vanilla slot art, page arrows)
 - **Bags** (square vanilla bag slots on the bags bar, vanilla bag and backpack windows, also for the combined backpack)
 - **Micro Menu** (the classic micro buttons on the vanilla stone bar panel, with your portrait on the character button)
+- **Game Menu** (the vanilla Esc menu: classic dialog box and header, small red classic buttons)
 - **Spellbook** (WoW Forever: the vanilla book, twelve spells per page, skill line tabs on the side)
 - **Talents** (WoW Forever: the vanilla talent frame, one tree at a time with the classic branches and tabs)
 - **Character Window** (WoW Forever: the vanilla paperdoll with the classic tabs, resistances and stat boxes, and the vanilla reputation and skills pages; the details pane docks to its side)

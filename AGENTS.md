@@ -43,6 +43,7 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/BagsBar.lua      "Bags" option, bags bar (reload; square equal-size slots, backpack icon, strip cells, Forever key ring)
   Modules/BagFrames.lua    vanilla bag / backpack / combined windows   (part of Bags; slots re-anchored from Blizzard's grid)
   Modules/MicroMenu.lua    classic micro buttons (reload; UI-MicroButton-* files re-applied from hooks on the buttons' Set*Atlas)
+  Modules/GameMenu.lua     vanilla game menu / Esc menu (reload; dialog box drawn behind GameMenuFrame, pooled buttons re-skinned and re-stacked after its Layout)
   Textures/                bundled art (UI-Merchant-SellJunk.tga, the vanilla-style Sell All Junk icon;
                            UI-Character-ReputationBar.tga, the 1.12 reputation row art;
                            UI-MicroButton-MainMenu/Quest/Socials-*.tga, the vanilla micro buttons from the

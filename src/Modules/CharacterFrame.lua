@@ -55,8 +55,7 @@ T.CHARACTER_GENERAL  = "Interface\\PaperDollInfoFrame\\UI-Character-General-"   
 T.STAT_BACKGROUND    = "Interface\\PaperDollInfoFrame\\UI-Character-StatBackground"
 T.RESISTANCE_ICONS   = "Interface\\PaperDollInfoFrame\\UI-Character-ResistanceIcons"
 T.AMMO_SLOT          = "Interface\\PaperDollInfoFrame\\UI-Character-AmmoSlot"
-T.DIALOG_BACKGROUND  = "Interface\\DialogFrame\\UI-DialogBox-Background"
-T.DIALOG_BORDER      = "Interface\\DialogFrame\\UI-DialogBox-Border"
+-- T.DIALOG_BACKGROUND / T.DIALOG_BORDER come from GameMenu.lua (loaded earlier).
 
 local module = ns:RegisterModule({
 	key = "characterframe",
