@@ -30,68 +30,30 @@ every supported version in the file's Game Version field:
 
 # Description
 
-**Forevermore Classic UI** brings the classic look to the modern UI of
-WoW Forever and Retail, without breaking it.
+**The classic look for WoW Forever and Retail, without breaking the modern UI.**
 
-It is a **reskin, not a replacement**. Instead of rebuilding the old frames
-from scratch, Forevermore keeps Blizzard's own frames and only changes how
-they look, so **no functionality is lost**: Edit Mode, heal prediction, absorbs,
-auras, vehicles, the search boxes, the sort buttons, the auction house
-commodity market, staged talent changes, casting from the spellbook in combat,
-all of it keeps working, now wearing the vanilla art.
+- **Reskin, not replacement:** Blizzard's own frames with the vanilla art. Every new Blizzard feature keep working.
+- **Pick what you want:** every element has its own Modern / Classic switch.
+- **User Fiendly:** setup wizard on first login: one-click presets, or choose element by element.
 
-Each element is its own option, so restore only the parts you miss and keep
-the rest modern. On the first login (after installing or updating) a **setup wizard** asks how you want it:
-one-click presets (everything classic, or a classic HUD with modern windows
-or the reverse), or going through the elements one by one
-with a picture of the modern and the classic look side by side.
+## What it changes
 
-## What it restores
+- **HUD:** Unit Frames, Combo Points\*, Cast Bars, Nameplates, Breath & Fatigue Bars
+- **Action bars:** Bar Art, Gryphons, XP & Reputation Bars, Bags, Micro Menu
+- **Minimap:** Minimap, Group Finder Eye
+- **Windows:** Game Menu, Loot, Vendor, Trainer, Auction House, Character\*,
+  Spellbook\*, Talents\*, Professions\*
 
-- **Unit Frames**
-- **Combo Points** (WoW Forever)
-- **Cast Bars**
-- **Breath & Fatigue Bars**
-- **Nameplates**
-- **Minimap**
-- **Group Finder Eye**
-- **Loot Window**
-- **Trainer Windows**
-- **Auction House**
-- **Action Bar Gryphons**
-- **XP & Reputation Bars**
-- **Vendor Window**
-- **Action Bar Art**
-- **Bags**
-- **Micro Menu**
-- **Game Menu**
-- **Spellbook** (WoW Forever)
-- **Talents** (WoW Forever)
-- **Character Window** (WoW Forever)
-- **Professions Window** (WoW Forever)
-
-## How it works
-
-Blizzard's frames are reskinned in place, not replaced: only textures,
-positions and colours change. The buttons you click, the bars you watch and
-the windows you open are still Blizzard's own, driven by Blizzard's own code,
-so Edit Mode, heal prediction, absorbs, vehicles, role icons, threat, auras,
-tooltips and keybinds all keep working, and new features Blizzard adds keep
-showing up. The classic look follows the modern UI, not the other way
-around. No libraries, nothing to configure or position; turn an element off
-and it goes back to the modern look.
-
-## Known limitations
-
-- **Friendly nameplates in dungeons and raids** keep the modern look: Blizzard
-  locks them so no addon can change them. Enemy nameplates there are classic.
+\* _WoW Forever only_
 
 ## Options
 
-`/fmcui` (or `/forevermore`, `/cuir`, `/classicui`), or **Game Menu > Options > AddOns > Forevermore
-Classic UI**: every element with a picture of its current look and a
-Modern / Classic switch, plus All Classic / All Modern. `/fmcui setup` (or the
-Setup Wizard button there) opens the setup wizard again.
+`/fmcui` or **Options > AddOns > Forevermore Classic UI**.
+`/fmcui setup` reopens the wizard.
+
+## Known limitations
+
+- Friendly nameplates in dungeons and raids stay modern (Blizzard locks them).
 
 ## Upgrading from Classic UI Restoration
 
