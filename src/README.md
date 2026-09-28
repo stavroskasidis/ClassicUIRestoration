@@ -82,7 +82,14 @@ swapping, party roster updates and Edit Mode.
 Cast bars are re-textured from script hooks on the bars themselves (their
 cast methods must not be hooked on 12.x, see `Modules\CastBars.lua`), the
 breath/fatigue timers are Blizzard's own timer frames re-textured in place,
-and nameplates use the `nameplateStyle` CVar's Classic value. The minimap keeps
+and nameplates use the `nameplateStyle` CVar's Classic value, with its border
+crop fixed by the addon. Friendly nameplates inside dungeons and raids are
+locked by Blizzard (no addon can change them), so they show Blizzard's own
+classic style, whose border comes out squashed with the level bubble in the
+middle of the bar. To hide those bars, show names only for friendly players:
+`/run C_CVar.SetCVar("nameplateShowOnlyNameForFriendlyPlayerUnits", 1)`
+(`0` to undo). This leaves a stray level number above each plate and also
+applies outside instances. The minimap keeps
 Blizzard's cluster (so Edit Mode, the tracking menu and the notifications keep
 working) and re-parents its pieces into the scaled map container at the
 classic positions.

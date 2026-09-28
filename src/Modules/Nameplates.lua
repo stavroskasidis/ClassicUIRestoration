@@ -13,7 +13,9 @@
 	Blizzard lays a plate out (NamePlateUnitFrameMixin:UpdateAnchors) the
 	classic geometry is re-applied here with plain SetSize/SetPoint calls.
 	Only widget state is touched - no Lua fields are written on the plates,
-	which matters because nameplate values are "secret" in 12.x.
+	which matters because nameplate values are "secret" in 12.x. Friendly
+	plates inside instances are forbidden frames (ForbiddenNamePlate*, same
+	mixin): they are skipped and keep Blizzard's own classic style.
 
 	The style's cast bar (Blizzard's classicStyleCastBar path) draws the
 	glossy UI-StatusBar fill with a 32px spark glow, which looks out of place
@@ -164,6 +166,9 @@ end)
 
 -- Re-applies the classic border/bar geometry after Blizzard's UpdateAnchors.
 local function EnforceClassicLayout(unitFrame)
+	-- Friendly plates in instances are forbidden frames (ForbiddenNamePlate*)
+	-- built from the same mixin; addon code cannot touch them.
+	if not unitFrame or unitFrame:IsForbidden() then return end
 	if not enabled then
 		HideOwnTextures(unitFrame)
 		return

@@ -81,6 +81,16 @@ showing up. The classic look follows the modern UI, not the other way
 around. No libraries, nothing to configure or position; turn an element off
 and it goes back to the modern look.
 
+## Known limitations
+
+- **Friendly nameplates in dungeons and raids.** Blizzard locks these
+  nameplates so no addon can change them. They show Blizzard's own classic
+  style, whose border comes out squashed with the level bubble in the middle
+  of the bar. To hide those bars, show names only for friendly players with
+  `/run C_CVar.SetCVar("nameplateShowOnlyNameForFriendlyPlayerUnits", 1)`
+  (`0` to undo). This leaves a small level number above each nameplate and
+  also applies outside dungeons.
+
 ## Options
 
 `/fmcui` (or `/forevermore`, `/cuir`, `/classicui`), or **Game Menu > Options > AddOns > Forevermore
