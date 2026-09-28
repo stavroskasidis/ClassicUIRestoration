@@ -9,6 +9,10 @@
 	slots down both sides and along the bottom, the model between them, the
 	resistances down the model's right edge and two stat boxes under it,
 	each with the 2.x dropdown (base stats, melee, ranged, spell, defenses).
+	Blizzard's pet view (the right pane's pet tab, which hides the slots
+	and shows the pet in the model) gets 1.12's pet page instead
+	(PetPaperDollFrame.xml): its art, the model over the whole width, the
+	pet's stats, resistances, portrait and name, and the XP bar.
 	The other tabs get the plain frame (UI-Character-General-*) with
 	Blizzard's content inside it; they get their own vanilla pages later.
 
@@ -55,12 +59,13 @@ T.CHARACTER_GENERAL  = "Interface\\PaperDollInfoFrame\\UI-Character-General-"   
 T.STAT_BACKGROUND    = "Interface\\PaperDollInfoFrame\\UI-Character-StatBackground"
 T.RESISTANCE_ICONS   = "Interface\\PaperDollInfoFrame\\UI-Character-ResistanceIcons"
 T.AMMO_SLOT          = "Interface\\PaperDollInfoFrame\\UI-Character-AmmoSlot"
+T.PET_PAPERDOLL      = "Interface\\PetPaperDollFrame\\UI-PetPaperDollFrame-"         -- + BotLeft / BotRight
 -- T.DIALOG_BACKGROUND / T.DIALOG_BORDER come from GameMenu.lua (loaded earlier).
 
 local module = ns:RegisterModule({
 	key = "characterframe",
 	name = "Character Window",
-	tooltip = "Restores the vanilla character window: the classic frame with the tabs under it, the classic paperdoll with the equipment slots around the model, the resistances and two stat boxes with the classic stat dropdowns. The details pane (stats, gear sets, titles, pet) docks to the window's side in the classic dialog border.",
+	tooltip = "Restores the vanilla character window: the classic frame with the tabs under it, the classic paperdoll with the equipment slots around the model, the resistances and two stat boxes with the classic stat dropdowns, and the vanilla pet page. The details pane (stats, gear sets, titles, pet) docks to the window's side in the classic dialog border.",
 	live = false,
 })
 
@@ -99,6 +104,16 @@ local DOCK_X, DOCK_Y, DOCK_HEIGHT = 347, -12, 454
 -- (faded here); they are taken down to this.
 local STATS_LIST_BOTTOM = 6
 local DOCK_INSET_LEFT, DOCK_INSET_TOP, DOCK_INSET_RIGHT, DOCK_INSET_BOTTOM = 11, 12, 12, 11
+-- The 1.12 pet page (PetPaperDollFrame.xml): the model over the page's
+-- whole width, the stat boxes a little lower, the resistances at the
+-- model's right edge, the XP bar in the art's groove (top left) and the
+-- happiness icon under the model's top left corner.
+local PET_MODEL_X, PET_MODEL_Y, PET_MODEL_WIDTH, PET_MODEL_HEIGHT = 25, -78, 318, 224
+local PET_STATS_Y = -300
+local PET_RESIST_RIGHT = 347
+local PET_XP_X, PET_XP_Y, PET_XP_WIDTH, PET_XP_HEIGHT = 23, -396, 319, 11
+local PET_XP_COLOR = { 0.58, 0, 0.55 }
+local PET_HAPPINESS_X, PET_HAPPINESS_Y = 30, -111
 
 -- The 1.12 slot columns, top to bottom, and the weapon row.
 local LEFT_SLOTS = { "CharacterHeadSlot", "CharacterNeckSlot", "CharacterShoulderSlot", "CharacterBackSlot",
@@ -138,6 +153,12 @@ local STAT_CATEGORIES = {
 	{ key = "PLAYERSTAT_DEFENSES", fallback = "Defenses",
 		stats = { { "ARMOR" }, { "DEFENSE" }, { "DODGE", 0 }, { "PARRY", 0 }, { "BLOCK", 0 } } },
 }
+-- The pet page's boxes (no dropdowns in 1.12): the stats of Blizzard's pet
+-- pane (pets have no attributes on Forever).
+local PET_STATS = {
+	left = { { "HEALTH" }, { "ARMOR" }, { "MAINHAND_DAMAGE", nil, LABEL_DAMAGE }, { "ATTACK_AP", 0, LABEL_ATTACK_POWER }, { "SPELLPOWER", 0 } },
+	right = { { "HITCHANCE", 0 }, { "CRITCHANCE", 0, LABEL_CRIT }, { "HASTE", 0 }, { "MOVESPEED", nil, SPEED or "Speed" } },
+}
 local STAT_CVARS = { left = "playerStatLeftDropdown", right = "playerStatRightDropdown" }
 -- 2.x's default right box by class (the left one shows the base stats).
 local CASTERS = { MAGE = true, PRIEST = true, WARLOCK = true }
@@ -158,8 +179,10 @@ local AMMO_ART = {
 local COLLAPSED_CVAR = "characterFrameCollapsed"
 
 local frame                -- CharacterFrame
-local paperdollArt, generalArt = {}, {}
-local portrait, levelText, guildText
+local paperdollArt, generalArt, petArt = {}, {}, {}
+local portrait, levelText, guildText, petNameText
+local attributes           -- the stat boxes' frame
+local petXPBar
 local statBoxes = {}       -- "left" / "right" -> { rows = { stat frames }, dropdown }
 local resistances = {}     -- the resistance frames, in RESISTANCES order
 local tabSkins = setmetatable({}, { __mode = "k" }) -- Blizzard tab frame -> what this module added to it
@@ -196,15 +219,22 @@ end
 -- Frame art
 ---------------------------------------------------------------------------
 
--- Four pieces (256 / 128 wide, 256 tall) at the frame's top left.
-local function CreateArt(list, prefix, names, x, y)
+-- Blizzard's pet view hides the slots (PaperDollItemsFrame) and puts the
+-- pet in the model; the slots stay hidden while the right pane is collapsed
+-- on it.
+local function IsPetPage()
+	return PaperDollFrame:IsShown() and PaperDollItemsFrame ~= nil and not PaperDollItemsFrame:IsShown()
+end
+
+-- Four files (256 / 128 wide, 256 tall) at the frame's top left.
+local function CreateArt(list, files, x, y)
 	local pieces = {
-		{ names[1], 256, 0, 0 }, { names[2], 128, 256, 0 },
-		{ names[3], 256, 0, -256 }, { names[4], 128, 256, -256 },
+		{ files[1], 256, 0, 0 }, { files[2], 128, 256, 0 },
+		{ files[3], 256, 0, -256 }, { files[4], 128, 256, -256 },
 	}
 	for _, piece in ipairs(pieces) do
 		local texture = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
-		texture:SetTexture(prefix .. piece[1])
+		texture:SetTexture(piece[1])
 		texture:SetSize(piece[2], 256)
 		texture:SetPoint("TOPLEFT", frame, "TOPLEFT", x + piece[3], y + piece[4])
 		table.insert(list, texture)
@@ -213,22 +243,31 @@ end
 
 local function UpdateArt()
 	local paperdoll = PaperDollFrame:IsShown()
-	for _, texture in ipairs(paperdollArt) do texture:SetShown(paperdoll) end
+	local pet = IsPetPage()
+	for _, texture in ipairs(paperdollArt) do texture:SetShown(paperdoll and not pet) end
+	for _, texture in ipairs(petArt) do texture:SetShown(pet) end
 	for _, texture in ipairs(generalArt) do texture:SetShown(not paperdoll) end
 end
 
 -- The player's portrait under the art's ring (1.12 drew it on the frame,
--- under the page's art); Blizzard's own portrait (its spec icon on the
--- Character tab) is faded.
+-- under the page's art), the pet's on the pet page; Blizzard's own portrait
+-- (its spec icon on the Character tab) is faded.
 local function UpdatePortrait()
-	SetPortraitTexture(portrait, "player")
+	SetPortraitTexture(portrait, IsPetPage() and "pet" or "player")
 end
 
 local function SkinChrome()
 	FadeRegions(frame)
-	CreateArt(paperdollArt, T.CHARACTER_TAB_ART, { "L1", "R1", "BottomLeft", "BottomRight" }, 0, 0)
-	-- 1.12 ReputationFrame / SkillFrame drew these 2px right and 1px down.
-	CreateArt(generalArt, T.CHARACTER_GENERAL, { "TopLeft", "TopRight", "BottomLeft", "BottomRight" }, 2, -1)
+	CreateArt(paperdollArt, { T.CHARACTER_TAB_ART .. "L1", T.CHARACTER_TAB_ART .. "R1",
+		T.CHARACTER_TAB_ART .. "BottomLeft", T.CHARACTER_TAB_ART .. "BottomRight" }, 0, 0)
+	-- 1.12 ReputationFrame / SkillFrame / PetPaperDollFrame drew these 2px
+	-- right and 1px down; the pet page has its own bottom (with the XP bar's
+	-- groove), the general one where the client lacks it.
+	CreateArt(generalArt, { T.CHARACTER_GENERAL .. "TopLeft", T.CHARACTER_GENERAL .. "TopRight",
+		T.CHARACTER_GENERAL .. "BottomLeft", T.CHARACTER_GENERAL .. "BottomRight" }, 2, -1)
+	local petBottom = ns.HasTexture(T.PET_PAPERDOLL .. "BotLeft") and T.PET_PAPERDOLL .. "Bot" or T.CHARACTER_GENERAL .. "Bottom"
+	CreateArt(petArt, { T.CHARACTER_GENERAL .. "TopLeft", T.CHARACTER_GENERAL .. "TopRight",
+		petBottom .. "Left", petBottom .. "Right" }, 2, -1)
 	UpdateArt()
 
 	portrait = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
@@ -451,6 +490,24 @@ local function DockRightPane()
 		end
 	end
 
+	-- The lists hang under the stone header (faded here); the pet tab swaps it
+	-- for a taller one (StoneBG2) that makes room for a hunter pet's loyalty
+	-- line under the level, so the pet's list started lower than the
+	-- player's. It starts where the player's does, and one line lower when
+	-- Blizzard makes the level box taller for the loyalty.
+	local petList = CharacterStatsPanePetScrollBox
+	local stone = C_Texture.GetAtlasInfo("UI-Character-Info-Stat-StoneBG")
+	local levelInfo = PaperDollLevelInfo
+	if petList and petList.ScrollBox and stone and levelInfo then
+		local function PlacePetList()
+			local extra = math.max(0, levelInfo:GetHeight() - 20) -- its XML height
+			Point(petList.ScrollBox, "TOPLEFT", pane, "TOPLEFT", 10, -(stone.height + 8 + extra))
+			petList.ScrollBox:SetPoint("BOTTOMRIGHT", petList, "BOTTOMRIGHT", -30, STATS_LIST_BOTTOM)
+		end
+		PlacePetList()
+		ns.Hook("PaperDollFrame_SetPetLevel", PlacePetList)
+	end
+
 	local toggle = frame.RightPaneToggleButton
 	if toggle then
 		Point(toggle, "CENTER", frame, "TOPLEFT", TOGGLE_X, TOGGLE_Y)
@@ -512,11 +569,22 @@ local function PlaceSlots()
 	end
 end
 
+-- Between the slots, or over the pet page's whole width.
+local function SetModelSpot(pet)
+	local scene = CharacterModelScene
+	if pet then
+		Point(scene, "TOPLEFT", frame, "TOPLEFT", PET_MODEL_X, PET_MODEL_Y)
+		scene:SetSize(PET_MODEL_WIDTH, PET_MODEL_HEIGHT)
+	else
+		Point(scene, "TOPLEFT", frame, "TOPLEFT", MODEL_X, MODEL_Y)
+		scene:SetSize(MODEL_WIDTH, MODEL_HEIGHT)
+	end
+end
+
 local function PlaceModel()
 	local scene = CharacterModelScene
 	if not scene then return end
-	Point(scene, "TOPLEFT", frame, "TOPLEFT", MODEL_X, MODEL_Y)
-	scene:SetSize(MODEL_WIDTH, MODEL_HEIGHT)
+	SetModelSpot(false)
 	-- The race backgrounds: vanilla drew the model on the dark page.
 	for _, key in ipairs({ "BackgroundTopLeft", "BackgroundTopRight", "BackgroundBotLeft", "BackgroundBotRight", "BackgroundOverlay" }) do
 		Fade(scene[key])
@@ -544,9 +612,24 @@ local function UpdateGuild()
 end
 
 -- The level line is Blizzard's (in the right pane, hidden with it), copied
--- whenever Blizzard sets it for the player.
+-- whenever Blizzard sets it for the player or the pet.
 local function UpdateLevel()
 	levelText:SetText(CharacterLevelText and CharacterLevelText:GetText() or "")
+end
+
+-- The pet page: the pet's name on the title bar (in place of Blizzard's
+-- title, the player's name) and its loyalty in place of the guild line.
+local function UpdatePetLines()
+	local pet = IsPetPage()
+	if frame.TitleContainer then frame.TitleContainer:SetAlpha(pet and 0 or 1) end
+	petNameText:SetShown(pet)
+	if not pet then
+		UpdateGuild()
+		return
+	end
+	petNameText:SetText(UnitName("pet") or "")
+	local loyalty = C_PetInfo and C_PetInfo.GetPetLoyalty and C_PetInfo.GetPetLoyalty()
+	guildText:SetText(loyalty or "")
 end
 
 local function CreateNameLines(parent)
@@ -557,12 +640,23 @@ local function CreateNameLines(parent)
 	levelText:SetPoint("TOP", frame, "TOPLEFT", (TITLE_LEFT + TITLE_RIGHT) / 2, LEVEL_Y)
 	guildText = lines:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	guildText:SetPoint("TOP", levelText, "BOTTOM", 0, -1)
+	-- On the title bar (1.12's PetNameText), where Blizzard's title is faded.
+	petNameText = lines:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+	petNameText:SetPoint("TOPLEFT", frame, "TOPLEFT", TITLE_LEFT, TITLE_Y)
+	petNameText:SetPoint("TOPRIGHT", frame, "TOPLEFT", TITLE_RIGHT, TITLE_Y)
+	petNameText:SetHeight(frame.TitleContainer and frame.TitleContainer:GetHeight() or 20)
+	petNameText:Hide()
 	UpdateLevel()
 	UpdateGuild()
 	ns.Hook("PaperDollFrame_SetLevel", UpdateLevel)
+	ns.Hook("PaperDollFrame_SetPetLevel", function()
+		UpdateLevel()
+		UpdatePetLines()
+	end)
 	lines:RegisterEvent("PLAYER_GUILD_UPDATE")
-	lines:SetScript("OnEvent", UpdateGuild)
-	lines:SetScript("OnShow", UpdateGuild)
+	lines:RegisterUnitEvent("UNIT_NAME_UPDATE", "pet")
+	lines:SetScript("OnEvent", UpdatePetLines)
+	lines:SetScript("OnShow", UpdatePetLines)
 end
 
 ---------------------------------------------------------------------------
@@ -616,11 +710,15 @@ local function IsSecret(value)
 	return issecretvalue ~= nil and issecretvalue(value)
 end
 
-local function UpdateStatBox(side)
+local function StatsUnit()
+	return IsPetPage() and "pet" or "player"
+end
+
+local function UpdateStatBox(side, unit)
 	local box = statBoxes[side]
-	local category = GetCategory(side)
+	local stats = unit == "pet" and PET_STATS[side] or GetCategory(side).stats
 	local shown = 0
-	for _, stat in ipairs(category.stats) do
+	for _, stat in ipairs(stats) do
 		local info = PAPERDOLL_STATINFO and PAPERDOLL_STATINFO[stat[1]]
 		local row = box.rows[shown + 1]
 		if info and info.updateFunc and row then
@@ -629,7 +727,7 @@ local function UpdateStatBox(side)
 			row.Label:SetText("")
 			row.Value:SetText("")
 			row:Show()
-			local ok, value = pcall(info.updateFunc, row, "player")
+			local ok, value = pcall(info.updateFunc, row, unit)
 			local hidden = stat[2] ~= nil and not IsSecret(value) and value == stat[2]
 			local rowShown = row:IsShown()
 			rowShown = IsSecret(rowShown) or rowShown
@@ -649,9 +747,10 @@ local function UpdateStatBox(side)
 end
 
 local function UpdateResistances()
+	local unit = StatsUnit()
 	for _, resistance in ipairs(resistances) do
 		local id = resistance:GetID()
-		local _, total, positive, negative = UnitResistance("player", id)
+		local _, total, positive, negative = UnitResistance(unit, id)
 		local color = HIGHLIGHT_FONT_COLOR
 		if IsSecret(total) or IsSecret(positive) or IsSecret(negative) then
 			-- Shown as is (white); the colour needs a comparison.
@@ -667,7 +766,7 @@ local function UpdateResistances()
 		resistance.text:SetTextColor(color:GetRGB())
 		resistance.tooltip, resistance.tooltip2 = nil, nil
 		if PaperDollFrame_SetResistanceTooltips then
-			pcall(PaperDollFrame_SetResistanceTooltips, resistance, _G["DAMAGE_SCHOOL" .. (id + 1)] or "", total, "player", id)
+			pcall(PaperDollFrame_SetResistanceTooltips, resistance, _G["DAMAGE_SCHOOL" .. (id + 1)] or "", total, unit, id)
 		end
 	end
 end
@@ -677,16 +776,27 @@ end
 -- what they show during combat and are filled again when it ends. They are
 -- also filled out of combat while the window is closed (`always`), so that
 -- a window first opened in combat is not empty. The resistances are shown
--- as they come (secret ones in white, see UpdateResistances).
+-- as they come (secret ones in white, see UpdateResistances). Switched
+-- between the player and the pet in combat, the boxes stay empty until it
+-- ends.
 local statsPending = false
+local statsUnit            -- whose stats the boxes show
 local function UpdateStats(always)
 	if not (always or PaperDollFrame:IsShown()) then return end
+	local unit = StatsUnit()
 	if InCombatLockdown() then
 		statsPending = true
+		if unit ~= statsUnit then
+			for _, box in pairs(statBoxes) do
+				for _, row in ipairs(box.rows) do row:Hide() end
+			end
+			statsUnit = nil
+		end
 	else
 		statsPending = false
-		UpdateStatBox("left")
-		UpdateStatBox("right")
+		statsUnit = unit
+		UpdateStatBox("left", unit)
+		UpdateStatBox("right", unit)
 	end
 	UpdateResistances()
 end
@@ -781,7 +891,7 @@ end
 local function CreateStats()
 	-- Above the model (it takes the mouse for turning it), below the slots.
 	local level = CharacterModelScene:GetFrameLevel() + 5
-	local attributes = CreateFrame("Frame", nil, PaperDollFrame)
+	attributes = CreateFrame("Frame", nil, PaperDollFrame)
 	attributes:SetFrameLevel(level)
 	attributes:SetSize(2 * STAT_BOX_WIDTH, 85)
 	attributes:SetPoint("TOPLEFT", frame, "TOPLEFT", STATS_X, STATS_Y)
@@ -795,7 +905,7 @@ local function CreateStats()
 
 	ns.Hook("PaperDollFrame_UpdateStats", function() UpdateStats() end)
 	local events = CreateFrame("Frame", nil, attributes)
-	events:RegisterUnitEvent("UNIT_RESISTANCES", "player")
+	events:RegisterUnitEvent("UNIT_RESISTANCES", "player", "pet")
 	events:RegisterEvent("PLAYER_ENTERING_WORLD")
 	events:RegisterEvent("PLAYER_REGEN_ENABLED")
 	events:SetScript("OnEvent", function(_, event)
@@ -806,6 +916,95 @@ local function CreateStats()
 		end
 	end)
 	UpdateStats(true)
+end
+
+---------------------------------------------------------------------------
+-- Pet page (1.12 PetPaperDollFrame)
+---------------------------------------------------------------------------
+
+-- Blizzard's XP bar (a modern progress bar, over the model's bottom) is
+-- faded; this is 1.12's, shown whenever Blizzard shows its own (pets that
+-- gain experience).
+local function UpdatePetXPBar()
+	local blizzard = PetPaperDollFrameExpBar
+	local shown = IsPetPage() and blizzard ~= nil and blizzard:IsShown()
+	petXPBar:SetShown(shown)
+	if not shown then return end
+	local current, needed = GetPetExperience()
+	current, needed = current or 0, needed or 0
+	petXPBar:SetMinMaxValues(0, math.max(1, needed))
+	petXPBar:SetValue(current)
+	petXPBar.text:SetFormattedText("%s %s / %s", XP or "XP", current, needed)
+end
+
+local function CreatePetXPBar()
+	petXPBar = CreateFrame("StatusBar", nil, PaperDollFrame)
+	petXPBar:SetFrameLevel(CharacterModelScene:GetFrameLevel() + 5)
+	petXPBar:SetSize(PET_XP_WIDTH, PET_XP_HEIGHT)
+	petXPBar:SetPoint("TOPLEFT", frame, "TOPLEFT", PET_XP_X, PET_XP_Y)
+	ns.SetBarTexture(petXPBar, T.STATUS_BAR)
+	petXPBar:SetStatusBarColor(unpack(PET_XP_COLOR))
+	-- The border: two halves of the main menu bar's XP bar frame.
+	local previous
+	for _, width in ipairs({ 160, 159 }) do
+		local border = petXPBar:CreateTexture(nil, "OVERLAY")
+		ns.SetTexture(border, T.MAINMENUBAR_STRIP, 0.203125, 0.8046875, 0.2890625, 0.33984375)
+		border:SetSize(width, 13)
+		if previous then
+			border:SetPoint("LEFT", previous, "RIGHT", 0, 0)
+		else
+			border:SetPoint("TOPLEFT", petXPBar, "TOPLEFT", 0, 0)
+		end
+		previous = border
+	end
+	petXPBar.text = petXPBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	petXPBar.text:SetPoint("CENTER", petXPBar, "CENTER", 0, 1)
+	petXPBar:Hide()
+
+	local blizzard = PetPaperDollFrameExpBar
+	if blizzard then
+		blizzard:SetAlpha(0)
+		blizzard:HookScript("OnShow", UpdatePetXPBar)
+		blizzard:HookScript("OnHide", UpdatePetXPBar)
+	end
+end
+
+-- Switches the page between the paperdoll and the pet page whenever
+-- Blizzard switches the view (its right pane's tabs, the pet going away,
+-- the page showing).
+local function UpdatePetPage()
+	local pet = IsPetPage()
+	UpdateArt()
+	UpdatePortrait()
+	SetModelSpot(pet)
+	Point(attributes, "TOPLEFT", frame, "TOPLEFT", STATS_X, pet and PET_STATS_Y or STATS_Y)
+	for _, box in pairs(statBoxes) do
+		box.dropdown:SetShown(not pet)
+	end
+	Point(resistances[1], "TOPRIGHT", frame, "TOPLEFT", pet and PET_RESIST_RIGHT or RESIST_RIGHT, RESIST_Y)
+	UpdateLevel()
+	UpdatePetLines()
+	UpdatePetXPBar()
+	if pet ~= (statsUnit == "pet") then
+		UpdateStats()
+	end
+end
+
+local function CreatePetPage()
+	CreatePetXPBar()
+	if PetPaperDollPetHappinessInfo then
+		Point(PetPaperDollPetHappinessInfo, "TOPLEFT", frame, "TOPLEFT", PET_HAPPINESS_X, PET_HAPPINESS_Y)
+	end
+
+	ns.Hook("PaperDollFrame_ShowSidebar", UpdatePetPage)
+	PaperDollFrame:HookScript("OnShow", UpdatePetPage)
+	PaperDollFrame:HookScript("OnHide", UpdatePetPage)
+	local events = CreateFrame("Frame", nil, PaperDollFrame)
+	events:RegisterUnitEvent("UNIT_PET", "player")
+	events:RegisterUnitEvent("UNIT_PET_EXPERIENCE", "player")
+	events:RegisterUnitEvent("UNIT_PORTRAIT_UPDATE", "pet")
+	events:SetScript("OnEvent", UpdatePetPage)
+	UpdatePetPage()
 end
 
 ---------------------------------------------------------------------------
@@ -997,6 +1196,7 @@ function module:Apply()
 	PlaceModel()
 	CreateNameLines(PaperDollFrame)
 	CreateStats()
+	CreatePetPage()
 
 	ns.Hook(frame, "UpdateTabLayout", LayoutTabs)
 	LayoutTabs()
