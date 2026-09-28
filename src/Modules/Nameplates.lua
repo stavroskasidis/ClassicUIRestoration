@@ -1,41 +1,50 @@
 --[[
 	Forevermore Classic UI - Nameplates
 
-	The 12.x client ships a built-in "Classic" nameplate style (the pre-
-	Dragonflight look: Interface\Tooltips\Nameplate-Border with the flat
-	UI-TargetingFrame-BarFill health bar, level text and the small classic cast
-	bar). It is selected through the "nameplateStyle" CVar; this module drives
-	that CVar and remembers the style that was active before, so the retail look
-	can be restored when the option is turned off.
+	The pre-Dragonflight nameplate (Interface\Tooltips\Nameplate-Border with
+	the flat UI-TargetingFrame-BarFill health bar, the level in the border's
+	bubble, the name above it and a small bordered cast bar below it), drawn
+	on Blizzard's own plates.
 
-	The built-in style is not exposed in Blizzard's own options and its layout
-	code is not fully reliable (the border can end up mis-sized), so after
-	Blizzard lays a plate out (NamePlateUnitFrameMixin:UpdateAnchors) the
-	classic geometry is re-applied here with plain SetSize/SetPoint calls.
+	The 12.x client has a built-in "Classic" nameplate style (the
+	"nameplateStyle" CVar), but this module does not use it: the style is one
+	setting for every plate, and friendly plates inside dungeons and raids are
+	forbidden frames (ForbiddenNamePlate*) no addon can touch. With the classic
+	style those showed Blizzard's broken version of it (the 256px-wide border
+	file stretched over the bar, the level bubble in its middle). So the style
+	is left as the player set it (normally Modern) and the classic look is laid
+	out here, after Blizzard's own layout (NamePlateUnitFrameMixin:
+	UpdateAnchors), on every plate addon code can reach: the containers get the
+	classic sizes, the modern art is faded, and the addon's own border,
+	background, level text and cast bar border are added. Forbidden plates
+	(IsForbidden) are skipped and keep Blizzard's modern look.
+
 	Only widget state is touched - no Lua fields are written on the plates,
-	which matters because nameplate values are "secret" in 12.x. Friendly
-	plates inside instances are forbidden frames (ForbiddenNamePlate*, same
-	mixin): they are skipped and keep Blizzard's own classic style.
+	which matters because nameplate values are "secret" in 12.x. The level
+	comes from UnitEffectiveLevel and is simply not shown while it is secret.
 
-	The style's cast bar (Blizzard's classicStyleCastBar path) draws the
-	glossy UI-StatusBar fill with a 32px spark glow, which looks out of place
-	at nameplate size. The plates here get the flat health bar fill and no
-	spark instead, and the retail finish glow, "casting at you" glow and
-	important-cast pulse are blanked. Blizzard re-applies
-	its fill on every cast, so like the Cast Bars module this one polls the
-	visible plate cast bars from its own frame (the bars themselves cannot be
-	hooked, see Modules\CastBars.lua).
+	Blizzard re-applies its modern cast bar fill on every cast, so like the
+	Cast Bars module this one polls the visible plate cast bars from its own
+	frame (the bars themselves cannot be hooked, see Modules\CastBars.lua) and
+	puts the flat fill back in the classic colour of the cast type. The modern
+	spark, shield, target name and glows are faded or blanked.
 
-	This module can be toggled live.
+	Earlier versions switched "nameplateStyle" to Classic and saved the
+	player's style in db.nameplatesPreviousStyle; that style is restored once
+	at login.
+
+	Needs a reload to switch off: the plates cannot be handed back to
+	Blizzard's layout without calling its (field-writing) layout code.
 ]]
 
 local _, ns = ...
+local T = ns.T
 
 local module = ns:RegisterModule({
 	key = "nameplates",
 	name = "Nameplates",
-	tooltip = "Uses the classic nameplate style (classic border, flat health bar, level text and a flat cast bar without spark). Turning this off restores the nameplate style that was active before.",
-	live = true,
+	tooltip = "The classic nameplate: the classic border with the level in its bubble, a flat health bar, the name above it and a flat bordered cast bar. Friendly nameplates inside dungeons and raids are locked by Blizzard and keep the modern look.",
+	live = false,
 })
 
 local CVAR = "nameplateStyle"
@@ -44,112 +53,178 @@ local CAST_BORDER = "Interface\\Tooltips\\Nameplate-Border-Castbar"
 local BAR_FILL = "Interface\\TargetingFrame\\UI-TargetingFrame-BarFill"
 
 -- The retail client's Nameplate-Border.blp is 256x32 with the classic border
--- art (136x17 px) in the lower-left corner; the rest is empty. Blizzard's own
--- classic style still samples the whole width (0..1), which squashes the
--- border into the left half of the bar and leaves the level bubble in the
--- middle, so the art is cropped to its real extent here.
+-- art (136x17 px) in the lower-left corner; the rest is empty. It is cropped
+-- to that art and drawn 128x16 units, the classic border size.
 local BORDER_COORDS = { 0, 136 / 256, 15 / 32, 1 }
-local BORDER_ART_WIDTH = 136 -- px of the 128-unit classic border
+local BORDER_ART_WIDTH = 136
 -- Nameplate-Border-Castbar.blp is still the regular 128x32 file (art spans the
 -- full width in the lower half), so it only needs the vertical crop.
 local CAST_BORDER_COORDS = { 0, 1, 15 / 32, 1 }
 
+-- Classic layout in units at the Medium nameplate size (Blizzard's classic
+-- style constants); everything is multiplied by the size's scale.
+local BORDER_WIDTH, BORDER_HEIGHT = 128, 16
+local BAR_HEIGHT = 10         -- health and cast bar containers
+local CAST_TO_HEALTH = 4      -- cast bar container to health bar container
+local NAME_ABOVE = 4          -- health bar container to the name
+local FONT_HEIGHT = 10
+-- Health bar inside the border: 4 units in on the left, up to the level
+-- bubble (px 108 of the 136px art) on the right, half a unit up.
+local BAR_LEFT = 4
+local BAR_RIGHT = BORDER_WIDTH - BORDER_WIDTH * (108 / BORDER_ART_WIDTH) + 1.5
+local BAR_Y = 0.5
+-- Level centred in the bubble (px 120.5 of the art), from the border's right.
+local LEVEL_X = -(BORDER_WIDTH - BORDER_WIDTH * (120.5 / BORDER_ART_WIDTH))
+local SKULL_SIZE = 12
+-- Cast bar inside its border: the spell icon box on the left.
+local CAST_LEFT, CAST_RIGHT = 20.75, 3.5
+local CAST_ICON_SIZE, CAST_ICON_X = 14, 11.5
+
 local enabled = false
 
-local function GetClassicStyle()
-	return Enum.NamePlateStyle and Enum.NamePlateStyle.Classic
+local function IsSecret(value)
+	return issecretvalue ~= nil and issecretvalue(value)
 end
 
-local function GetModernStyle()
-	return (Enum.NamePlateStyle and Enum.NamePlateStyle.Modern) or 0
+local function GetScale()
+	local options = NamePlateSetupOptions
+	return (type(options) == "table" and options.verticalScale) or 1
 end
 
-local function GetCurrentStyle()
-	return tonumber(C_CVar.GetCVar(CVAR))
-end
+---------------------------------------------------------------------------
+-- Plates
+---------------------------------------------------------------------------
 
-local function SetStyle(style)
-	if style == nil then return end
-	if GetCurrentStyle() ~= style then
-		C_CVar.SetCVar(CVAR, tostring(style))
+-- The unit frame of a unit's plate, nil for none or a forbidden one. The
+-- settings' sample plate ("preview" token) makes the lookup error.
+local function PlateFor(unit)
+	if not unit or not C_NamePlate or not C_NamePlate.GetNamePlateForUnit then return nil end
+	local ok, plate = pcall(C_NamePlate.GetNamePlateForUnit, unit)
+	local unitFrame = ok and plate and plate.UnitFrame
+	if unitFrame and not unitFrame:IsForbidden() then
+		return unitFrame
 	end
 end
 
----------------------------------------------------------------------------
--- Classic geometry enforcement
----------------------------------------------------------------------------
-
--- Our own border textures, keyed by unit frame (never stored as fields on the
--- Blizzard frames). Blizzard's bgTexture keeps nine-slice state from the retail
--- atlas that SetTexture() does not clear, which is why it renders wrong with
--- the classic art; a fresh texture has no such baggage.
-local ownTextures = setmetatable({}, { __mode = "k" })
-
-local function GetOwnTextures(unitFrame)
-	local own = ownTextures[unitFrame]
-	if not own then
-		local container = unitFrame.HealthBarsContainer
-		local castBar = unitFrame.CastBarsContainer and unitFrame.CastBarsContainer.castBar
-		own = {}
-		own.border = container:CreateTexture(nil, "ARTWORK", nil, 1)
-		own.border:SetTexture(BORDER)
-		own.border:SetTexCoord(unpack(BORDER_COORDS))
-		if castBar then
-			own.castBorder = castBar:CreateTexture(nil, "OVERLAY", nil, -1)
-			own.castBorder:SetTexture(CAST_BORDER)
-			own.castBorder:SetTexCoord(unpack(CAST_BORDER_COORDS))
+local function ForEachPlate(fn)
+	if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
+	for _, plate in ipairs(C_NamePlate.GetNamePlates() or {}) do
+		local unitFrame = plate.UnitFrame
+		if unitFrame and not unitFrame:IsForbidden() then
+			xpcall(fn, geterrorhandler(), unitFrame)
 		end
-		ownTextures[unitFrame] = own
 	end
+end
+
+-- Faded rather than hidden: Blizzard shows and hides these itself.
+local function Fade(region)
+	if region then region:SetAlpha(0) end
+end
+
+-- Blanked: Blizzard shows, hides and animates the alpha of these glows; their
+-- atlases come from the XML template only.
+local function Blank(texture)
+	if texture then texture:SetColorTexture(0, 0, 0, 0) end
+end
+
+---------------------------------------------------------------------------
+-- The addon's own regions (keyed by unit frame, never fields on the plates)
+---------------------------------------------------------------------------
+
+local ownRegions = setmetatable({}, { __mode = "k" })
+
+local function FontTemplate(name, fallback)
+	return _G[name] and name or fallback
+end
+
+-- On the health bar, so they hide with it (names-only and widgets-only plates).
+local function GetOwnRegions(unitFrame, healthBar, castBar)
+	local own = ownRegions[unitFrame]
+	if own then return own end
+	own = {}
+
+	own.background = healthBar:CreateTexture(nil, "BACKGROUND", nil, 1)
+	own.background:SetColorTexture(0, 0, 0, 0.5)
+	own.background:SetAllPoints(healthBar)
+
+	own.border = healthBar:CreateTexture(nil, "OVERLAY", nil, 6)
+	own.border:SetTexture(BORDER)
+	own.border:SetTexCoord(unpack(BORDER_COORDS))
+
+	own.level = healthBar:CreateFontString(nil, "OVERLAY", FontTemplate("SystemFont_NamePlateLevel", "GameFontNormalSmall"))
+	own.level:SetDrawLayer("OVERLAY", 7)
+	own.level:SetJustifyH("CENTER")
+
+	own.skull = healthBar:CreateTexture(nil, "OVERLAY", nil, 7)
+	own.skull:SetTexture(T.SKULL)
+	own.skull:Hide()
+
+	if castBar then
+		own.castBorder = castBar:CreateTexture(nil, "OVERLAY", nil, -1)
+		own.castBorder:SetTexture(CAST_BORDER)
+		own.castBorder:SetTexCoord(unpack(CAST_BORDER_COORDS))
+	end
+
+	ownRegions[unitFrame] = own
 	return own
 end
 
--- Retail look: hide our textures and give Blizzard's regions their alpha back.
-local function HideOwnTextures(unitFrame)
-	local own = ownTextures[unitFrame]
+---------------------------------------------------------------------------
+-- Level
+---------------------------------------------------------------------------
+
+-- The level in the border's bubble: yellow for units that cannot be attacked,
+-- the difficulty colour for the others, and a skull when it is unknown or ten
+-- levels above the player (as the classic target frame).
+local function UpdateLevel(unitFrame)
+	local own = ownRegions[unitFrame]
 	if not own then return end
-	own.border:Hide()
-	if own.castBorder then own.castBorder:Hide() end
-	local healthBar = unitFrame.HealthBarsContainer and unitFrame.HealthBarsContainer.healthBar
-	if healthBar and healthBar.bgTexture then
-		healthBar.bgTexture:SetAlpha(1)
+	local unit = unitFrame.unit
+	local level = unit and (UnitEffectiveLevel or UnitLevel)(unit)
+	if level == nil or IsSecret(level) then
+		own.level:Hide()
+		own.skull:Hide()
+		return
 	end
-	local castBar = unitFrame.CastBarsContainer and unitFrame.CastBarsContainer.castBar
-	if castBar and castBar.Border then
-		castBar.Border:SetAlpha(1)
+
+	local canAttack = UnitCanAttack("player", unit)
+	if IsSecret(canAttack) then canAttack = false end
+	if level <= 0 or (canAttack and level >= UnitLevel("player") + 10) then
+		own.level:Hide()
+		own.skull:Show()
+		return
 	end
-	if castBar and castBar.Spark then
-		castBar.Spark:SetAlpha(1)
+
+	own.skull:Hide()
+	own.level:SetText(level)
+	local color = canAttack and GetCreatureDifficultyColor and GetCreatureDifficultyColor(level)
+	if color then
+		own.level:SetTextColor(color.r, color.g, color.b)
+	else
+		own.level:SetTextColor(1, 0.82, 0)
 	end
-	if castBar and castBar.CastTargetIndicator then
-		castBar.CastTargetIndicator:SetAtlas("ui-hud-nameplates-targetedbyenemy")
-	end
-	if castBar and castBar.ImportantCastIndicator then
-		castBar.ImportantCastIndicator:SetAtlas("ui-hud-nameplates-importantcast")
-	end
+	own.level:Show()
 end
 
--- Plate cast bars seen while the classic style was active; polled below.
+---------------------------------------------------------------------------
+-- Cast bars
+---------------------------------------------------------------------------
+
+-- Plate cast bars laid out while the module is on; polled below.
 local watchedCastBars = setmetatable({}, { __mode = "k" })
 
--- Fill texture as Blizzard reads it back (file id); on secret casts even that
--- is a secret, in which case the flat fill is simply re-applied.
-local barFillID = GetFileIDFromPath and GetFileIDFromPath(BAR_FILL)
-local function HasFlatFill(fill)
-	local texture = fill and fill:GetTexture()
-	if issecretvalue and issecretvalue(texture) then
-		return false
-	end
-	return texture == barFillID or texture == BAR_FILL
-end
-
+-- A fill or flash carrying an atlas is one Blizzard has just set; the colour
+-- comes from that atlas (standard / channel / uninterruptible / interrupted).
 local function RepairCastBarArt(castBar)
 	local art = ns.CastBarArt
-	if not HasFlatFill(castBar:GetStatusBarTexture()) then
+	if not art then return end
+	if art.HasAtlas(castBar:GetStatusBarTexture()) then
+		local color = art.GetColor(castBar)
 		castBar:SetStatusBarTexture(BAR_FILL)
+		castBar:SetStatusBarColor(color[1], color[2], color[3])
 	end
 	-- Classic plates have no finish flash; blank the retail glow.
-	if art and castBar.Flash and art.HasAtlas(castBar.Flash) then
+	if castBar.Flash and art.HasAtlas(castBar.Flash) then
 		castBar.Flash:SetColorTexture(0, 0, 0, 0)
 	end
 end
@@ -164,171 +239,211 @@ updater:SetScript("OnUpdate", function()
 	end
 end)
 
--- Re-applies the classic border/bar geometry after Blizzard's UpdateAnchors.
-local function EnforceClassicLayout(unitFrame)
-	-- Friendly plates in instances are forbidden frames (ForbiddenNamePlate*)
-	-- built from the same mixin; addon code cannot touch them.
-	if not unitFrame or unitFrame:IsForbidden() then return end
-	if not enabled then
-		HideOwnTextures(unitFrame)
-		return
-	end
-	local options = NamePlateSetupOptions
-	if type(options) ~= "table" or not options.useClassicHealthBar then
-		HideOwnTextures(unitFrame)
-		return
-	end
+local function LayoutCastBar(castContainer, castBar, own, scale)
+	watchedCastBars[castBar] = true
 
-	local hScale = options.horizontalScale or 1
-	local vScale = options.verticalScale or 1
-	local borderW = options.healthBarBorderWidth or (128 * hScale)
-	local borderH = options.healthBarBorderHeight or (16 * vScale)
+	castBar:ClearAllPoints()
+	castBar:SetPoint("TOPLEFT", castContainer, "TOPLEFT", CAST_LEFT * scale, BAR_Y * scale)
+	castBar:SetPoint("BOTTOMRIGHT", castContainer, "BOTTOMRIGHT", -CAST_RIGHT * scale, BAR_Y * scale)
 
-	local container = unitFrame.HealthBarsContainer
+	own.castBorder:ClearAllPoints()
+	own.castBorder:SetPoint("CENTER", castContainer, "CENTER", 0, 0)
+	own.castBorder:SetSize(BORDER_WIDTH * scale, BORDER_HEIGHT * scale)
+
+	if castBar.Icon then
+		castBar.Icon:ClearAllPoints()
+		castBar.Icon:SetPoint("CENTER", own.castBorder, "LEFT", CAST_ICON_X * scale, 0)
+		castBar.Icon:SetSize(CAST_ICON_SIZE * scale, CAST_ICON_SIZE * scale)
+	end
+	if castBar.Text then
+		castBar.Text:ClearAllPoints()
+		castBar.Text:SetPoint("TOPLEFT", castBar, "TOPLEFT", 0, -1 * scale)
+		castBar.Text:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 0, -1 * scale)
+		castBar.Text:SetJustifyH("CENTER")
+	end
+	if castBar.Background then
+		castBar.Background:SetColorTexture(0, 0, 0, 0.5)
+	end
+	-- Blizzard's own border (the classic style's), the modern spark, the
+	-- uninterruptible shield (the grey fill shows it) and the target's name.
+	Fade(castBar.Border)
+	Fade(castBar.Spark)
+	Fade(castBar.BorderShield)
+	Fade(castBar.CastTargetNameText)
+	-- The "casting at you" glow and the pulsing important-cast glow.
+	Blank(castBar.CastTargetIndicator)
+	Blank(castBar.ImportantCastIndicator)
+	RepairCastBarArt(castBar)
+end
+
+---------------------------------------------------------------------------
+-- Layout
+---------------------------------------------------------------------------
+
+-- Runs after Blizzard's UpdateAnchors, which lays the whole plate out again
+-- (unit set, size, options and name-only changes).
+local function Layout(unitFrame)
+	if not enabled or not unitFrame or unitFrame:IsForbidden() then return end
+	local container, castContainer = unitFrame.HealthBarsContainer, unitFrame.CastBarsContainer
 	local healthBar = container and container.healthBar
-	if not healthBar then return end
-	local own = GetOwnTextures(unitFrame)
+	if not healthBar or not castContainer then return end
+	local castBar = castContainer.castBar
+	local own = GetOwnRegions(unitFrame, healthBar, castBar)
+	local scale = GetScale()
 
-	-- Blizzard's own background/border region is replaced by ours.
-	if healthBar.bgTexture then
-		healthBar.bgTexture:SetAlpha(0)
-	end
-	own.border:ClearAllPoints()
-	own.border:SetPoint("CENTER", container, "CENTER", 0, 0)
-	own.border:SetSize(borderW, borderH)
-	own.border:Show()
+	-- From the bottom: the cast bar slot, the health bar above it, both the
+	-- classic border's width and centred on the plate.
+	castContainer:ClearAllPoints()
+	castContainer:SetPoint("BOTTOM", unitFrame, "BOTTOM", 0, 0)
+	castContainer:SetSize(BORDER_WIDTH * scale, BAR_HEIGHT * scale)
+	container:ClearAllPoints()
+	container:SetPoint("BOTTOM", castContainer, "TOP", 0, CAST_TO_HEALTH * scale)
+	container:SetSize(BORDER_WIDTH * scale, BAR_HEIGHT * scale)
 
-	-- Health bar: flat classic fill, inset so the level bubble on the right is free.
+	-- Health bar: the flat classic fill inside the border, up to the bubble.
+	healthBar:ClearAllPoints()
+	healthBar:SetPoint("TOPLEFT", container, "TOPLEFT", BAR_LEFT * scale, BAR_Y * scale)
+	healthBar:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -BAR_RIGHT * scale, BAR_Y * scale)
 	if healthBar.barTexture then
 		healthBar.barTexture:SetTexture(BAR_FILL)
 	end
-	-- In the 136px art the bubble starts at px 108 (border units: 128 * 108/136).
-	local bubbleLeft = 128 * (108 / BORDER_ART_WIDTH)
-	local bubbleCenter = 128 * (120.5 / BORDER_ART_WIDTH)
-	healthBar:ClearAllPoints()
-	healthBar:SetPoint("TOPLEFT", container, "TOPLEFT", 4 * hScale, 0.5 * vScale)
-	healthBar:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -(128 - bubbleLeft + 1.5) * hScale, 0.5 * vScale)
+	-- The modern background, target border and the dimming of the others.
+	Fade(healthBar.bgTexture)
+	Fade(healthBar.selectedBorder)
+	Fade(healthBar.deselectedOverlay)
 
-	-- Level text sits in the bubble.
-	if unitFrame.LevelFrame then
-		unitFrame.LevelFrame:ClearAllPoints()
-		unitFrame.LevelFrame:SetPoint("CENTER", own.border, "RIGHT", -(128 - bubbleCenter) * hScale, 0)
+	own.border:ClearAllPoints()
+	own.border:SetPoint("CENTER", container, "CENTER", 0, 0)
+	own.border:SetSize(BORDER_WIDTH * scale, BORDER_HEIGHT * scale)
+
+	own.level:ClearAllPoints()
+	own.level:SetPoint("CENTER", own.border, "RIGHT", LEVEL_X * scale, 0)
+	own.level:SetTextHeight(FONT_HEIGHT * scale)
+	own.skull:ClearAllPoints()
+	own.skull:SetPoint("CENTER", own.border, "RIGHT", LEVEL_X * scale, 0)
+	own.skull:SetSize(SKULL_SIZE * scale, SKULL_SIZE * scale)
+	UpdateLevel(unitFrame)
+
+	-- Blizzard's level (classic style), Forever's level box and the modern
+	-- classification icon: the level is in the bubble.
+	Fade(unitFrame.LevelFrame)
+	Fade(unitFrame.PlayerLevelDiffFrame)
+	Fade(unitFrame.ClassificationFrame)
+
+	-- The name centred above the border, in the classic (not outlined) font.
+	local name = unitFrame.name
+	if name then
+		name:SetFontObject(FontTemplate("SystemFont_NamePlate", "GameFontNormalSmall"))
+		name:SetTextHeight(FONT_HEIGHT * scale)
+		name:ClearAllPoints()
+		name:SetPoint("BOTTOM", container, "TOP", 0, NAME_ABOVE * scale)
+		name:SetWidth(0)
+		name:SetJustifyH("CENTER")
 	end
 
-	-- Cast bar border (only visible while casting).
-	local castContainer = unitFrame.CastBarsContainer
-	local castBar = castContainer and castContainer.castBar
-	if castBar then
-		watchedCastBars[castBar] = true
-		-- No spark on classic plates. Blizzard only ever shows/hides it, so
-		-- the alpha sticks (restored by HideOwnTextures).
-		if castBar.Spark then
-			castBar.Spark:SetAlpha(0)
+	-- Debuffs above the name; crowd control, loss of control and the raid
+	-- icon beside the (now narrower) bar.
+	local auras = unitFrame.AurasFrame
+	if auras then
+		if auras.DebuffListFrame and name then
+			local padding = tonumber(C_CVar.GetCVar("nameplateDebuffPadding")) or 0
+			auras.DebuffListFrame:SetPoint("BOTTOM", name, "TOP", 0, padding)
 		end
-		-- Nor the retail "casting at you" glow around the bar and the pulsing
-		-- important-cast glow. Blizzard shows/hides them and animates the
-		-- latter's alpha, so they are blanked rather than faded; the atlases
-		-- come from the XML template only (restored by HideOwnTextures).
-		if castBar.CastTargetIndicator then
-			castBar.CastTargetIndicator:SetColorTexture(0, 0, 0, 0)
+		if auras.CrowdControlListFrame then
+			auras.CrowdControlListFrame:SetPoint("LEFT", container, "RIGHT", 5, 0)
 		end
-		if castBar.ImportantCastIndicator then
-			castBar.ImportantCastIndicator:SetColorTexture(0, 0, 0, 0)
+		if auras.LossOfControlFrame then
+			auras.LossOfControlFrame:SetPoint("LEFT", container, "RIGHT", 5, 0)
 		end
 	end
+	if unitFrame.RaidTargetFrame and not unitFrame.showOnlyName then
+		unitFrame.RaidTargetFrame:ClearAllPoints()
+		unitFrame.RaidTargetFrame:SetPoint("RIGHT", container, "LEFT", 0, 0)
+	end
+
 	if castBar and own.castBorder then
-		if castBar.Border then
-			castBar.Border:SetAlpha(0)
-		end
-		own.castBorder:ClearAllPoints()
-		own.castBorder:SetPoint("CENTER", castContainer, "CENTER", 0, 0)
-		own.castBorder:SetSize(options.castBarBorderWidth or borderW, options.castBarBorderHeight or borderH)
-		own.castBorder:Show()
+		LayoutCastBar(castContainer, castBar, own, scale)
 	end
 end
+
+---------------------------------------------------------------------------
+-- Hooks
+---------------------------------------------------------------------------
 
 local mixinHooked = false
 local hookedFrames = setmetatable({}, { __mode = "k" })
 
 local function HookFrame(unitFrame)
-	if not unitFrame or hookedFrames[unitFrame] then return end
+	if hookedFrames[unitFrame] then return end
 	hookedFrames[unitFrame] = true
-	ns.Hook(unitFrame, "UpdateAnchors", EnforceClassicLayout)
+	ns.Hook(unitFrame, "UpdateAnchors", Layout)
 end
 
 local function InstallHooks()
 	-- Frames created from now on copy the hooked mixin function.
 	if not mixinHooked and type(NamePlateUnitFrameMixin) == "table" then
-		mixinHooked = ns.Hook(NamePlateUnitFrameMixin, "UpdateAnchors", EnforceClassicLayout)
+		mixinHooked = ns.Hook(NamePlateUnitFrameMixin, "UpdateAnchors", Layout)
 	end
 end
 
-local function ApplyToExistingPlates()
-	if not C_NamePlate or not C_NamePlate.GetNamePlates then return end
-	for _, plate in pairs(C_NamePlate.GetNamePlates()) do
-		local ok, unitFrame = pcall(function() return plate.UnitFrame end)
-		if ok and unitFrame then
-			if not mixinHooked then
-				HookFrame(unitFrame)
-			end
-			xpcall(EnforceClassicLayout, geterrorhandler(), unitFrame)
-		end
-	end
-end
-
--- Plates that appear later are laid out by Blizzard (UpdateAnchors) which
--- triggers the hook; plates created before the mixin was hooked are covered
--- by hooking them individually when they are added.
+-- Blizzard lays a plate out before it sets its unit, so the level is only
+-- known once the plate has been added. Plates created before the mixin was
+-- hooked are hooked here as well.
 local driverHooked = false
 local function HookDriver()
 	if driverHooked or not NamePlateDriverFrame then return end
 	driverHooked = ns.Hook(NamePlateDriverFrame, "OnNamePlateAdded", function(_, unitToken)
-		if not enabled or mixinHooked then return end
-		local plate = C_NamePlate.GetNamePlateForUnit(unitToken)
-		local ok, unitFrame = pcall(function() return plate and plate.UnitFrame end)
-		if ok and unitFrame then
+		local unitFrame = enabled and PlateFor(unitToken)
+		if not unitFrame then return end
+		if not mixinHooked then
 			HookFrame(unitFrame)
-			xpcall(EnforceClassicLayout, geterrorhandler(), unitFrame)
 		end
+		Layout(unitFrame)
 	end)
 end
 
----------------------------------------------------------------------------
--- Module entry points
----------------------------------------------------------------------------
-
-function module:Enable()
-	local classic = GetClassicStyle()
-	if not classic then
-		ns.Print("This client has no classic nameplate style; the Nameplates option has no effect.")
+local events = CreateFrame("Frame")
+events:RegisterEvent("PLAYER_LOGIN")
+events:RegisterEvent("UNIT_LEVEL")
+events:RegisterEvent("UNIT_FACTION")
+events:RegisterEvent("PLAYER_LEVEL_UP")
+events:SetScript("OnEvent", function(_, event, unit)
+	if event == "PLAYER_LOGIN" then
+		-- Earlier versions set the style to Classic; give the player's back.
+		local previous = ns.db and ns.db.nameplatesPreviousStyle
+		if previous ~= nil then
+			ns.db.nameplatesPreviousStyle = nil
+			local classic = Enum.NamePlateStyle and Enum.NamePlateStyle.Classic
+			if classic and previous ~= classic and tonumber(C_CVar.GetCVar(CVAR)) == classic then
+				C_CVar.SetCVar(CVAR, tostring(previous))
+			end
+		end
+		if ns.db then
+			ns.db.nameplatesinstances = nil -- a removed option
+		end
+	elseif not enabled then
 		return
+	elseif event == "PLAYER_LEVEL_UP" then
+		-- The difficulty colours follow the player's level.
+		ForEachPlate(UpdateLevel)
+	else
+		local unitFrame = PlateFor(unit)
+		if unitFrame then
+			UpdateLevel(unitFrame)
+		end
 	end
+end)
 
+---------------------------------------------------------------------------
+-- Module entry point
+---------------------------------------------------------------------------
+
+function module:Apply()
 	enabled = true
 	InstallHooks()
 	HookDriver()
-
-	local current = GetCurrentStyle()
-	if current ~= nil and current ~= classic then
-		-- Remember what to go back to when the option is disabled.
-		ns.db.nameplatesPreviousStyle = current
-	end
-	SetStyle(classic)
-	ApplyToExistingPlates()
+	ForEachPlate(Layout)
 	updater:Show()
-end
-
-function module:Disable()
-	enabled = false
-	updater:Hide()
-	local classic = GetClassicStyle()
-	local restore = ns.db.nameplatesPreviousStyle
-	if restore == nil or restore == classic then
-		restore = GetModernStyle()
-	end
-	ns.db.nameplatesPreviousStyle = nil
-	-- Blizzard re-lays every plate out for the new style (hooks stay idle).
-	SetStyle(restore)
 end
 
 -- Hook the mixin as early as possible so every plate created later is covered.

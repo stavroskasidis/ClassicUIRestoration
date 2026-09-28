@@ -46,7 +46,7 @@ waiting for a reload.
 | **Combo Points** (WoW Forever only) | The classic combo point layout on the target frame: the points run down the right side of the target's portrait (as in vanilla) instead of in an arc over its top. Works with or without the Unit Frames option. | Immediate |
 | **Cast Bars** | Classic cast bar art (border, spark, flash, yellow/green/red fill colours) for the player, pet, target, focus and boss cast bars. Works with the "lock to player frame" Edit Mode option. | Immediate |
 | **Breath & Fatigue Bars** | Classic look for the mirror timers (breath, fatigue, feign death): the flat bar on a black backdrop with the label on the bar, the large classic cast bar border and the classic colours (blue breath, yellow fatigue, orange death / feign death). Edit Mode's position and size settings keep working. | Immediate |
-| **Nameplates** | Switches nameplates to the client's built-in classic style (classic border, flat health bar, level text in the border's bubble, flat cast bar without spark) and remembers the previous style so it can be restored. | Immediate |
+| **Nameplates** | The classic nameplate: the classic border (`Nameplate-Border`) with the level in its bubble (coloured by difficulty, a skull when it is unknown or far above yours), the flat classic health bar on a dark background, the name centred above it and a flat cast bar in the classic cast bar border with the spell icon in its box (yellow casts, green channels, grey when it cannot be interrupted), without the modern spark, glows and target borders. The game's nameplate style is left as it is (normally Modern): friendly nameplates inside dungeons and raids are locked by Blizzard, no addon can change them, and they keep that modern look. The game's nameplate size setting keeps working. | UI reload |
 | **Minimap** | Classic minimap: the 140px map in the round `UI-Minimap-Border` ring with the zone text bar on top, the round tracking button on the left, always-visible classic zoom buttons, the calendar page with the day printed on it, the clock on its plate at the bottom of the map, the square world map button, the letter icon (in a ring) for new mail and crafting orders, the compass ring while "rotate minimap" is on and the north tag otherwise. The addon compartment button gets the same round classic button look, below the tracking button. Edit Mode's size slider and the icon scale still work; its "header underneath" option has no classic equivalent and is ignored. | UI reload |
 | **Group Finder Eye** | The classic group finder eye: the animated eye (`LFG-Eye`) in a round minimap button ring instead of the modern eye. The button keeps Blizzard's tooltip, menu and Edit Mode position (next to the micro menu on retail; on WoW Forever the Minimap option puts its default spot at the classic place on the ring). Turn it off to keep the modern eye. | Immediate |
 | **Loot Window** | The vanilla loot panel: the classic `UI-LootPanel` artwork with the skull (fishing bobber for fishing loot) in its ring, the round close button, one classic name plate per item and the Prev / Next arrows; four items fit, with more the panel shows three per page like the original (the mouse wheel steps one row). Blizzard's looting, tooltips, quest markers and the "open loot window at mouse" option keep working. | UI reload |
@@ -82,14 +82,12 @@ swapping, party roster updates and Edit Mode.
 Cast bars are re-textured from script hooks on the bars themselves (their
 cast methods must not be hooked on 12.x, see `Modules\CastBars.lua`), the
 breath/fatigue timers are Blizzard's own timer frames re-textured in place,
-and nameplates use the `nameplateStyle` CVar's Classic value, with its border
-crop fixed by the addon. Friendly nameplates inside dungeons and raids are
-locked by Blizzard (no addon can change them), so they show Blizzard's own
-classic style, whose border comes out squashed with the level bubble in the
-middle of the bar. To hide those bars, show names only for friendly players:
-`/run C_CVar.SetCVar("nameplateShowOnlyNameForFriendlyPlayerUnits", 1)`
-(`0` to undo). This leaves a stray level number above each plate and also
-applies outside instances. The minimap keeps
+and nameplates keep the game's own (modern) style: after Blizzard lays a
+plate out, its bars are given the classic sizes, the modern art is faded and
+the classic border, background, level and cast bar border are drawn on it.
+The game's built-in classic nameplate style is not used, because it is one
+setting for every plate and the friendly plates inside dungeons and raids,
+which no addon can touch, would show Blizzard's broken version of it. The minimap keeps
 Blizzard's cluster (so Edit Mode, the tracking menu and the notifications keep
 working) and re-parents its pieces into the scaled map container at the
 classic positions.
@@ -234,9 +232,9 @@ Blizzard's own Create / Create All.
   classic had its PvP banner (using the legacy
   `Interface\TargetingFrame\UI-PVP-*` art when the client has it, otherwise
   Blizzard's small icon),
-- nameplates get a level indicator box (`PlayerLevelDiffFrame`) to the right
-  of every health bar: hidden while the classic nameplate style is on, and the
-  bar takes the full width again,
+- nameplates get a level indicator box (`PlayerLevelDiffFrame`) next to
+  every health bar: hidden by the Nameplates option, whose level is in the
+  classic border's bubble (the shared module fades it wherever it exists),
 - the hunter pet happiness indicator next to the pet frame is left as is,
 - the minimap frame is re-skinned by the overlay on every "rotate minimap"
   change (`Blizzard_Minimap\Camelot\Skin.lua`); the classic art is put back
@@ -265,7 +263,7 @@ Modules/HealthBars.lua   health bar textures/colours
 Modules/PowerBars.lua    power bar textures/colours
 Modules/CastBars.lua     classic cast bars (live toggle)
 Modules/MirrorTimers.lua classic breath/fatigue timer bars (live toggle)
-Modules/Nameplates.lua   classic nameplate style (live toggle)
+Modules/Nameplates.lua   classic nameplates drawn on the modern style (reload)
 Modules/Minimap.lua      classic minimap cluster; Group Finder Eye (live toggle)
 Modules/LootFrame.lua    classic loot window
 Modules/TrainerFrame.lua classic trainer window

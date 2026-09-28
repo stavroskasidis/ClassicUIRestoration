@@ -93,9 +93,14 @@ local function GetAtlasName(region)
 	return false, nil
 end
 
-local function ApplyClassicFill(bar)
+-- The classic colour for the retail fill atlas Blizzard just put on the bar.
+local function GetClassicColor(bar)
 	local _, atlas = GetAtlasName(bar:GetStatusBarTexture())
-	local color = (atlas and ATLAS_COLORS[string.lower(atlas)]) or YELLOW
+	return (atlas and ATLAS_COLORS[string.lower(atlas)]) or YELLOW
+end
+
+local function ApplyClassicFill(bar)
+	local color = GetClassicColor(bar)
 	bar:SetStatusBarTexture(T.STATUS_BAR)
 	bar:SetStatusBarColor(color[1], color[2], color[3])
 end
@@ -329,6 +334,7 @@ end
 -- Shared with the Nameplates module, whose cast bars have the same problem.
 ns.CastBarArt = {
 	HasAtlas = GetAtlasName,
+	GetColor = GetClassicColor,
 	ApplyFill = ApplyClassicFill,
 	ApplySpark = ApplyClassicSpark,
 }

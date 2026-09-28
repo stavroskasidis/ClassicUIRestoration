@@ -20,10 +20,6 @@
 	    "Interface\TargetingFrame\UI-PVP-*" banners; they are used when the
 	    client still has them, otherwise Blizzard's small icon is moved to
 	    the classic spot.
-	  * Nameplates get a level indicator box (PlayerLevelDiffFrame) to the
-	    right of every health bar and shrink the bar to make room for it. The
-	    classic border has its own level bubble, so the box is faded out and
-	    the bar takes the full width again.
 	  * The minimap frame is re-skinned by Blizzard_Minimap\Camelot\Skin.lua
 	    on every "rotate minimap" change (container/backdrop size, compass
 	    atlas, a static ring underlay in the rotated mode); the classic art is
@@ -204,48 +200,6 @@ local function SkinTargetStyleFrame(frame, hasPvP)
 		ns.Hook(frame, "CheckFaction", ClassicTargetPvPIcon)
 		ClassicTargetPvPIcon(frame)
 	end
-end
-
----------------------------------------------------------------------------
--- Nameplates: hide the Camelot level box next to the classic health bar
----------------------------------------------------------------------------
-
-local function AdjustNamePlateLevelBox(unitFrame)
-	local box = unitFrame.PlayerLevelDiffFrame
-	if not box then return end
-
-	local options = NamePlateSetupOptions
-	local classic = ns:IsEnabled("nameplates") and type(options) == "table" and options.useClassicHealthBar
-	if not classic then
-		box:SetAlpha(1)
-		return
-	end
-
-	-- Fade rather than hide: Blizzard re-shows it on every unit update.
-	box:SetAlpha(0)
-
-	-- Blizzard shrank the health bar by the box's width; take it back. The
-	-- shared module's border and bar are anchored to the container and follow.
-	local container, castContainer = unitFrame.HealthBarsContainer, unitFrame.CastBarsContainer
-	if container and castContainer then
-		container:SetPoint("BOTTOMRIGHT", castContainer, "TOPRIGHT", 0, options.castBarToHealthBarSpacing or 2)
-		local auras = unitFrame.AurasFrame
-		if auras then
-			if auras.CrowdControlListFrame then
-				auras.CrowdControlListFrame:SetPoint("LEFT", container, "RIGHT", 5, 0)
-			end
-			if auras.LossOfControlFrame then
-				auras.LossOfControlFrame:SetPoint("LEFT", container, "RIGHT", 5, 0)
-			end
-		end
-	end
-end
-
--- Installed at load time, like the shared Nameplates module's own hook, so
--- every plate created afterwards copies the hooked mixin function. Runs after
--- the shared module's layout hook on the same function.
-if type(NamePlateUnitFrameMixin) == "table" then
-	ns.Hook(NamePlateUnitFrameMixin, "UpdateAnchors", AdjustNamePlateLevelBox)
 end
 
 ---------------------------------------------------------------------------

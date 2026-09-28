@@ -37,7 +37,7 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/PowerBars.lua    power bar textures/colours               (part of Unit Frames)
   Modules/CastBars.lua     classic cast bars (live toggle)
   Modules/MirrorTimers.lua classic breath/fatigue (mirror timer) bars (live toggle)
-  Modules/Nameplates.lua   classic nameplate style (live toggle)
+  Modules/Nameplates.lua   classic nameplates drawn on the modern style (reload; forbidden plates skipped)
   Modules/Minimap.lua      classic minimap cluster (reload; keeps Blizzard's cluster, re-parents its pieces into MinimapContainer)
                            + the Group Finder Eye option (live; classic eye drawn on a child frame of QueueStatusButton)
   Modules/LootFrame.lua    vanilla loot panel (reload; re-skins the ScrollingFlatPanel loot frame in place, pages its scroll box)
@@ -215,9 +215,16 @@ anything under `build/`.
 - `StatusBar:SetStatusBarTexture(file)` resets the fill's draw layer; use
   `ns.SetBarTexture` for mirrors. Atlases are applied with
   `texture:SetAtlas(name)`, never by passing an atlas name as a file path.
-- Nameplates: the built-in `nameplateStyle` CVar value `Enum.NamePlateStyle.Classic`
-  is used as the base; the module fixes its texcoords/insets itself and restores
-  the previous CVar value on disable.
+- Nameplates: the built-in classic style (`nameplateStyle` CVar =
+  `Enum.NamePlateStyle.Classic`) is *not* used. The CVar is one setting for
+  every plate, and friendly plates inside dungeons and raids are forbidden
+  frames (`ForbiddenNamePlate*`, same `NamePlateUnitFrameMixin`, so its hooks
+  run for them: skip anything `IsForbidden()`) that would show Blizzard's broken
+  classic border. The module leaves the player's style (normally Modern) and
+  lays the classic look out itself after `UpdateAnchors` on the plates addon
+  code can reach; forbidden plates keep the modern look. Blizzard lays a
+  plate out before setting its unit, so unit-dependent parts (the level) are
+  updated from a hook on `NamePlateDriverFrame:OnNamePlateAdded`.
 - Spellbook (Forever only; dropped for retail on 2026-09-26, whose spellbook
   with its Class / General / Pet text tabs and Specialization / Talents bar
   did not fit the vanilla book): the spell buttons of
@@ -301,7 +308,7 @@ anything under `build/`.
 
 - Every file registers itself with `ns:RegisterModule{ key, name, tooltip, live, parent }`.
   `live = true` modules implement `Enable()`/`Disable()` and can be toggled at
-  runtime (cast bars, nameplates). `live = false` modules implement `Apply()`
+  runtime (cast bars, breath timers). `live = false` modules implement `Apply()`
   once at login and need a `/reload` to switch off, because Blizzard frames
   cannot be safely un-skinned.
 - `parent = "unitframes"` marks a module as part of the Unit Frames option: no

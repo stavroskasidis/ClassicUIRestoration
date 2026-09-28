@@ -13,7 +13,7 @@ UI"; the addon folder is `ForevermoreClassicUI`.)
 
 ## Summary (short field, under 250 characters)
 
-The vanilla look on the modern UI, nothing lost: Blizzard's own frames are reskinned in place, so every feature and Edit Mode keep working. Classic unit frames, action bars, minimap, bags, nameplates and more, each switchable. Forever & Retail.
+The best Classic UI addon. Every UI feature and Edit Mode keeps working. Classic unit frames, action bars, minimap, bags, nameplates and more, each switchable. Make the UI as Classic as you want. For Forever & Retail.
 
 ## Categories
 
@@ -49,26 +49,26 @@ with a picture of the modern and the classic look side by side.
 ## What it restores
 
 - **Unit Frames**
-- **Combo Points** (WoW Forever: the classic layout down the side of the target's portrait)
+- **Combo Points** (WoW Forever)
 - **Cast Bars**
 - **Breath & Fatigue Bars**
 - **Nameplates**
 - **Minimap**
-- **Group Finder Eye** (the animated classic eye in a minimap button ring)
+- **Group Finder Eye**
 - **Loot Window**
 - **Trainer Windows**
 - **Auction House**
 - **Action Bar Gryphons**
-- **XP & Reputation Bars** (the segmented vanilla XP bar with the rest marker, the reputation bar in its standing's colour)
-- **Vendor Window** icons (repair buttons, buyback slot)
-- **Action Bar Art** (square classic button borders, vanilla slot art, page arrows)
-- **Bags** (square vanilla bag slots on the bags bar, vanilla bag and backpack windows, also for the combined backpack)
-- **Micro Menu** (the classic micro buttons on the vanilla stone bar panel, with your portrait on the character button)
-- **Game Menu** (the vanilla Esc menu: classic dialog box and header, small red classic buttons)
-- **Spellbook** (WoW Forever: the vanilla book, twelve spells per page, skill line tabs on the side)
-- **Talents** (WoW Forever: the vanilla talent frame, one tree at a time with the classic branches and tabs)
-- **Character Window** (WoW Forever: the vanilla paperdoll and pet page with the classic tabs, resistances and stat boxes, and the vanilla reputation and skills pages; the details pane docks to its side)
-- **Professions Window** (WoW Forever: the vanilla trade skill window, recipes coloured by difficulty, reagents with "have / need", Create All / Create)
+- **XP & Reputation Bars**
+- **Vendor Window**
+- **Action Bar Art**
+- **Bags**
+- **Micro Menu**
+- **Game Menu**
+- **Spellbook** (WoW Forever)
+- **Talents** (WoW Forever)
+- **Character Window** (WoW Forever)
+- **Professions Window** (WoW Forever)
 
 ## How it works
 
@@ -83,13 +83,8 @@ and it goes back to the modern look.
 
 ## Known limitations
 
-- **Friendly nameplates in dungeons and raids.** Blizzard locks these
-  nameplates so no addon can change them. They show Blizzard's own classic
-  style, whose border comes out squashed with the level bubble in the middle
-  of the bar. To hide those bars, show names only for friendly players with
-  `/run C_CVar.SetCVar("nameplateShowOnlyNameForFriendlyPlayerUnits", 1)`
-  (`0` to undo). This leaves a small level number above each nameplate and
-  also applies outside dungeons.
+- **Friendly nameplates in dungeons and raids** keep the modern look: Blizzard
+  locks them so no addon can change them. Enemy nameplates there are classic.
 
 ## Options
 

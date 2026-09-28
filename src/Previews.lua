@@ -171,16 +171,25 @@ local function RoundIcon(parent, path, size, x, y, layer, sublevel)
 end
 
 -- An enemy's portrait: the player's target while it is hostile, else a
--- stock creature.
+-- stock creature (named as in the nameplate pictures).
+local ENEMY_NAME = "Murloc Forager"
 local ENEMY_ICONS = { "Interface\\Icons\\INV_Misc_Head_Murloc_01", "Interface\\Icons\\Ability_Hunter_Pet_Wolf" }
 
+local function HostileTarget()
+	return UnitExists("target") and UnitCanAttack("player", "target")
+end
+
 local function EnemyPortrait(parent, size, x, y, layer, sublevel)
-	if UnitExists("target") and UnitCanAttack("player", "target") then
+	if HostileTarget() then
 		return Portrait(parent, size, x, y, layer, sublevel, "target")
 	end
 	for _, icon in ipairs(ENEMY_ICONS) do
 		if ns.HasTexture(icon) then
-			return RoundIcon(parent, icon, size, x, y, layer, sublevel)
+			-- Cropped inside the icon's own bevelled border, which would
+			-- otherwise show as a square edge inside the round mask.
+			local texture = RoundIcon(parent, icon, size, x, y, layer, sublevel)
+			texture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+			return texture
 		end
 	end
 	return Portrait(parent, size, x, y, layer, sublevel)
@@ -400,28 +409,50 @@ local function ComboPoint(c, x, y, lit)
 	end
 end
 
-local COMBO_PORTRAIT_X, COMBO_PORTRAIT_Y, COMBO_PORTRAIT_SIZE = 20, -30, 64
+-- The classic target frame (UnitFrames.lua's layout: the 232x100 art, the
+-- bars from 7px in, the 64px portrait at 126,-12) with a hostile unit, drawn
+-- COMBO_MARGIN below the top to leave room for the modern arc. Returns a layer
+-- above the frame for the points and the portrait's centre.
+local COMBO_MARGIN = 12
+
+local function ComboTargetFrame(c)
+	local y = -COMBO_MARGIN
+	local name, level = ENEMY_NAME, "11"
+	if HostileTarget() then
+		name = UnitName("target") or name
+		local unitLevel = UnitLevel("target")
+		level = unitLevel and unitLevel > 0 and tostring(unitLevel) or "??"
+	end
+	Color(c, 0, 0, 0, 0.5, 119, 41, 7, y - 22, "BACKGROUND", -8)
+	-- The name background: Blizzard colours it with the unit's selection colour.
+	File(c, T.LEVEL_BG, 119, 19, 7, y - 22, "BACKGROUND", -6):SetVertexColor(1, 0, 0)
+	EnemyPortrait(c, 64, 126, y - 12)
+	Fill(c, T.STATUS_BAR, 119, 12, 1, { 0, 1, 0 }, "BACKGROUND", 2):SetPoint("TOPLEFT", c, "TOPLEFT", 7, y - 41)
+	Fill(c, T.STATUS_BAR, 119, 12, 1, { 0, 0, 1 }, "BACKGROUND", 2):SetPoint("TOPLEFT", c, "TOPLEFT", 7, y - 52)
+	File(c, T.TARGET_FRAME, 232, 100, 0, y, "BORDER", 0, { 0.09375, 1, 0, 0.78125 })
+	local top = Layer(c)
+	Text(top, "GameFontNormalSmall", name, "CENTER", 66, y - 31, "TOPLEFT")
+	Text(top, "GameFontNormalSmall", level, "CENTER", 177, y - 67, "TOPLEFT")
+	return top, 126 + 32, y - 12 - 32
+end
 
 Previews.combopoints = {
-	width = 130, height = 110,
+	width = 232, height = 100 + COMBO_MARGIN,
 	classic = function(c)
-		EnemyPortrait(c, COMBO_PORTRAIT_SIZE, COMBO_PORTRAIT_X, COMBO_PORTRAIT_Y)
+		local top, centerX, centerY = ComboTargetFrame(c)
 		-- The module's anchors: the frame's top right corner at the portrait's
 		-- centre + (30, 35), each point's top right corner offset from it.
-		local frameX = COMBO_PORTRAIT_X + COMBO_PORTRAIT_SIZE / 2 + 30
-		local frameY = COMBO_PORTRAIT_Y - COMBO_PORTRAIT_SIZE / 2 + 35
+		local frameX, frameY = centerX + 30, centerY + 35
 		for i, offset in ipairs({ { 0, 0 }, { 7, -8 }, { 12, -19 }, { 14, -30 }, { 12, -41 } }) do
-			ComboPoint(c, frameX + offset[1] - 12, frameY + offset[2], i <= 3)
+			ComboPoint(top, frameX + offset[1] - 12, frameY + offset[2], i <= 3)
 		end
 	end,
 	modern = function(c)
-		EnemyPortrait(c, COMBO_PORTRAIT_SIZE, COMBO_PORTRAIT_X, COMBO_PORTRAIT_Y)
+		local top, centerX, centerY = ComboTargetFrame(c)
 		-- An arc over the top of the portrait.
-		local centerX = COMBO_PORTRAIT_X + COMBO_PORTRAIT_SIZE / 2
-		local centerY = COMBO_PORTRAIT_Y - COMBO_PORTRAIT_SIZE / 2
 		for i = 1, 5 do
 			local angle = math.rad(150 - (i - 1) * 30)
-			ComboPoint(c, centerX + math.cos(angle) * 40 - 6, centerY + math.sin(angle) * 40 + 8, i <= 3)
+			ComboPoint(top, centerX + math.cos(angle) * 40 - 6, centerY + math.sin(angle) * 40 + 8, i <= 3)
 		end
 	end,
 }
@@ -503,7 +534,7 @@ Previews.mirrortimers = {
 -- Nameplates
 ---------------------------------------------------------------------------
 
-local NAMEPLATE_NAME = "Murloc Forager"
+local NAMEPLATE_NAME = ENEMY_NAME
 
 Previews.nameplates = {
 	width = 160, height = 48,
@@ -511,7 +542,7 @@ Previews.nameplates = {
 		-- Nameplates.lua: the 136x17 border art (128 units wide), the bar from
 		-- 4 units in to the level bubble, the level centred in the bubble.
 		local borderX, borderY = 16, -20
-		Color(c, 0, 0, 0, 0.6, 96, 8, borderX + 4, borderY - 5, "BACKGROUND")
+		Color(c, 0, 0, 0, 0.5, 96, 8, borderX + 4, borderY - 5, "BACKGROUND")
 		Fill(c, "Interface\\TargetingFrame\\UI-TargetingFrame-BarFill", 96, 8, 0.8, { 1, 0, 0 }):SetPoint("TOPLEFT", c, "TOPLEFT", borderX + 4, borderY - 5)
 		File(c, "Interface\\Tooltips\\Nameplate-Border", 128, 17, borderX, borderY, "ARTWORK", 0, { 0, 136 / 256, 15 / 32, 1 })
 		local level = c:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")

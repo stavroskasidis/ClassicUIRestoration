@@ -6,7 +6,7 @@
 	activated from PLAYER_LOGIN when its option is enabled.
 
 	Modules come in two flavours:
-	  * "live" modules (cast bars, nameplates) implement Enable()/Disable() and
+	  * "live" modules (cast bars, breath timers) implement Enable()/Disable() and
 	    can be toggled at any time without a reload.
 	  * "reload" modules (unit frames, with portraits and health/power bars as
 	    its parts) implement Apply() once at login; turning them off restores
