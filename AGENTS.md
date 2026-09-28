@@ -283,6 +283,12 @@ anything under `build/`.
   the list instead (`ns.CharacterList` in `CharacterFrame.lua`). A ScrollBox's
   acquired-frame callback runs before the row's first Initialize, the
   initialized-frame callback after every one.
+- Trainer: on Forever a skill row click selects through the row's
+  `displayIndex` Lua field, written by the list's layout, and the Train
+  button passes the selection to `BuyTrainerService` (protected for pet
+  training). A tainted layout (from writing the view's extent or padding)
+  gets pet training blocked (2026-09-29), so the trainer list is scaled
+  down, never re-extented. Retail rows select through `GetID()`.
 - A texture's `SetAlpha` is its vertex alpha: `GetVertexColor()` on a faded
   texture returns alpha 0, so copy only r, g, b from it.
 - Minimap: `MinimapCluster` is a `ResizeLayoutFrame` (sizes itself to its shown

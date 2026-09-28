@@ -27,9 +27,14 @@
 	    strata so the portrait shows through the ring's hole like vanilla),
 	  * the rows keep Blizzard's name text (re-anchored and coloured by
 	    service type) and get the vanilla highlight bar; their icon, price,
-	    requirement text and card textures are faded out. The list view's
-	    element extent is set to 16 so the rows stack like the vanilla list,
-	    and the MinimalScrollBar is re-skinned into the classic knob bar,
+	    requirement text and card textures are faded out. The list is
+	    scaled down (listScale) so Blizzard's 47px rows stack as the vanilla
+	    16px ones, the rows' text enlarged back. The view's extents and
+	    padding are never set: they are Lua state every layout reads, and
+	    on Forever a row click selects through the row's displayIndex field
+	    that layout writes, which the Train button hands to the protected
+	    BuyTrainerService (pet training was blocked, 2026-09-29). The
+	    MinimalScrollBar is re-skinned into the classic knob bar,
 	  * ClassTrainerFrame_Update (which re-anchors the ScrollBox every time)
 	    and ClassTrainer_SetSelection are hooked to lay the list out and to
 	    fill the addon's own detail pane. The description comes from the
@@ -75,7 +80,8 @@ local LIST_LEFT, LIST_TOP, LIST_WIDTH = 21, -96, 296 -- ClassTrainerListScrollFr
 local ROW_LEFT, ROW_WIDTH = 22, 294                   -- the rows sit 1px in and 4px down from it
 local LIST_HEIGHT_CLASS, LIST_HEIGHT_TRADE = 184, 168 -- 11 / 10 rows
 local DETAIL_HEIGHT_CLASS, DETAIL_HEIGHT_TRADE = 119, 135
-local SKILL_TEXT_WIDTH = 262                          -- vanilla: 270, minus the tree indent on Forever
+local SKILL_TEXT_WIDTH = 266                          -- vanilla: 270, minus the tree indent on Forever
+local BLIZZARD_ROW_HEIGHT = 47                        -- CLASS_TRAINER_SKILL_HEIGHT, the fallback
 local DROPDOWN_WIDTH = 130                            -- UIDropDownMenu_SetWidth(130); the box adds 25px each side
 
 -- 1.12 colours: GameFontNormalLeftGreen / GameFontNormalLeftRed /
@@ -91,6 +97,7 @@ local art = {}                                       -- regions/frames created b
 local rows = setmetatable({}, { __mode = "k" })      -- skill row -> { bar = highlight texture }
 local headers = setmetatable({}, { __mode = "k" })   -- category row -> { icon = +/- texture }
 local artPrefix                                      -- T.TRAINER_ART or T.TRADESKILL_ART, whichever this client ships
+local listScale = 1                                  -- the ScrollBox's scale: Blizzard's row height -> ROW_HEIGHT
 local highlightFile
 
 ---------------------------------------------------------------------------
@@ -137,6 +144,23 @@ end
 local function IsPetTrainer()
 	return C_Trainer ~= nil and C_Trainer.GetTrainerType ~= nil and Enum.TrainerType ~= nil
 		and C_Trainer.GetTrainerType() == Enum.TrainerType.Pet
+end
+
+-- The rows and headers in the ScrollBox are drawn at listScale, so their
+-- offsets and fonts are divided by it; the pinned step button is not.
+local function RowScale(row)
+	return row == ClassTrainerFrame.skillStepButton and 1 or listScale
+end
+
+-- Enlarges a font string's current font by 1 / scale. The shadow offset
+-- keeps its size: it does not shrink with the list's scale (enlarged, the
+-- shadow showed as a ghost copy of the text).
+local function ScaleFont(fontString, scale)
+	local font, size, flags = fontString:GetFont()
+	if font then
+		fontString:SetFont(font, size / scale, flags or "")
+	end
+	fontString:SetHeight(0) -- the template's fixed height would clip the enlarged text
 end
 
 local function ResolveArtPrefix()
@@ -314,10 +338,12 @@ end
 
 -- Vanilla row (ClassTrainerSkillButtonTemplate): 293x16, the name 21px in,
 -- the "(Rank n)" sub text 10px after it. Blizzard's Init only sets texts,
--- so the anchors are set once here; what Init touches is fixed in OnRowInit.
+-- so the anchors and fonts are set once here; what Init touches is fixed in
+-- OnRowInit.
 local function SkinRow(row)
 	local state = { bar = row:CreateTexture(nil, "BACKGROUND") }
 	rows[row] = state
+	local scale = RowScale(row)
 
 	for _, key in ipairs({ "icon", "subText", "selectedTex", "disabledBG", "lock", "money", "alternateCost" }) do
 		if row[key] then row[key]:SetAlpha(0) end -- Init shows some of these again; alpha survives that
@@ -333,11 +359,13 @@ local function SkinRow(row)
 	if row.name then
 		row.name:SetWordWrap(false)
 		row.name:SetJustifyH("LEFT")
-		Point(row.name, "LEFT", row, "LEFT", 21, 1)
+		ScaleFont(row.name, scale)
+		Point(row.name, "LEFT", row, "LEFT", 21 / scale, 1 / scale)
 	end
 	if row.nameSubText and row.name then
 		row.nameSubText:SetJustifyH("LEFT")
-		Point(row.nameSubText, "LEFT", row.name, "RIGHT", 10, 0)
+		ScaleFont(row.nameSubText, scale)
+		Point(row.nameSubText, "LEFT", row.name, "RIGHT", 10 / scale, 0)
 	end
 
 	row:HookScript("OnEnter", function(self) ColorRow(self, true) end)
@@ -357,35 +385,43 @@ local function OnRowInit(row)
 	-- Vanilla let the name run free when a sub text followed it and capped
 	-- it (no wrap, so it truncates) otherwise.
 	local sub = row.nameSubText and row.nameSubText:GetText()
-	row.name:SetWidth((sub and sub ~= "") and 0 or SKILL_TEXT_WIDTH)
+	row.name:SetWidth((sub and sub ~= "") and 0 or SKILL_TEXT_WIDTH / RowScale(row))
 	ColorRow(row, row:IsMouseOver())
 end
 
 -- Forever's category headers (TrainerUICategoryTemplate): the atlas pieces
 -- and collapse arrow are faded and the vanilla +/- box drawn in their place.
--- Blizzard re-sets the header's scripts on every Init, so the font hooks
--- are re-added each time; the +/- follows the CollapseIcon atlas Blizzard
--- swaps when the category is toggled.
+-- Blizzard re-sets the header's scripts on every Init (they swap the
+-- label's font object), so the font hooks are re-added each time; the +/-
+-- follows the CollapseIcon atlas Blizzard swaps when the category is
+-- toggled. The header is Blizzard's 25 list units high (about half a
+-- vanilla row); the label and +/- are centred on it.
+local function SetHeaderFont(label, hovered)
+	label:SetFontObject(hovered and GameFontHighlight or GameFontNormal)
+	ScaleFont(label, listScale)
+end
+
 local function OnCategoryInit(button, node)
 	local state = headers[button]
 	if not state then
+		local size = 16 / listScale
 		state = { icon = button:CreateTexture(nil, "ARTWORK") }
 		headers[button] = state
 		for _, key in ipairs({ "LeftPiece", "RightPiece", "CenterPiece", "CollapseIcon", "CollapseIconAlphaAdd" }) do
 			if button[key] then button[key]:SetAlpha(0) end
 		end
-		state.icon:SetSize(16, 16)
-		state.icon:SetPoint("LEFT", button, "LEFT", 3, 0)
+		state.icon:SetSize(size, size)
+		state.icon:SetPoint("LEFT", button, "LEFT", 3 / listScale, 0)
 		if button.Label then
-			Point(button.Label, "LEFT", button, "LEFT", 21, 1)
+			Point(button.Label, "LEFT", button, "LEFT", 21 / listScale, 0)
 		end
 		if ns.HasTexture(T.PLUS_HILIGHT) then
 			button:SetHighlightTexture(T.PLUS_HILIGHT, "ADD")
 			local highlight = button:GetHighlightTexture()
 			if highlight then
 				highlight:ClearAllPoints()
-				highlight:SetSize(16, 16)
-				highlight:SetPoint("LEFT", button, "LEFT", 3, 0)
+				highlight:SetSize(size, size)
+				highlight:SetPoint("LEFT", button, "LEFT", 3 / listScale, 0)
 			end
 		end
 		if button.CollapseIcon then
@@ -398,9 +434,9 @@ local function OnCategoryInit(button, node)
 	local collapsed = node and node.IsCollapsed and node:IsCollapsed()
 	SetTexture(state.icon, (collapsed and T.PLUS_BUTTON or T.MINUS_BUTTON) .. "Up")
 	if button.Label then
-		button.Label:SetFontObject(GameFontNormal)
-		button:HookScript("OnEnter", function(self) self.Label:SetFontObject(GameFontHighlight) end)
-		button:HookScript("OnLeave", function(self) self.Label:SetFontObject(GameFontNormal) end)
+		SetHeaderFont(button.Label, false)
+		button:HookScript("OnEnter", function(self) SetHeaderFont(self.Label, true) end)
+		button:HookScript("OnLeave", function(self) SetHeaderFont(self.Label, false) end)
 	end
 end
 
@@ -651,18 +687,18 @@ local function LayoutFrame()
 
 	local scrollBox = frame.ScrollBox
 	local step = frame.skillStepButton
-	scrollBox:ClearAllPoints()
+	local boxTop, boxHeight = rowsTop, rowsHeight
 	if step and IsStepPinned() then
 		step:SetSize(ROW_WIDTH, ROW_HEIGHT)
 		Point(step, "TOPLEFT", frame, "TOPLEFT", ROW_LEFT, rowsTop)
 		step:Show()
-		scrollBox:SetPoint("TOPLEFT", frame, "TOPLEFT", ROW_LEFT, rowsTop - ROW_HEIGHT)
-		scrollBox:SetSize(ROW_WIDTH, rowsHeight - ROW_HEIGHT)
-	else
-		if step then step:Hide() end
-		scrollBox:SetPoint("TOPLEFT", frame, "TOPLEFT", ROW_LEFT, rowsTop)
-		scrollBox:SetSize(ROW_WIDTH, rowsHeight)
+		boxTop, boxHeight = rowsTop - ROW_HEIGHT, rowsHeight - ROW_HEIGHT
+	elseif step then
+		step:Hide()
 	end
+	-- The ScrollBox's offsets and size are in its own (scaled) units.
+	Point(scrollBox, "TOPLEFT", frame, "TOPLEFT", ROW_LEFT / listScale, boxTop / listScale)
+	scrollBox:SetSize(ROW_WIDTH / listScale, boxHeight / listScale)
 
 	local scrollBar = frame.ScrollBar
 	if scrollBar then
@@ -715,12 +751,11 @@ local function Skin()
 	art.detailTroughTop, art.detailTroughBottom = CreateTrough(frame, 0)
 	CreateDetailPane(frame)
 
+	-- Scaled, never the view's SetElementExtent / SetPadding (see the header).
 	local scrollBox = frame.ScrollBox
-	local view = scrollBox:GetView()
-	if view then
-		if view.SetElementExtent then view:SetElementExtent(ROW_HEIGHT) end
-		if view.SetPadding then view:SetPadding(0, 0, 0, 0, 0) end
-	end
+	local blizzardRowHeight = type(CLASS_TRAINER_SKILL_HEIGHT) == "number" and CLASS_TRAINER_SKILL_HEIGHT or BLIZZARD_ROW_HEIGHT
+	listScale = ROW_HEIGHT / blizzardRowHeight
+	scrollBox:SetScale(listScale)
 	-- Retail fades the list's edges with shadow textures while it scrolls.
 	if scrollBox.GetUpperShadowTexture then
 		scrollBox:GetUpperShadowTexture():SetAlpha(0)
