@@ -45,7 +45,10 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/AuctionHouse.lua vanilla auction house (reload; resizes Blizzard_AuctionHouseUI to 832x447, classic art per tab, sub-frames re-anchored into it)
   Modules/EndCaps.lua      vanilla action bar gryphons (live toggle)
   Modules/ExperienceBar.lua vanilla XP / reputation bars (live toggle; classic frame over Blizzard's status tracking bars, mirror fill)
-  Modules/MerchantFrame.lua vanilla vendor window icons: repair/junk buttons, buyback slot (live toggle)
+  Modules/Windows.lua      "Window Frames" (reload; the other ButtonFrameTemplate windows: modern NineSlice faded, the
+                           legacy UI-Frame-* border drawn on it and switched from a NineSliceUtil.ApplyLayout hook,
+                           classic close button, tabs through ns.SkinPanelTab in Core.lua)
+  Modules/MerchantFrame.lua vanilla vendor window icons: repair/junk buttons, buyback slot (part of Window Frames)
   Modules/ActionBars.lua   vanilla action bar art (reload; button borders, per-button strip cells, page arrows)
   Modules/BagsBar.lua      "Bags" option, bags bar (reload; square equal-size slots, backpack icon, strip cells, Forever key ring)
   Modules/BagFrames.lua    vanilla bag / backpack / combined windows   (part of Bags; slots re-anchored from Blizzard's grid)

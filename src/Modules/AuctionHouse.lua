@@ -61,8 +61,6 @@ T.AH_ART           = "Interface\\AuctionFrame\\UI-AuctionFrame-" -- + Browse / A
 T.AH_FILTER_BG     = "Interface\\AuctionFrame\\UI-AuctionFrame-FilterBg"
 T.AH_FILTER_LINES  = "Interface\\AuctionFrame\\UI-AuctionFrame-FilterLines"
 T.CHAR_SCROLLBAR   = "Interface\\PaperDollInfoFrame\\UI-Character-ScrollBar"
-T.TAB_INACTIVE     = "Interface\\PaperDollInfoFrame\\UI-Character-InActiveTab"
-T.TAB_HIGHLIGHT    = "Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight"
 T.SORT_ARROW       = "Interface\\Buttons\\UI-SortArrow"
 T.LIST_HIGHLIGHT   = "Interface\\HelpFrame\\HelpFrameButton-Highlight"
 T.INPUT_BORDER     = "Interface\\Common\\Common-Input-Border"
@@ -103,7 +101,6 @@ local FILTER_DROPDOWN_WIDTH, DURATION_DROPDOWN_WIDTH = 110, 100
 local art = {}                                        -- regions/frames created by this module
 local skinned = setmetatable({}, { __mode = "k" })    -- Blizzard frame -> true once its one-time skin ran
 local squareButtons = setmetatable({}, { __mode = "k" }) -- circular item buttons squared off by this module
-local skinnedBottomTabs = setmetatable({}, { __mode = "k" }) -- the frame's tabs, whose selected text keeps its place
 
 ---------------------------------------------------------------------------
 -- Helpers
@@ -202,69 +199,6 @@ local function SkinInputBox(box, width, height)
 		box.Middle:SetHeight(20)
 		Point(box.Middle, "LEFT", box.Left, "RIGHT", 0, 0)
 		box.Middle:SetPoint("RIGHT", box.Right, "LEFT", 0, 0)
-	end
-end
-
--- PanelTabButtonTemplate draws three atlas pieces for the inactive tab,
--- three for the active one (shown / hidden by PanelTemplates_SelectTab) and
--- three additive highlights. They become the vanilla CharacterFrame tab
--- pieces (UI-Character-InActiveTab, 20px ends) with the classic glow
--- highlight. Vanilla's active tab (UI-Character-ActiveTab) was the same
--- body without its top rim, drawn 5px up into the frame border; the retail
--- client's file of that name is a different, short gold-glow tab, so the
--- active pieces are cut from the inactive file (its rim rows skipped)
--- instead: its body rows (below the top rim, down to the bottom rim) are
--- stretched from 5px above the tab to the inactive tab's bottom edge, and
--- the text stays where the inactive tab has it. Top tabs (the Auctions /
--- Bids sub-tabs) are the same art flipped and cut to 24px, as Blizzard's
--- PanelTopTabButtonMixin does with its atlases; their active state is the
--- same art in place (a shift into the panel would cover its top border).
-local TAB_RIM_TOP, TAB_RIM_BOTTOM = 0.15625, 0.875 -- InActiveTab: rows 0-4 rim, 5-27 body, 28-31 empty
-local TAB_ACTIVE_RISE = 5
-
-local function SkinTab(tab, isTop)
-	local height = isTop and 24 or 32
-	local topCoord, bottomCoord = 0, 1
-	local activeTop, activeBottom, activeHeight, activeY = TAB_RIM_TOP, TAB_RIM_BOTTOM, 28 + TAB_ACTIVE_RISE, TAB_ACTIVE_RISE
-	if isTop then
-		topCoord, bottomCoord = 1, 0.25
-		activeTop, activeBottom, activeHeight, activeY = topCoord, bottomCoord, height, 0
-	end
-	local function Piece(texture, left, right, top, bottom, pieceHeight)
-		if not texture then return end
-		SetTexture(texture, T.TAB_INACTIVE, left, right, top, bottom)
-		texture:SetHeight(pieceHeight)
-	end
-	local function End(texture, left, right, top, bottom, pieceHeight, point, x, y)
-		if not texture then return end
-		Piece(texture, left, right, top, bottom, pieceHeight)
-		texture:SetWidth(20)
-		Point(texture, point, tab, point, x, y)
-	end
-	local topPoint, rightPoint = "TOPLEFT", "TOPRIGHT"
-	if isTop then
-		topPoint, rightPoint = "BOTTOMLEFT", "BOTTOMRIGHT"
-	end
-	End(tab.Left, 0, 0.15625, topCoord, bottomCoord, height, topPoint, 0, 0)
-	Piece(tab.Middle, 0.15625, 0.84375, topCoord, bottomCoord, height)
-	End(tab.Right, 0.84375, 1, topCoord, bottomCoord, height, rightPoint, 0, 0)
-	End(tab.LeftActive, 0, 0.15625, activeTop, activeBottom, activeHeight, topPoint, 0, activeY)
-	Piece(tab.MiddleActive, 0.15625, 0.84375, activeTop, activeBottom, activeHeight)
-	End(tab.RightActive, 0.84375, 1, activeTop, activeBottom, activeHeight, rightPoint, 0, activeY)
-	if not isTop then
-		skinnedBottomTabs[tab] = true
-	end
-
-	for _, key in ipairs({ "LeftHighlight", "MiddleHighlight", "RightHighlight" }) do
-		Fade(tab[key])
-	end
-	if ns.HasTexture(T.TAB_HIGHLIGHT) then
-		local glow = tab:CreateTexture(nil, "HIGHLIGHT")
-		SetTexture(glow, T.TAB_HIGHLIGHT, 0, 1, topCoord, bottomCoord)
-		glow:SetBlendMode("ADD")
-		glow:SetHeight(height)
-		glow:SetPoint("LEFT", tab, "LEFT", 10, isTop and -2 or 2)
-		glow:SetPoint("RIGHT", tab, "RIGHT", -10, isTop and -2 or 2)
 	end
 end
 
@@ -524,16 +458,9 @@ local function ApplyFrameChrome(frame)
 	-- Tabs: vanilla hung them from the bottom left, 8px into each other.
 	if frame.Tabs then
 		for _, tab in ipairs(frame.Tabs) do
-			SkinTab(tab, false)
+			ns.SkinPanelTab(tab, false)
 		end
 	end
-	-- PanelTemplates_SelectTab drops the text 5px for its taller active
-	-- atlas; the merged classic body keeps the inactive text position.
-	ns.Hook("PanelTemplates_SelectTab", function(tab)
-		if skinnedBottomTabs[tab] and tab.Text then
-			tab.Text:SetPoint("CENTER", tab, "CENTER", 0, 2)
-		end
-	end)
 	if frame.BuyTab then
 		Point(frame.BuyTab, "TOPLEFT", frame, "BOTTOMLEFT", 15, 11)
 	end
@@ -954,7 +881,7 @@ local function LayoutAuctions(frame)
 	-- The sub-tabs sit on top of the summary column, in the strip.
 	if auctions.Tabs then
 		for _, tab in ipairs(auctions.Tabs) do
-			SkinTab(tab, true)
+			ns.SkinPanelTab(tab, true)
 		end
 	end
 	if auctions.AuctionsTab then

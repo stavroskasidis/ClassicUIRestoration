@@ -395,10 +395,25 @@ end
 -- label's font object), so the font hooks are re-added each time; the +/-
 -- follows the CollapseIcon atlas Blizzard swaps when the category is
 -- toggled. The header is Blizzard's 25 list units high (about half a
--- vanilla row); the label and +/- are centred on it.
+-- vanilla row, and it cannot be made taller without tainting the list), so
+-- its label is in the small font (the normal one crowded the rows around
+-- it), and the label and +/- sit HEADER_RISE above its middle, where the
+-- text sat low against the recipe row under it (measured in game,
+-- 2026-09-29).
+-- The size comes from the font object, not the label: SetFontObject with
+-- the object the label already has leaves the enlarged font in place, so
+-- scaling the label's own font again on every Init or hover made the header
+-- text grow each time.
+local HEADER_RISE = 2
+
 local function SetHeaderFont(label, hovered)
-	label:SetFontObject(hovered and GameFontHighlight or GameFontNormal)
-	ScaleFont(label, listScale)
+	local fontObject = hovered and GameFontHighlightSmall or GameFontNormalSmall
+	label:SetFontObject(fontObject)
+	local font, size, flags = fontObject:GetFont()
+	if font then
+		label:SetFont(font, size / listScale, flags or "")
+	end
+	label:SetHeight(0) -- the template's fixed height would clip the enlarged text
 end
 
 local function OnCategoryInit(button, node)
@@ -411,9 +426,9 @@ local function OnCategoryInit(button, node)
 			if button[key] then button[key]:SetAlpha(0) end
 		end
 		state.icon:SetSize(size, size)
-		state.icon:SetPoint("LEFT", button, "LEFT", 3 / listScale, 0)
+		state.icon:SetPoint("LEFT", button, "LEFT", 3 / listScale, HEADER_RISE / listScale)
 		if button.Label then
-			Point(button.Label, "LEFT", button, "LEFT", 21 / listScale, 0)
+			Point(button.Label, "LEFT", button, "LEFT", 21 / listScale, HEADER_RISE / listScale)
 		end
 		if ns.HasTexture(T.PLUS_HILIGHT) then
 			button:SetHighlightTexture(T.PLUS_HILIGHT, "ADD")
@@ -421,7 +436,7 @@ local function OnCategoryInit(button, node)
 			if highlight then
 				highlight:ClearAllPoints()
 				highlight:SetSize(size, size)
-				highlight:SetPoint("LEFT", button, "LEFT", 3 / listScale, 0)
+				highlight:SetPoint("LEFT", button, "LEFT", 3 / listScale, HEADER_RISE / listScale)
 			end
 		end
 		if button.CollapseIcon then
@@ -674,6 +689,20 @@ end
 -- Layout
 ---------------------------------------------------------------------------
 
+-- The list scrolls by pixels, so the row at its top is often cut in half
+-- under the pinned step row; vanilla only ever showed whole rows. A row cut
+-- off at the list's top is faded (alpha is never read by Blizzard, so the
+-- list's own state stays untouched).
+local function FadeClippedRows()
+	local scrollBox = ClassTrainerFrame and ClassTrainerFrame.ScrollBox
+	local top = scrollBox and scrollBox:GetTop()
+	if not top then return end
+	scrollBox:ForEachFrame(function(row)
+		local rowTop = row:GetTop()
+		row:SetAlpha((rowTop and rowTop > top + 0.5) and 0 or 1)
+	end)
+end
+
 -- Vanilla shows 11 rows for a class trainer and 10 (with a taller detail
 -- pane) for a profession trainer. Runs after ClassTrainerFrame_Update, which
 -- anchors the ScrollBox to the retail insets every time.
@@ -771,7 +800,15 @@ local function Skin()
 	ns.Hook("ClassTrainerFrame_Update", function()
 		LayoutFrame()
 		UpdateDetails()
+		FadeClippedRows()
 	end)
+	if scrollBox.RegisterCallback and BaseScrollBoxEvents then
+		for _, event in ipairs({ BaseScrollBoxEvents.OnScroll, BaseScrollBoxEvents.OnLayout }) do
+			if event then
+				scrollBox:RegisterCallback(event, FadeClippedRows, module)
+			end
+		end
+	end
 	ns.Hook("ClassTrainer_SetSelection", UpdateDetails)
 
 	if frame:IsShown() then

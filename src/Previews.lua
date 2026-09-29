@@ -310,17 +310,21 @@ end
 -- A retail portrait panel (PortraitFrameTexturedBaseTemplate's art: the
 -- rock background and the PortraitFrameTemplate nine-slice) with its
 -- portrait and title. `portrait` draws into a 62px square at (-5, 7).
-local function ModernWindow(c, width, height, title, portrait)
-	local frame = CreateFrame("Frame", nil, c)
-	frame:SetSize(width, height)
-	frame:SetPoint("TOPLEFT", c, "TOPLEFT", 6, -8)
-
+local function RockBackground(frame)
 	local bg = Tex(frame, "BACKGROUND", -6)
 	bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Rock", "REPEAT", "REPEAT")
 	bg:SetHorizTile(true)
 	bg:SetVertTile(true)
 	bg:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -21)
 	bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+end
+
+-- Also returns the nine-slice border, for pieces drawn over it.
+local function ModernWindow(c, width, height, title, portrait)
+	local frame = CreateFrame("Frame", nil, c)
+	frame:SetSize(width, height)
+	frame:SetPoint("TOPLEFT", c, "TOPLEFT", 6, -8)
+	RockBackground(frame)
 
 	local border = CreateFrame("Frame", nil, frame, "NineSlicePanelTemplate")
 	border:SetAllPoints(frame)
@@ -334,7 +338,7 @@ local function ModernWindow(c, width, height, title, portrait)
 		texture:SetPoint("TOPLEFT", top, "TOPLEFT", -5, 7)
 	end
 	Text(top, "GameFontNormal", title, "TOP", 17, -5)
-	return frame, top
+	return frame, top, border
 end
 
 local function ModernInset(frame, left, top, right, bottom)
@@ -1053,37 +1057,118 @@ Previews.gamemenu = {
 }
 
 ---------------------------------------------------------------------------
--- Vendor window icons
+-- Window frames (the vendor window)
 ---------------------------------------------------------------------------
 
 local MERCHANT_CELLS = { 0, 1, 2 } -- hammer, anvil, gold anvil
 local MERCHANT_ATLASES = { "SpellIcon-256x256-Repair", "SpellIcon-256x256-RepairAll", "SpellIcon-256x256-RepairAllGuild" }
 local BUYBACK_ICON = "Interface\\Icons\\INV_Misc_Pelt_Wolf_01"
+local VENDOR_PORTRAIT = "Interface\\Icons\\INV_Misc_Bag_10"
+local VENDOR_X, VENDOR_Y, VENDOR_WIDTH, VENDOR_HEIGHT = 18, -16, 262, 150
+local VENDOR_TAB_WIDTH = 80
 
-Previews.merchant = {
-	width = 250, height = 56,
-	classic = function(c)
-		-- MerchantFrame.lua: the 36px cells of UI-Merchant-RepairIcons (their
-		-- bevel is in the art) and the bundled junk cell; a plain buyback item.
-		File(c, T.MERCHANT_SELL_JUNK, 36, 36, 10, -10, "ARTWORK", 0, { 0, 36 / 64, 0, 36 / 64 })
+-- The vendor row inside the inset: Sell All Junk, the three repair buttons
+-- and the buyback slot (MerchantFrame.lua: the 36px cells of
+-- UI-Merchant-RepairIcons, whose bevel is in the art, the bundled junk cell
+-- and a plain buyback item).
+local function VendorIcons(parent, classic)
+	local y = -74
+	if classic then
+		File(parent, T.MERCHANT_SELL_JUNK, 36, 36, 14, y, "ARTWORK", 0, { 0, 36 / 64, 0, 36 / 64 })
 		for i, cell in ipairs(MERCHANT_CELLS) do
-			File(c, T.MERCHANT_REPAIR_ICONS, 36, 36, 10 + i * 42, -10, "ARTWORK", 0, { cell * 36 / 128, (cell + 1) * 36 / 128, 0, 36 / 64 })
+			File(parent, T.MERCHANT_REPAIR_ICONS, 36, 36, 14 + i * 42, y, "ARTWORK", 0, { cell * 36 / 128, (cell + 1) * 36 / 128, 0, 36 / 64 })
 		end
-		ClassicSlot(c, BUYBACK_ICON, 36, 200, -10)
+	else
+		local function Slot(x, atlas)
+			File(parent, "Interface\\Buttons\\UI-EmptySlot", 64, 64, x - 13, y + 14, "BACKGROUND")
+			At(Atlas(parent, atlas, "ARTWORK", 0, 36, 36), "TOPLEFT", x, y)
+		end
+		Slot(14, "SpellIcon-256x256-SellJunk")
+		for i, atlas in ipairs(MERCHANT_ATLASES) do
+			Slot(14 + i * 42, atlas)
+		end
+	end
+	ClassicSlot(parent, BUYBACK_ICON, 36, 204, y)
+	if not classic then
+		local undo = Atlas(parent, "common-icon-undo", "OVERLAY", 1, 20, 20)
+		undo:SetPoint("BOTTOMRIGHT", parent, "TOPLEFT", 204 + 38, y - 38)
+	end
+end
+
+-- PanelTabButtonTemplate: the ends 3 / 7px out (the selected tab's 1 / 8px),
+-- the text 2px above the middle (5px below it while selected).
+local function ModernTab(parent, x, y, label, selected)
+	local prefix = selected and "uiframe-activetab-" or "uiframe-tab-"
+	local left = At(Atlas(parent, prefix .. "left", "BACKGROUND"), "TOPLEFT", x - (selected and 1 or 3), y)
+	local right = At(Atlas(parent, prefix .. "right", "BACKGROUND"), "TOPRIGHT", x + VENDOR_TAB_WIDTH + (selected and 8 or 7), y, parent, "TOPLEFT")
+	local middle = Atlas(parent, "_" .. prefix .. "center", "BACKGROUND")
+	middle:SetHorizTile(true)
+	middle:SetPoint("TOPLEFT", left, "TOPRIGHT", 0, 0)
+	middle:SetPoint("TOPRIGHT", right, "TOPLEFT", 0, 0)
+	Text(parent, selected and "GameFontHighlightSmall" or "GameFontNormalSmall", label, "CENTER", x + VENDOR_TAB_WIDTH / 2, y - 16 + (selected and -3 or 2), "TOPLEFT")
+end
+
+-- ns.SkinPanelTab (flat, as Windows.lua uses it): UI-Character-InActiveTab
+-- with 20px ends in both states; the selected tab only has white text.
+local function ClassicTab(parent, x, y, label, selected)
+	File(parent, T.TAB_INACTIVE, 20, 32, x, y, "BACKGROUND", 0, { 0, 0.15625, 0, 1 })
+	File(parent, T.TAB_INACTIVE, VENDOR_TAB_WIDTH - 40, 32, x + 20, y, "BACKGROUND", 0, { 0.15625, 0.84375, 0, 1 })
+	File(parent, T.TAB_INACTIVE, 20, 32, x + VENDOR_TAB_WIDTH - 20, y, "BACKGROUND", 0, { 0.84375, 1, 0, 1 })
+	Text(parent, selected and "GameFontHighlightSmall" or "GameFontNormalSmall", label, "CENTER", x + VENDOR_TAB_WIDTH / 2, y - 14, "TOPLEFT")
+end
+
+-- The vendor's two tabs under the frame, on the frame itself so its border
+-- covers their tops; the first one selected. Blizzard centres
+-- MerchantFrameTab1 50px in and 15px below the bottom edge with the second
+-- 16px into it; Windows.lua hangs them 12px in, 1px up, 19px into each other.
+local function VendorTabs(frame, Tab, classic)
+	local labels = { MERCHANT or "Merchant", BUYBACK or "Buyback" }
+	local x, y, overlap = 50 - VENDOR_TAB_WIDTH / 2, -VENDOR_HEIGHT - 15 + 16, 16
+	if classic then
+		x, y, overlap = 12, -VENDOR_HEIGHT + 1, 19
+	end
+	for i, label in ipairs(labels) do
+		Tab(frame, x + (i - 1) * (VENDOR_TAB_WIDTH - overlap), y, label, i == 1)
+	end
+end
+
+local function VendorPortrait(parent)
+	local texture = File(parent, VENDOR_PORTRAIT, 62, 62, -5, 7, "OVERLAY")
+	Mask(parent, texture)
+	return texture
+end
+
+Previews.windows = {
+	width = VENDOR_X + VENDOR_WIDTH + 12, height = -VENDOR_Y + VENDOR_HEIGHT + 40,
+	classic = function(c)
+		-- Windows.lua: the rock and inset stay, the metal is the legacy
+		-- UI-Frame-* border (ns.CreateClassicBorder) with the round close
+		-- button 4px right of and 5px above the corner.
+		local frame = CreateFrame("Frame", nil, c)
+		frame:SetSize(VENDOR_WIDTH, VENDOR_HEIGHT)
+		frame:SetPoint("TOPLEFT", c, "TOPLEFT", VENDOR_X, VENDOR_Y)
+		RockBackground(frame)
+		ModernInset(frame, 4, -60, -6, 26)
+		VendorPortrait(Layer(frame, 20))
+		ns.CreateClassicBorder(Layer(frame, 30), frame, true)
+		local top = Layer(frame, 40)
+		Text(top, "GameFontNormal", MERCHANT or "Merchant", "TOP", 17, -5)
+		File(top, T.PANEL_CLOSE .. "Up", 32, 32, VENDOR_WIDTH + 4 - 32, 5, "OVERLAY")
+		VendorIcons(top, true)
+		VendorTabs(frame, ClassicTab, true)
 	end,
 	modern = function(c)
-		local function Slot(x, atlas)
-			File(c, "Interface\\Buttons\\UI-EmptySlot", 64, 64, x - 13, -10 + 14, "BACKGROUND")
-			local icon = Atlas(c, atlas, "ARTWORK", 0, 36, 36)
-			icon:SetPoint("TOPLEFT", c, "TOPLEFT", x, -10)
-		end
-		Slot(10, "SpellIcon-256x256-SellJunk")
-		for i, atlas in ipairs(MERCHANT_ATLASES) do
-			Slot(10 + i * 42, atlas)
-		end
-		ClassicSlot(c, BUYBACK_ICON, 36, 200, -10)
-		local undo = Atlas(c, "common-icon-undo", "OVERLAY", 1, 20, 20)
-		undo:SetPoint("BOTTOMRIGHT", c, "TOPLEFT", 200 + 38, -10 - 38)
+		local frame, top, border = ModernWindow(c, VENDOR_WIDTH, VENDOR_HEIGHT, MERCHANT or "Merchant", VendorPortrait)
+		frame:ClearAllPoints()
+		frame:SetPoint("TOPLEFT", c, "TOPLEFT", VENDOR_X, VENDOR_Y)
+		ModernInset(frame, 4, -60, -6, 26)
+		-- UIPanelCloseButtonDefaultAnchors, over the nine-slice like Blizzard's.
+		local buttons = CreateFrame("Frame", nil, frame)
+		buttons:SetAllPoints(frame)
+		buttons:SetFrameLevel(border:GetFrameLevel() + 10)
+		At(Atlas(buttons, "RedButton-Exit", "OVERLAY", 0, 24, 24), "TOPRIGHT", 1, 0)
+		VendorIcons(Layer(frame, 30), false)
+		VendorTabs(frame, ModernTab)
 	end,
 }
 

@@ -50,8 +50,8 @@ local GROUPS = {
 		keys = { "minimap", "groupfindereye" } },
 	{ title = "Your Character", text = "Your character window, spellbook and talents.",
 		keys = { "characterframe", "spellbook", "talents" } },
-	{ title = "Out in the World", text = "Looting, shopping and training.",
-		keys = { "lootframe", "merchant", "trainer" } },
+	{ title = "Out in the World", text = "Looting, training, and the vendor, mail, quest and other windows.",
+		keys = { "lootframe", "windows", "trainer" } },
 	{ title = "Trade", text = "The auction house and your professions.",
 		keys = { "auctionhouse", "professions" } },
 }
@@ -74,7 +74,7 @@ local SUMMARIES = {
 	spellbook = "The vanilla spellbook: twelve spells a page, with the skill line tabs down its side.",
 	talents = "The vanilla talent frame: one painted tree at a time, with square talents and rank boxes.",
 	lootframe = "The vanilla loot panel with the skull and the classic item rows.",
-	merchant = "The classic repair icons and a plain buyback slot in the vendor window.",
+	windows = "The pre-Dragonflight metal frame, round close button and classic tabs on the vendor, mail, quest, trade and other windows.",
 	trainer = "The vanilla trainer window with the colour-coded skill list.",
 	auctionhouse = "The vanilla auction house: the classic panel, filter column and Bid / Buyout buttons.",
 	professions = "The vanilla trade skill window: the rank bar, the compact recipe list and the reagents below it.",
@@ -133,7 +133,7 @@ end
 -- for the presets.
 local WINDOWS = {
 	gamemenu = true, characterframe = true, spellbook = true, talents = true, lootframe = true,
-	merchant = true, trainer = true, auctionhouse = true, professions = true,
+	windows = true, trainer = true, auctionhouse = true, professions = true,
 }
 
 function UI.IsWindow(module)

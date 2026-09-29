@@ -98,6 +98,8 @@ ns.T = {
 	QUICKSLOT_PUSHED   = "Interface\\Buttons\\UI-Quickslot-Depress",
 	BUTTON_HIGHLIGHT   = "Interface\\Buttons\\ButtonHilight-Square",
 	BUTTON_CHECKED     = "Interface\\Buttons\\CheckButtonHilight",
+	TAB_INACTIVE       = "Interface\\PaperDollInfoFrame\\UI-Character-InActiveTab",
+	TAB_HIGHLIGHT      = "Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight",
 }
 
 -- Classic colours.
@@ -396,7 +398,8 @@ function ns.HideBarDividers(bar)
 end
 
 ---------------------------------------------------------------------------
--- Classic widget skins shared by the panel modules (trainer, auction house)
+-- Classic widget skins shared by the panel modules (trainer, auction house,
+-- window frames)
 ---------------------------------------------------------------------------
 
 -- MinimalScrollBar's steppers swap atlases on their own Texture from their
@@ -580,6 +583,83 @@ function ns.SkinCloseButton(close)
 		close:SetHighlightTexture(ns.T.PANEL_CLOSE .. "Highlight", "ADD")
 	end
 end
+
+-- PanelTabButtonTemplate draws three atlas pieces for the inactive tab,
+-- three for the active one (shown / hidden by PanelTemplates_SelectTab) and
+-- three additive highlights. They become the vanilla CharacterFrame tab
+-- pieces (UI-Character-InActiveTab, 20px ends) with the classic glow
+-- highlight. Vanilla's active tab (UI-Character-ActiveTab) was the same
+-- body without its top rim, drawn 5px up into the frame border; the retail
+-- client's file of that name is a different, short gold-glow tab, so the
+-- active pieces are cut from the inactive file (its rim rows skipped)
+-- instead: its body rows (below the top rim, down to the bottom rim) are
+-- stretched from 5px above the tab to the inactive tab's bottom edge, and
+-- the text stays where the inactive tab has it. Top tabs
+-- (PanelTopTabButtonTemplate) are the same art flipped and cut to 24px, as
+-- Blizzard's PanelTopTabButtonMixin does with its atlases; their active
+-- state is the same art in place (a shift into the panel would cover its
+-- top border). `flat` keeps a bottom tab's active state the same art in
+-- place too, for tabs drawn under a frame border that the rise would poke
+-- out over. The caller positions the tab.
+local TAB_RIM_TOP, TAB_RIM_BOTTOM = 0.15625, 0.875 -- InActiveTab: rows 0-4 rim, 5-27 body, 28-31 empty
+local TAB_ACTIVE_RISE = 5
+local skinnedTabs = setmetatable({}, { __mode = "k" }) -- tab -> "bottom" / "top"
+
+function ns.SkinPanelTab(tab, isTop, flat)
+	if not tab or skinnedTabs[tab] then return end
+	skinnedTabs[tab] = isTop and "top" or "bottom"
+	local T = ns.T
+	local height = isTop and 24 or 32
+	local topCoord, bottomCoord = 0, 1
+	local activeTop, activeBottom, activeHeight, activeY = TAB_RIM_TOP, TAB_RIM_BOTTOM, 28 + TAB_ACTIVE_RISE, TAB_ACTIVE_RISE
+	if isTop then
+		topCoord, bottomCoord = 1, 0.25
+	end
+	if isTop or flat then
+		activeTop, activeBottom, activeHeight, activeY = topCoord, bottomCoord, height, 0
+	end
+	local function Piece(texture, left, right, top, bottom, pieceHeight)
+		if not texture then return end
+		ns.SetTexture(texture, T.TAB_INACTIVE, left, right, top, bottom)
+		texture:SetHeight(pieceHeight)
+	end
+	local function End(texture, left, right, top, bottom, pieceHeight, point, x, y)
+		if not texture then return end
+		Piece(texture, left, right, top, bottom, pieceHeight)
+		texture:SetWidth(20)
+		ns.Point(texture, point, tab, point, x, y)
+	end
+	local topPoint, rightPoint = "TOPLEFT", "TOPRIGHT"
+	if isTop then
+		topPoint, rightPoint = "BOTTOMLEFT", "BOTTOMRIGHT"
+	end
+	End(tab.Left, 0, 0.15625, topCoord, bottomCoord, height, topPoint, 0, 0)
+	Piece(tab.Middle, 0.15625, 0.84375, topCoord, bottomCoord, height)
+	End(tab.Right, 0.84375, 1, topCoord, bottomCoord, height, rightPoint, 0, 0)
+	End(tab.LeftActive, 0, 0.15625, activeTop, activeBottom, activeHeight, topPoint, 0, activeY)
+	Piece(tab.MiddleActive, 0.15625, 0.84375, activeTop, activeBottom, activeHeight)
+	End(tab.RightActive, 0.84375, 1, activeTop, activeBottom, activeHeight, rightPoint, 0, activeY)
+
+	for _, key in ipairs({ "LeftHighlight", "MiddleHighlight", "RightHighlight" }) do
+		if tab[key] then tab[key]:SetAlpha(0) end
+	end
+	if ns.HasTexture(T.TAB_HIGHLIGHT) then
+		local glow = tab:CreateTexture(nil, "HIGHLIGHT")
+		ns.SetTexture(glow, T.TAB_HIGHLIGHT, 0, 1, topCoord, bottomCoord)
+		glow:SetBlendMode("ADD")
+		glow:SetHeight(height)
+		glow:SetPoint("LEFT", tab, "LEFT", 10, isTop and -2 or 2)
+		glow:SetPoint("RIGHT", tab, "RIGHT", -10, isTop and -2 or 2)
+	end
+end
+
+-- PanelTemplates_SelectTab drops the text 5px for its taller active atlas;
+-- the merged classic body keeps the inactive text position.
+ns.Hook("PanelTemplates_SelectTab", function(tab)
+	if skinnedTabs[tab] == "bottom" and tab.Text then
+		tab.Text:SetPoint("CENTER", tab, "CENTER", 0, 2)
+	end
+end)
 
 ---------------------------------------------------------------------------
 -- Mirror bars

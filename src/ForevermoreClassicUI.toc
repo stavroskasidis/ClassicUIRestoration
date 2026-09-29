@@ -24,6 +24,7 @@ Modules\TrainerFrame.lua
 Modules\AuctionHouse.lua
 Modules\EndCaps.lua
 Modules\ExperienceBar.lua
+Modules\Windows.lua
 Modules\MerchantFrame.lua
 Modules\ActionBars.lua
 Modules\BagsBar.lua
