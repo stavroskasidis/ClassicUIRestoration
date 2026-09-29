@@ -13,7 +13,7 @@ UI"; the addon folder is `ForevermoreClassicUI`.)
 
 ## Summary (short field, under 250 characters)
 
-The best Classic UI addon. Every UI feature and Edit Mode keeps working. Classic unit frames, action bars, minimap, bags, nameplates and more, each switchable. Make the UI as Classic as you want. For Forever & Retail.
+The best Classic UI addon. Make the UI as Classic as you want. Every UI feature and Edit Mode keeps working. Classic unit frames, action bars, minimap, bags, nameplates and more, each switchable. For Forever & Retail.
 
 ## Categories
 
