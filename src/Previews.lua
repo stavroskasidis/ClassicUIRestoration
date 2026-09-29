@@ -1173,6 +1173,126 @@ Previews.windows = {
 }
 
 ---------------------------------------------------------------------------
+-- Quest log
+---------------------------------------------------------------------------
+
+local FALLBACK_QUESTS = {
+	{ header = true, title = "Elwynn Forest" },
+	{ title = "The Fargodeep Mine", level = 7 },
+	{ title = "Princess Must Die!", level = 9 },
+	{ title = "Bounty on Murlocs", level = 10 },
+	{ header = true, title = "Westfall" },
+	{ title = "The Defias Brotherhood", level = 14 },
+}
+
+-- The first rows of the player's own quest log, or stock quests.
+local function QuestRows(count)
+	local rows = {}
+	if C_QuestLog and C_QuestLog.GetNumQuestLogEntries then
+		for index = 1, C_QuestLog.GetNumQuestLogEntries() do
+			if #rows >= count then break end
+			local info = C_QuestLog.GetInfo(index)
+			if info and not info.isHidden and not info.isTask and info.title then
+				rows[#rows + 1] = { header = info.isHeader, title = info.title, level = info.difficultyLevel or info.level }
+			end
+		end
+	end
+	if #rows < 3 then
+		rows = FALLBACK_QUESTS
+	end
+	return rows
+end
+
+local function QuestColor(row)
+	local color = row.header and QuestDifficultyColors and QuestDifficultyColors.header
+		or (GetQuestDifficultyColor and GetQuestDifficultyColor(row.level or 1))
+	return color and { color.r, color.g, color.b } or WHITE
+end
+
+local QUESTLOG_X, QUESTLOG_Y, QUESTLOG_WIDTH, QUESTLOG_HEIGHT = 14, -14, 338, 452
+
+Previews.questlog = {
+	width = QUESTLOG_X + QUESTLOG_WIDTH + 12, height = -QUESTLOG_Y + QUESTLOG_HEIGHT + 10,
+	classic = function(c)
+		-- QuestLog.lua: Window Frames' metal frame with the book in the ring,
+		-- the list box 58px down (98 high: six 16px title rows 15px apart, the
+		-- first quest selected on the tinted bar), the parchment box 4px under
+		-- it down to 28px above the bottom, and the three buttons below.
+		local frame = CreateFrame("Frame", nil, c)
+		frame:SetSize(QUESTLOG_WIDTH, QUESTLOG_HEIGHT)
+		frame:SetPoint("TOPLEFT", c, "TOPLEFT", QUESTLOG_X, QUESTLOG_Y)
+		RockBackground(frame)
+		local listBox = ModernInset(frame, 6, -58, -6, QUESTLOG_HEIGHT - 58 - 98)
+		listBox.Bg:SetColorTexture(0, 0, 0, 0.75)
+		local detailBox = ModernInset(frame, 6, -58 - 98 - 4, -6, 28)
+		detailBox.Bg:SetHorizTile(false)
+		detailBox.Bg:SetVertTile(false)
+		ns.SetAtlas(detailBox.Bg, "QuestBG-Parchment")
+		local portrait = File(Layer(frame, 20), T.QUESTLOG_ICON, 62, 62, -5, 7, "ARTWORK")
+		Mask(portrait:GetParent(), portrait)
+		ns.CreateClassicBorder(Layer(frame, 30), frame, true)
+
+		local top = Layer(frame, 40)
+		Text(top, "GameFontNormal", QUEST_LOG or "Quest Log", "TOP", 17, -5)
+		File(top, T.PANEL_CLOSE .. "Up", 32, 32, QUESTLOG_WIDTH + 4 - 32, 5, "OVERLAY")
+		local selected
+		for i, row in ipairs(QuestRows(6)) do
+			if i > 6 then break end
+			local y = -58 - 4 - (i - 1) * 15
+			local color = QuestColor(row)
+			if row.header then
+				File(top, T.MINUS_BUTTON .. "Up", 16, 16, 10 + 3, y, "ARTWORK")
+			elseif not selected then
+				selected = row
+				local bar = File(top, T.QUESTLOG_HIGHLIGHT, 293, 16, 10, y, "ARTWORK", 0)
+				bar:SetBlendMode("ADD")
+				bar:SetVertexColor(color[1], color[2], color[3])
+				color = WHITE
+			end
+			local text = top:CreateFontString(nil, "OVERLAY", "GameFontNormalLeft")
+			text:SetText(row.header and row.title or ("  " .. row.title))
+			text:SetTextColor(color[1], color[2], color[3])
+			text:SetPoint("LEFT", top, "TOPLEFT", 10 + 20, y - 8)
+		end
+		if selected then
+			local title = top:CreateFontString(nil, "OVERLAY", "QuestTitleFont")
+			title:SetText(selected.title)
+			title:SetPoint("TOPLEFT", top, "TOPLEFT", 6 + 6 + 5, -58 - 98 - 4 - 6 - 5)
+			local objectives = top:CreateFontString(nil, "OVERLAY", "QuestFont")
+			objectives:SetText(QUEST_OBJECTIVES or "Quest Objectives")
+			objectives:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
+		end
+		local buttonY = -(QUESTLOG_HEIGHT - 4 - 22)
+		ClassicButtonArt(top, 120, 22, 4, buttonY, ABANDON_QUEST or "Abandon Quest")
+		ClassicButtonArt(top, QUESTLOG_WIDTH - 4 - 120 - 2 - 2 - 90 - 6, 22, 4 + 120 + 2, buttonY, SHARE_QUEST or "Share Quest")
+		ClassicButtonArt(top, 90, 22, QUESTLOG_WIDTH - 6 - 90, buttonY, EXIT or "Exit")
+	end,
+	modern = function(c)
+		-- Retail has no quest log window: the quest list is the world map's
+		-- side panel (QuestMapFrame, QuestLog-main-background), with the map
+		-- beside it.
+		local frame, top = ModernWindow(c, 340, 430, MAP_AND_QUEST_LOG or "Map & Quest Log", IconPortrait("Interface\\Icons\\INV_Misc_Map_01"))
+		local panel = Atlas(frame, "QuestLog-main-background", "ARTWORK", 0, 290, 360)
+		panel:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -45)
+		local y = -60
+		for i, row in ipairs(QuestRows(8)) do
+			if i > 8 then break end
+			local text = top:CreateFontString(nil, "OVERLAY", row.header and "GameFontNormalMed2" or "GameFontHighlight")
+			text:SetText(row.title)
+			text:SetPoint("TOPLEFT", top, "TOPLEFT", row.header and 44 or 58, y)
+			if not row.header then
+				local color = QuestColor(row)
+				text:SetTextColor(0.9, 0.9, 0.9)
+				local dot = Atlas(top, "questlog-icon-ticksquare", "OVERLAY", 0, 12, 12)
+				dot:SetVertexColor(color[1], color[2], color[3])
+				dot:SetPoint("RIGHT", text, "LEFT", -4, 0)
+			end
+			y = y - (row.header and 26 or 20)
+		end
+	end,
+}
+
+---------------------------------------------------------------------------
 -- Loot window
 ---------------------------------------------------------------------------
 

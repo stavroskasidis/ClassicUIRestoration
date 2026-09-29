@@ -48,8 +48,8 @@ local GROUPS = {
 		keys = { "micromenu", "gamemenu" } },
 	{ title = "Minimap", text = "The minimap cluster and the group finder eye.",
 		keys = { "minimap", "groupfindereye" } },
-	{ title = "Your Character", text = "Your character window, spellbook and talents.",
-		keys = { "characterframe", "spellbook", "talents" } },
+	{ title = "Your Character", text = "Your character window, spellbook, talents and quest log.",
+		keys = { "characterframe", "spellbook", "talents", "questlog" } },
 	{ title = "Out in the World", text = "Looting, training, and the vendor, mail, quest and other windows.",
 		keys = { "lootframe", "windows", "trainer" } },
 	{ title = "Trade", text = "The auction house and your professions.",
@@ -73,6 +73,7 @@ local SUMMARIES = {
 	characterframe = "The vanilla character window: the paperdoll, resistances and stat boxes, with the tabs under it.",
 	spellbook = "The vanilla spellbook: twelve spells a page, with the skill line tabs down its side.",
 	talents = "The vanilla talent frame: one painted tree at a time, with square talents and rank boxes.",
+	questlog = "The vanilla quest log window: the quest list with zone headers over the quest's details, opened with the quest log key.",
 	lootframe = "The vanilla loot panel with the skull and the classic item rows.",
 	windows = "The pre-Dragonflight metal frame, round close button and classic tabs on the vendor, mail, quest, trade and other windows.",
 	trainer = "The vanilla trainer window with the colour-coded skill list.",
@@ -132,7 +133,7 @@ end
 -- The options that restyle a window (everything else is part of the HUD),
 -- for the presets.
 local WINDOWS = {
-	gamemenu = true, characterframe = true, spellbook = true, talents = true, lootframe = true,
+	gamemenu = true, characterframe = true, spellbook = true, talents = true, questlog = true, lootframe = true,
 	windows = true, trainer = true, auctionhouse = true, professions = true,
 }
 

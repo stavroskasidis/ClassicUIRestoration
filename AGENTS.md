@@ -54,6 +54,9 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/BagFrames.lua    vanilla bag / backpack / combined windows   (part of Bags; slots re-anchored from Blizzard's grid)
   Modules/MicroMenu.lua    classic micro buttons (reload; UI-MicroButton-* files re-applied from hooks on the buttons' Set*Atlas)
   Modules/GameMenu.lua     vanilla game menu / Esc menu (reload; dialog box drawn behind GameMenuFrame, pooled buttons re-skinned and re-stacked after its Layout)
+  Modules/QuestLog.lua     vanilla quest log (reload; the addon's own window, since the modern quest log is the world map's
+                           side panel: list from C_QuestLog, details by QuestInfo_Display, opened by override bindings and a
+                           button over the micro button)
   Textures/                bundled art (UI-Merchant-SellJunk.tga, the vanilla-style Sell All Junk icon;
                            UI-Character-ReputationBar.tga, the 1.12 reputation row art;
                            UI-MicroButton-MainMenu/Quest/Socials-*.tga, the vanilla micro buttons from the
@@ -197,6 +200,15 @@ anything under `build/`.
   moves or resizes a protected frame.
 - Anything that must touch a protected frame outside combat goes through
   `ns:RunOutOfCombat`.
+- Closing Blizzard's UI panels without `HideUIPanel` (see `Modules/QuestLog.lua`):
+  a secure button (`SecureActionButtonTemplate`, type "macro") whose
+  macrotext `/click`s the panels' own close buttons does it, in combat too.
+  Two traps, seen in game 2026-09-29: `/click` sends an up click, and a
+  secure action button acts only on the down click while "cast on key down"
+  (`ActionButtonUseKeyDown`, on by default) is on unless it has the
+  `useOnKeyDown` attribute set to false; and a macro that `/click`s another
+  macro button does not run that button's macro (keep every line in one
+  macro; `/click` on a "click"-type secure button from a macro works).
 - Never call `ShowUIPanel` / `HideUIPanel` from addon code: in combat the
   panel manager refuses tainted calls ("Interface action failed because of
   an AddOn"). A template's script on a button the addon created runs as
@@ -343,6 +355,8 @@ anything under `build/`.
   client behaviour, no globals except the saved variables (`ForevermoreClassicUIDB`
   account-wide, mirrored into `ForevermoreClassicUICharDB` per character; both
   globals reference the same table, see `InitializeDB` in `Core.lua`) and the
-  slash command tables.
+  slash command tables (and the quest log's secure buttons,
+  `ForevermoreClassicUIQuestLogButton` and `...Map`: an override binding
+  and a macro's /click can only click a button by name).
 - Diagnostic slash sub-commands are temporary: remove them once the issue they
   were added for is fixed.
