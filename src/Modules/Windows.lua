@@ -3,7 +3,7 @@
 
 	Most of Blizzard's other windows (vendor, mail, quest and gossip, trade,
 	dressing room, tabard, guild registrar and charter, books and letters,
-	flight map, macros, the social window) are ButtonFrameTemplate /
+	flight map, macros, the social window, inspect) are ButtonFrameTemplate /
 	PortraitFrameTemplate panels. Their stone (UI-Background-Rock), inset
 	marble and red panel buttons are still the pre-Dragonflight art; what
 	Dragonflight changed is the metal around them (the NineSlice layouts
@@ -30,8 +30,11 @@
 
 	The windows other options redraw in full (character, spellbook, talents,
 	professions, trainer, auction house, loot, bags, bank, game menu) are not
-	in the list. Windows of load-on-demand addons are skinned when their
-	addon loads. The vendor window's icons are a part of this option
+	in the list. Windows of load-on-demand addons (macros, inspect) are
+	skinned when their addon loads. A window another option draws in full
+	on this client is left to it (ns.windowOwners: on WoW Forever the
+	Character Window option draws the vanilla inspect window,
+	CharacterInspect.lua). The vendor window's icons are a part of this option
 	(MerchantFrame.lua).
 
 	Everything is widget state (alpha, textures, the close button's anchor);
@@ -48,7 +51,7 @@ T.PANEL_SMALLER = "Interface\\Buttons\\UI-Panel-SmallerButton-" -- + Up / Down /
 local module = ns:RegisterModule({
 	key = "windows",
 	name = "Window Frames",
-	tooltip = "Restores the pre-Dragonflight frame on the vendor, mail, quest, gossip, trade, dressing room, tabard, guild charter, book, flight map, macro and social windows: the silver metal border with the portrait ring, the round close button and the classic tabs, plus the vendor's classic repair / junk icons and plain buyback slot.",
+	tooltip = "Restores the pre-Dragonflight frame on the vendor, mail, quest, gossip, trade, dressing room, tabard, guild charter, book, flight map, macro, social and inspect windows: the silver metal border with the portrait ring, the round close button and the classic tabs, plus the vendor's classic repair / junk icons and plain buyback slot.",
 	live = false,
 })
 
@@ -58,6 +61,7 @@ local WINDOWS = {
 	"MerchantFrame", "MailFrame", "OpenMailFrame", "QuestFrame", "GossipFrame",
 	"TradeFrame", "DressUpFrame", "TabardFrame", "GuildRegistrarFrame",
 	"PetitionFrame", "ItemTextFrame", "TaxiFrame", "FriendsFrame", "MacroFrame",
+	"InspectFrame",
 }
 
 ---------------------------------------------------------------------------
@@ -318,6 +322,10 @@ local function SkinWindow(frame)
 	end
 end
 
+-- Window name -> function returning true while another option draws that
+-- window in full (set by that option's file, loaded after this one).
+ns.windowOwners = {}
+
 local pending = {}
 local watcher
 
@@ -326,7 +334,10 @@ local function SkinPending()
 		local frame = _G[name]
 		if frame then
 			pending[name] = nil
-			xpcall(SkinWindow, geterrorhandler(), frame)
+			local owner = ns.windowOwners[name]
+			if not (owner and owner()) then
+				xpcall(SkinWindow, geterrorhandler(), frame)
+			end
 		end
 	end
 	if watcher and not next(pending) then

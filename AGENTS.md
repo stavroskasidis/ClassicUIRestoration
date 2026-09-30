@@ -74,6 +74,8 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/CharacterFrame.lua vanilla character window, Forever only (reload; vanilla art on CharacterFrame, left pane moved into it, right pane docked, mode tabs as bottom tabs)
   Modules/CharacterReputation.lua its Reputation tab, Forever only   (part of Character Window; rows re-skinned after Blizzard initializes them)
   Modules/CharacterSkills.lua its Skills tab, Forever only           (part of Character Window; same row skinning, own 1.12 detail pane)
+  Modules/CharacterInspect.lua the vanilla inspect window, Forever only (part of Character Window; its art, slots and tab row
+                           through ns.CharacterWindow; Window Frames skips the window through ns.windowOwners)
   Modules/ProfessionsFrame.lua vanilla trade skill window, Forever only (reload; crafting page re-skinned in place, Blizzard's recipe list scaled with its row heights overridden, own detail pane / rank bar / "All" tab / proxy create buttons)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
   README.md             user-facing description of every option (both flavors)
@@ -104,6 +106,7 @@ game version. Forever-only code lives in its own files (`Modules/Forever.lua`,
 which hooks the same Blizzard functions *after* the other modules, and
 `Modules/ComboPoints.lua` / `Modules/SpellBook.lua` / `Modules/TalentFrame.lua` /
 `Modules/CharacterFrame.lua` / `Modules/CharacterReputation.lua` / `Modules/CharacterSkills.lua` /
+`Modules/CharacterInspect.lua` /
 `Modules/ProfessionsFrame.lua`, options only Forever has, with
 `Modules/PlayerSpellsPanel.lua` shared by the spellbook and talents), each starting with `if not ns.IS_FOREVER then return end` right
 after `local _, ns = ...`, so on retail they register nothing.

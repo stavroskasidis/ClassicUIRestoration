@@ -65,7 +65,7 @@ T.PET_PAPERDOLL      = "Interface\\PetPaperDollFrame\\UI-PetPaperDollFrame-"    
 local module = ns:RegisterModule({
 	key = "characterframe",
 	name = "Character Window",
-	tooltip = "Restores the vanilla character window: the classic frame with the tabs under it, the classic paperdoll with the equipment slots around the model, the resistances and two stat boxes with the classic stat dropdowns, and the vanilla pet page. The details pane (stats, gear sets, titles, pet) docks to the window's side in the classic dialog border.",
+	tooltip = "Restores the vanilla character window: the classic frame with the tabs under it, the classic paperdoll with the equipment slots around the model, the resistances and two stat boxes with the classic stat dropdowns, the vanilla pet page, and the same vanilla paperdoll on the inspect window. The details pane (stats, gear sets, titles, pet) docks to the window's side in the classic dialog border.",
 	live = false,
 })
 
@@ -227,17 +227,18 @@ local function IsPetPage()
 	return PaperDollFrame:IsShown() and PaperDollItemsFrame ~= nil and not PaperDollItemsFrame:IsShown()
 end
 
--- Four files (256 / 128 wide, 256 tall) at the art's top left (the origin).
-local function CreateArt(list, files, x, y)
+-- Four files (256 / 128 wide, 256 tall) on `owner` at its art's top left
+-- (`ownerOrigin`), shifted by x, y.
+local function CreateArt(list, files, x, y, owner, ownerOrigin)
 	local pieces = {
 		{ files[1], 256, 0, 0 }, { files[2], 128, 256, 0 },
 		{ files[3], 256, 0, -256 }, { files[4], 128, 256, -256 },
 	}
 	for _, piece in ipairs(pieces) do
-		local texture = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
+		local texture = (owner or frame):CreateTexture(nil, "BACKGROUND", nil, -6)
 		texture:SetTexture(piece[1])
 		texture:SetSize(piece[2], 256)
-		texture:SetPoint("TOPLEFT", origin, "TOPLEFT", x + piece[3], y + piece[4])
+		texture:SetPoint("TOPLEFT", ownerOrigin or origin, "TOPLEFT", x + piece[3], y + piece[4])
 		table.insert(list, texture)
 	end
 end
@@ -347,6 +348,7 @@ local TAB_LABELS = {
 	PVPRankFrame = HONOR or "Honor", -- 1.12's name for the tab ("Player vs. Player" is too wide for the row)
 	TokenFrame = CURRENCY or "Currency",
 	StatisticsFrame = STATISTICS or "Statistics",
+	GuildFrame = GUILD or "Guild", -- the inspect window's (CharacterInspect.lua)
 }
 local TAB_ART = { "Background", "Icon", "SelectedTexture", "HighlightTexture" }
 
@@ -419,9 +421,10 @@ local function SkinTab(tab)
 end
 
 -- After Blizzard's tab layout (a column down the frame's right side): the
--- shown tabs go into a row under the frame, each sized to its label.
-local function LayoutTabs()
-	local tabs = frame.ModeTabs and frame.ModeTabs.Tabs
+-- shown tabs of `owner` (the character or the inspect window) go into a row
+-- under its art (`ownerOrigin`), each sized to its label.
+local function LayoutModeTabs(owner, ownerOrigin)
+	local tabs = owner.ModeTabs and owner.ModeTabs.Tabs
 	if not tabs then return end
 	local previous
 	for _, tab in ipairs(tabs) do
@@ -433,12 +436,16 @@ local function LayoutTabs()
 			if previous then
 				Point(tab, "TOPLEFT", previous, "TOPRIGHT", -TAB_OVERLAP, 0)
 			else
-				Point(tab, "TOPLEFT", origin, "TOPLEFT", TAB_X, TAB_Y)
+				Point(tab, "TOPLEFT", ownerOrigin, "TOPLEFT", TAB_X, TAB_Y)
 			end
 			UpdateTab(tab)
 			previous = tab
 		end
 	end
+end
+
+local function LayoutTabs()
+	LayoutModeTabs(frame, origin)
 end
 
 ---------------------------------------------------------------------------
@@ -1205,6 +1212,23 @@ function module:Apply()
 	ns.Hook(frame, "UpdateSize", UpdateHitRects)
 	UpdateHitRects()
 	StartCollapsed()
-	-- The tab pages (CharacterReputation.lua, ...) are skinned only inside it.
+	-- The tab pages (CharacterReputation.lua, ...) and the inspect window
+	-- (CharacterInspect.lua) are skinned only with it.
 	ns.characterWindowSkinned = true
 end
+
+-- What the inspect window (CharacterInspect.lua) shares with this one: the
+-- 1.12 art and geometry (offsets from the art's top left), the slot skin
+-- and the tab row.
+ns.CharacterWindow = {
+	CreateArt = CreateArt,
+	SkinSlot = SkinSlot,
+	LayoutModeTabs = LayoutModeTabs,
+	PORTRAIT_X = PORTRAIT_X, PORTRAIT_Y = PORTRAIT_Y, PORTRAIT_SIZE = PORTRAIT_SIZE,
+	CLOSE_X = CLOSE_X, CLOSE_Y = CLOSE_Y,
+	TITLE_LEFT = TITLE_LEFT, TITLE_RIGHT = TITLE_RIGHT, TITLE_Y = TITLE_Y, LEVEL_Y = LEVEL_Y,
+	SLOT_LEFT_X = SLOT_LEFT_X, SLOT_RIGHT_X = SLOT_RIGHT_X, SLOT_Y = SLOT_Y, SLOT_STRIDE = SLOT_STRIDE,
+	WEAPON_X = WEAPON_X, WEAPON_Y = WEAPON_Y, WEAPON_STRIDE = WEAPON_STRIDE,
+	MODEL_X = MODEL_X, MODEL_Y = MODEL_Y, MODEL_WIDTH = MODEL_WIDTH,
+	HIT_WIDTH = HIT_WIDTH, HIT_HEIGHT = HIT_HEIGHT,
+}
