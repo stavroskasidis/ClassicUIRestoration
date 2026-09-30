@@ -656,14 +656,12 @@ local function IsShownPanel(panel)
 		and panel:GetAttribute("UIPanelLayout-area") ~= nil
 end
 
--- The window opens at the left panel spot (it replaces the panel there); a
--- window the player dragged stays where it was put.
-local DEFAULT_X, DEFAULT_Y = 16, -116
-
+-- The window opens at the left panel spot (it replaces the panel there),
+-- where the manager would put a panel of its size, like the vendor or the
+-- mailbox window; a window the player dragged stays where it was put.
 function Place()
 	if frame.CUIR_placed then return end
-	frame:ClearAllPoints()
-	frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", DEFAULT_X, DEFAULT_Y)
+	Point(frame, "TOPLEFT", UIParent, "TOPLEFT", ns.PanelLeft(), ns.PanelTop(0, FRAME_HEIGHT))
 end
 
 -- The micro button looks pressed while the window is open. Blizzard sets it
@@ -686,7 +684,7 @@ end
 local function CreateWindow()
 	frame = CreateFrame("Frame", nil, UIParent)
 	frame:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
-	frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", DEFAULT_X, DEFAULT_Y)
+	Place()
 	frame:SetFrameStrata("MEDIUM")
 	frame:SetToplevel(true)
 	frame:EnableMouse(true)

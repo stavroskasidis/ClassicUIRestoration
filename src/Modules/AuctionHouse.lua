@@ -99,6 +99,7 @@ local ITEM_BUTTON_SIZE = 37                                             -- vanil
 local FILTER_DROPDOWN_WIDTH, DURATION_DROPDOWN_WIDTH = 110, 100
 
 local art = {}                                        -- regions/frames created by this module
+local origin                                          -- the vanilla art's top-left corner (ns.ArtOrigin), which everything is placed from
 local skinned = setmetatable({}, { __mode = "k" })    -- Blizzard frame -> true once its one-time skin ran
 local squareButtons = setmetatable({}, { __mode = "k" }) -- circular item buttons squared off by this module
 
@@ -114,19 +115,18 @@ local function Fade(region)
 	if region then region:SetAlpha(0) end
 end
 
--- Anchors a frame to a rectangle of the auction house frame. `left` / `top`
--- are offsets from the frame's TOPLEFT. A negative `bottom` is also from
--- the top (and `right` an x from the left edge); a positive `bottom` is an
--- offset up from the frame's bottom edge (and `right` an offset in from
--- the right edge), for the lists that run down to the bottom strip.
+-- Anchors a frame to a rectangle of the vanilla art. `left` / `top` are
+-- offsets from the art's TOPLEFT. A negative `bottom` is also from the top
+-- (and `right` an x from the left edge); a positive `bottom` is an offset
+-- up from the art's bottom edge (and `right` an offset in from the right
+-- edge), for the lists that run down to the bottom strip.
 local function Rect(region, left, top, right, bottom)
-	local frame = AuctionHouseFrame
 	region:ClearAllPoints()
-	region:SetPoint("TOPLEFT", frame, "TOPLEFT", left, top)
+	region:SetPoint("TOPLEFT", origin, "TOPLEFT", left, top)
 	if bottom > 0 then
-		region:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", right, bottom)
+		region:SetPoint("BOTTOMRIGHT", origin, "BOTTOMRIGHT", right, bottom)
 	else
-		region:SetPoint("BOTTOMRIGHT", frame, "TOPLEFT", right, bottom)
+		region:SetPoint("BOTTOMRIGHT", origin, "TOPLEFT", right, bottom)
 	end
 end
 
@@ -135,7 +135,7 @@ end
 -- strip above the inset, beside the Back button.
 local function RefreshToStrip(list)
 	if list.RefreshFrame then
-		Point(list.RefreshFrame, "BOTTOMRIGHT", AuctionHouseFrame, "TOPRIGHT", -17, COLUMN_TOP + 2)
+		Point(list.RefreshFrame, "BOTTOMRIGHT", origin, "TOPRIGHT", -17, COLUMN_TOP + 2)
 	end
 end
 
@@ -205,7 +205,7 @@ end
 -- An 80x22 vanilla bottom-strip button in one of the three art slots.
 local function ToSlot(button, slot)
 	button:SetSize(80, 22)
-	Point(button, "BOTTOMRIGHT", AuctionHouseFrame, "BOTTOMRIGHT", BOTTOM_SLOTS[slot], BOTTOM_BUTTON_Y)
+	Point(button, "BOTTOMRIGHT", origin, "BOTTOMRIGHT", BOTTOM_SLOTS[slot], BOTTOM_BUTTON_Y)
 end
 
 ---------------------------------------------------------------------------
@@ -371,7 +371,7 @@ local function CreateArt(frame)
 	local function Piece(x, y, width)
 		local texture = frame:CreateTexture(nil, "BORDER")
 		texture:SetSize(width, 256)
-		texture:SetPoint("TOPLEFT", frame, "TOPLEFT", x, y)
+		texture:SetPoint("TOPLEFT", origin, "TOPLEFT", x, y)
 		return texture
 	end
 	-- Vanilla stretched the two middle pieces to 320px.
@@ -399,8 +399,8 @@ local function TileInterior(set)
 		art.interior:SetVertTile(true)
 	end
 	art.interior:ClearAllPoints()
-	art.interior:SetPoint("TOPLEFT", frame, "TOPLEFT", rect[1], rect[2])
-	art.interior:SetPoint("BOTTOMRIGHT", frame, "TOPLEFT", rect[3], rect[4])
+	art.interior:SetPoint("TOPLEFT", origin, "TOPLEFT", rect[1], rect[2])
+	art.interior:SetPoint("BOTTOMRIGHT", origin, "TOPLEFT", rect[3], rect[4])
 end
 
 -- "Browse" (Buy and Auctions tabs) or "Auction" (Sell tab).
@@ -415,6 +415,10 @@ end
 
 local function ApplyFrameChrome(frame)
 	frame:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
+	-- The art is drawn where the other windows open (Blizzard registers the
+	-- frame 20px right of the panel spot); the frame's mouse follows it.
+	origin = ns.ArtOrigin(frame, FRAME_WIDTH, FRAME_HEIGHT)
+	ns.SetArtHitRect(frame, 0, 0, 0, 0)
 	Hide(frame.NineSlice)
 	Hide(frame.Bg)
 	Hide(frame.TopTileStreaks)
@@ -428,19 +432,19 @@ local function ApplyFrameChrome(frame)
 	local portrait = container and container.portrait
 	if portrait then
 		portrait:SetSize(58, 58)
-		Point(portrait, "TOPLEFT", frame, "TOPLEFT", 8, -7)
+		Point(portrait, "TOPLEFT", origin, "TOPLEFT", 8, -7)
 		container:SetFrameStrata("LOW")
 		ns.StripMask(container.CircleMask, portrait)
 	end
 
 	local title = frame.TitleContainer and frame.TitleContainer.TitleText
 	if title then
-		Point(title, "TOP", frame, "TOP", 0, -17)
+		Point(title, "TOP", origin, "TOP", 0, -17)
 	end
 
 	if frame.CloseButton then
 		ns.SkinCloseButton(frame.CloseButton)
-		Point(frame.CloseButton, "TOPRIGHT", frame, "TOPRIGHT", 3, -8)
+		Point(frame.CloseButton, "TOPRIGHT", origin, "TOPRIGHT", 3, -8)
 	end
 
 	-- The player's money: retail draws it in a gold-edged box on an inset at
@@ -452,7 +456,7 @@ local function ApplyFrameChrome(frame)
 		for _, region in ipairs({ border:GetRegions() }) do
 			Fade(region)
 		end
-		Point(border, "BOTTOMRIGHT", frame, "BOTTOMLEFT", 187, 15)
+		Point(border, "BOTTOMRIGHT", origin, "BOTTOMLEFT", 187, 15)
 	end
 
 	-- Tabs: vanilla hung them from the bottom left, 8px into each other.
@@ -462,7 +466,7 @@ local function ApplyFrameChrome(frame)
 		end
 	end
 	if frame.BuyTab then
-		Point(frame.BuyTab, "TOPLEFT", frame, "BOTTOMLEFT", 15, 11)
+		Point(frame.BuyTab, "TOPLEFT", origin, "BOTTOMLEFT", 15, 11)
 	end
 	if frame.SellTab and frame.BuyTab then
 		Point(frame.SellTab, "TOPLEFT", frame.BuyTab, "TOPRIGHT", -8, 0)
@@ -499,19 +503,19 @@ local function LayoutSearchBar(frame)
 
 	art.nameLabel = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	art.nameLabel:SetText(NAME or "Name")
-	art.nameLabel:SetPoint("TOPLEFT", frame, "TOPLEFT", 80, -41)
+	art.nameLabel:SetPoint("TOPLEFT", origin, "TOPLEFT", 80, -41)
 
 	if bar.SearchBox then
 		SkinInputBox(bar.SearchBox, 170, 20)
-		Point(bar.SearchBox, "TOPLEFT", frame, "TOPLEFT", 84, -53)
+		Point(bar.SearchBox, "TOPLEFT", origin, "TOPLEFT", 84, -53)
 	end
 	if bar.FilterButton then
-		Point(bar.FilterButton, "TOPLEFT", frame, "TOPLEFT", 262, -49)
+		Point(bar.FilterButton, "TOPLEFT", origin, "TOPLEFT", 262, -49)
 		ns.SkinDropdownBox(bar.FilterButton, FILTER_DROPDOWN_WIDTH)
 	end
 	if bar.SearchButton then
 		bar.SearchButton:SetSize(80, 22)
-		Point(bar.SearchButton, "TOPRIGHT", frame, "TOPRIGHT", -30, -52)
+		Point(bar.SearchButton, "TOPRIGHT", origin, "TOPRIGHT", -30, -52)
 	end
 	if bar.FavoritesSearchButton and bar.SearchButton then
 		bar.FavoritesSearchButton:SetSize(22, 22)
@@ -591,7 +595,7 @@ local function LayoutCategories(frame)
 	-- Vanilla's "Filters" heading over the column.
 	art.filtersLabel = list:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	art.filtersLabel:SetText(FILTERS or "Filters")
-	art.filtersLabel:SetPoint("TOP", frame, "TOPLEFT", 91, -85)
+	art.filtersLabel:SetPoint("TOP", origin, "TOPLEFT", 91, -85)
 
 	ns.Hook("AuctionHouseFilterButton_SetUp", OnFilterButtonSetUp)
 end
@@ -608,10 +612,10 @@ local function LayoutItemBuy(frame)
 	local buy = frame.ItemBuyFrame
 	if not buy then return end
 	buy:ClearAllPoints()
-	buy:SetAllPoints(frame)
+	buy:SetAllPoints(origin)
 	if buy.BackButton then
 		buy.BackButton:SetSize(80, 22)
-		Point(buy.BackButton, "TOPLEFT", frame, "TOPLEFT", 192, -80)
+		Point(buy.BackButton, "TOPLEFT", origin, "TOPLEFT", 192, -80)
 	end
 	if buy.ItemDisplay then
 		Rect(buy.ItemDisplay, 192, SUB_PANEL_TOP, 815, ITEM_LIST_TOP + 8)
@@ -625,7 +629,7 @@ local function LayoutItemBuy(frame)
 	if buy.BidFrame then
 		if buy.BidFrame.BidButton then ToSlot(buy.BidFrame.BidButton, 1) end
 		if buy.BidFrame.BidAmount then
-			Point(buy.BidFrame.BidAmount, "BOTTOM", frame, "BOTTOM", -12, 18)
+			Point(buy.BidFrame.BidAmount, "BOTTOM", origin, "BOTTOM", -12, 18)
 		end
 	end
 	if buy.BuyoutFrame and buy.BuyoutFrame.BuyoutButton then
@@ -637,15 +641,15 @@ local function LayoutCommoditiesBuy(frame)
 	local buy = frame.CommoditiesBuyFrame
 	if not buy then return end
 	buy:ClearAllPoints()
-	buy:SetAllPoints(frame)
+	buy:SetAllPoints(origin)
 	if buy.BackButton then
 		buy.BackButton:SetSize(80, 22)
-		Point(buy.BackButton, "TOPLEFT", frame, "TOPLEFT", 192, -80)
+		Point(buy.BackButton, "TOPLEFT", origin, "TOPLEFT", 192, -80)
 	end
 	local display = buy.BuyDisplay
 	if display then
-		Point(display, "TOPLEFT", frame, "TOPLEFT", 192, SUB_PANEL_TOP)
-		display:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 192, COLUMN_BOTTOM + 3)
+		Point(display, "TOPLEFT", origin, "TOPLEFT", 192, SUB_PANEL_TOP)
+		display:SetPoint("BOTTOMLEFT", origin, "TOPLEFT", 192, COLUMN_BOTTOM + 3)
 		SkinInset(display)
 		if display.ItemDisplay then
 			SkinItemHeader(display.ItemDisplay, 56)
@@ -653,7 +657,7 @@ local function LayoutCommoditiesBuy(frame)
 	end
 	if buy.ItemList and display then
 		Point(buy.ItemList, "TOPLEFT", display, "TOPRIGHT", 1, 0)
-		buy.ItemList:SetPoint("BOTTOMRIGHT", frame, "TOPLEFT", 815, COLUMN_BOTTOM + 3)
+		buy.ItemList:SetPoint("BOTTOMRIGHT", origin, "TOPLEFT", 815, COLUMN_BOTTOM + 3)
 		SkinItemList(buy.ItemList, false)
 	end
 end
@@ -815,7 +819,7 @@ local function StackSellFrame(sellFrame)
 	local post = sellFrame.PostButton
 	if post then
 		post:SetSize(SELL_PANEL.right - SELL_PANEL.left - 4, 20)
-		Point(post, "BOTTOMLEFT", AuctionHouseFrame, "BOTTOMLEFT", SELL_PANEL.left + 2, 39)
+		Point(post, "BOTTOMLEFT", origin, "BOTTOMLEFT", SELL_PANEL.left + 2, 39)
 	end
 end
 
@@ -830,7 +834,7 @@ local function SkinSellFrame(sellFrame)
 	-- Vanilla's "Create Auction" heading sits in the dark plate of the art.
 	if sellFrame.CreateAuctionLabel then
 		sellFrame.CreateAuctionLabel:SetFontObject(GameFontHighlightSmall)
-		Point(sellFrame.CreateAuctionLabel, "CENTER", AuctionHouseFrame, "TOPLEFT", 115, -59)
+		Point(sellFrame.CreateAuctionLabel, "CENTER", origin, "TOPLEFT", 115, -59)
 	end
 
 	if sellFrame.ItemDisplay then
@@ -862,7 +866,7 @@ local function LayoutSell(frame)
 			-- Retail puts the total / refresh above the list, which would be
 			-- the title bar here; the Auction art's left bottom slot is free.
 			if list.RefreshFrame then
-				Point(list.RefreshFrame, "BOTTOMRIGHT", frame, "BOTTOMRIGHT", BOTTOM_SLOTS[2] - 2, BOTTOM_BUTTON_Y)
+				Point(list.RefreshFrame, "BOTTOMRIGHT", origin, "BOTTOMRIGHT", BOTTOM_SLOTS[2] - 2, BOTTOM_BUTTON_Y)
 			end
 		end
 	end
@@ -885,7 +889,7 @@ local function LayoutAuctions(frame)
 		end
 	end
 	if auctions.AuctionsTab then
-		Point(auctions.AuctionsTab, "TOPLEFT", frame, "TOPLEFT", 18, COLUMN_TOP + 32)
+		Point(auctions.AuctionsTab, "TOPLEFT", origin, "TOPLEFT", 18, COLUMN_TOP + 32)
 	end
 	if auctions.BidsTab and auctions.AuctionsTab then
 		Point(auctions.BidsTab, "TOPLEFT", auctions.AuctionsTab, "TOPRIGHT", -8, 0)
@@ -932,12 +936,12 @@ local function LayoutAuctions(frame)
 	-- Browse art has three 80px slots, so it spans the first two exactly.
 	if auctions.CancelAuctionButton then
 		auctions.CancelAuctionButton:SetSize(BOTTOM_SLOTS[3] - BOTTOM_SLOTS[1], 22)
-		Point(auctions.CancelAuctionButton, "BOTTOMRIGHT", frame, "BOTTOMRIGHT", BOTTOM_SLOTS[2], BOTTOM_BUTTON_Y)
+		Point(auctions.CancelAuctionButton, "BOTTOMRIGHT", origin, "BOTTOMRIGHT", BOTTOM_SLOTS[2], BOTTOM_BUTTON_Y)
 	end
 	if auctions.BidFrame then
 		if auctions.BidFrame.BidButton then ToSlot(auctions.BidFrame.BidButton, 1) end
 		if auctions.BidFrame.BidAmount then
-			Point(auctions.BidFrame.BidAmount, "BOTTOM", frame, "BOTTOM", -12, 18)
+			Point(auctions.BidFrame.BidAmount, "BOTTOM", origin, "BOTTOM", -12, 18)
 		end
 	end
 	if auctions.BuyoutFrame and auctions.BuyoutFrame.BuyoutButton then

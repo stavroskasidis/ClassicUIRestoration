@@ -94,7 +94,6 @@ local DEFAULT_BACKGROUND = "MageFire" -- 1.12's "temporary default for classes w
 -- corner.
 local FRAME_WIDTH, FRAME_HEIGHT = 384, 512
 local HIT_INSET_RIGHT, HIT_INSET_BOTTOM = 30, 45 -- the transparent art right of and under the frame
-local STANDARD_PANEL_HEIGHT = 424               -- as SpellBook.lua: the top line the other panels share
 local PORTRAIT_X, PORTRAIT_Y, PORTRAIT_SIZE = 7, -6, 60
 local TITLE_Y = -18                             -- top of the title, centred
 local CLOSE_X, CLOSE_Y = 340, -25               -- centre
@@ -1026,7 +1025,7 @@ local function SpellBookSpot()
 	local extraWidth = GetUIPanelAttribute and GetUIPanelAttribute(book, "checkFitExtraWidth") or 200
 	local extraHeight = GetUIPanelAttribute and GetUIPanelAttribute(book, "checkFitExtraHeight") or 140
 	local scale = math.min(1, UIParent:GetWidth() / (width + extraWidth), UIParent:GetHeight() / (height + extraHeight))
-	return ns.PlayerSpellsPanel.Left(), ns.PlayerSpellsPanel.Top(0, STANDARD_PANEL_HEIGHT), scale
+	return ns.ClassicArtLeft(scale), ns.ClassicArtTop(scale), scale
 end
 
 -- On every show of the page: the frame goes where the classic spellbook

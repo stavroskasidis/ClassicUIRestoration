@@ -179,6 +179,7 @@ local AMMO_ART = {
 local COLLAPSED_CVAR = "characterFrameCollapsed"
 
 local frame                -- CharacterFrame
+local origin               -- the vanilla art's top-left corner (ns.ArtOrigin), which everything is placed from
 local paperdollArt, generalArt, petArt = {}, {}, {}
 local portrait, levelText, guildText, petNameText
 local attributes           -- the stat boxes' frame
@@ -226,7 +227,7 @@ local function IsPetPage()
 	return PaperDollFrame:IsShown() and PaperDollItemsFrame ~= nil and not PaperDollItemsFrame:IsShown()
 end
 
--- Four files (256 / 128 wide, 256 tall) at the frame's top left.
+-- Four files (256 / 128 wide, 256 tall) at the art's top left (the origin).
 local function CreateArt(list, files, x, y)
 	local pieces = {
 		{ files[1], 256, 0, 0 }, { files[2], 128, 256, 0 },
@@ -236,7 +237,7 @@ local function CreateArt(list, files, x, y)
 		local texture = frame:CreateTexture(nil, "BACKGROUND", nil, -6)
 		texture:SetTexture(piece[1])
 		texture:SetSize(piece[2], 256)
-		texture:SetPoint("TOPLEFT", frame, "TOPLEFT", x + piece[3], y + piece[4])
+		texture:SetPoint("TOPLEFT", origin, "TOPLEFT", x + piece[3], y + piece[4])
 		table.insert(list, texture)
 	end
 end
@@ -257,6 +258,7 @@ local function UpdatePortrait()
 end
 
 local function SkinChrome()
+	origin = ns.ArtOrigin(frame)
 	FadeRegions(frame)
 	CreateArt(paperdollArt, { T.CHARACTER_TAB_ART .. "L1", T.CHARACTER_TAB_ART .. "R1",
 		T.CHARACTER_TAB_ART .. "BottomLeft", T.CHARACTER_TAB_ART .. "BottomRight" }, 0, 0)
@@ -272,7 +274,7 @@ local function SkinChrome()
 
 	portrait = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
 	portrait:SetSize(PORTRAIT_SIZE, PORTRAIT_SIZE)
-	portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", PORTRAIT_X, PORTRAIT_Y)
+	portrait:SetPoint("TOPLEFT", origin, "TOPLEFT", PORTRAIT_X, PORTRAIT_Y)
 	UpdatePortrait()
 	if frame.PortraitContainer then Fade(frame.PortraitContainer.portrait) end
 
@@ -286,20 +288,20 @@ local function SkinChrome()
 	local title = frame.TitleContainer
 	if title then
 		title:ClearAllPoints()
-		title:SetPoint("TOPLEFT", frame, "TOPLEFT", TITLE_LEFT, TITLE_Y)
-		title:SetPoint("TOPRIGHT", frame, "TOPLEFT", TITLE_RIGHT, TITLE_Y)
+		title:SetPoint("TOPLEFT", origin, "TOPLEFT", TITLE_LEFT, TITLE_Y)
+		title:SetPoint("TOPRIGHT", origin, "TOPLEFT", TITLE_RIGHT, TITLE_Y)
 	end
 
 	local close = frame.CloseButton
 	if close then
 		ns.SkinCloseButton(close)
-		Point(close, "CENTER", frame, "TOPLEFT", CLOSE_X, CLOSE_Y)
+		Point(close, "CENTER", origin, "TOPLEFT", CLOSE_X, CLOSE_Y)
 	end
 
 	-- The pages anchor their content to the left pane.
 	local left = frame.LeftPaneHost
 	left:ClearAllPoints()
-	left:SetPoint("TOPLEFT", frame, "TOPLEFT", CONTENT_X, CONTENT_Y)
+	left:SetPoint("TOPLEFT", origin, "TOPLEFT", CONTENT_X, CONTENT_Y)
 	left:SetSize(CONTENT_WIDTH, CONTENT_HEIGHT)
 
 	-- The art follows the page shown. Opened straight on another tab (the
@@ -322,13 +324,13 @@ end
 -- take the mouse; they are cut to the art so that the empty space around it
 -- lets clicks through. The docked pane takes its own clicks.
 local function UpdateHitRects()
-	local right = math.max(0, frame:GetWidth() - HIT_WIDTH)
-	local bottom = math.max(0, frame:GetHeight() - HIT_HEIGHT)
-	frame:SetHitRectInsets(0, right, 0, bottom)
+	local left, right, top, bottom = ns.ArtHitRectInsets(frame, 0, origin:GetWidth() - HIT_WIDTH, 0, origin:GetHeight() - HIT_HEIGHT)
+	right, bottom = math.max(0, right), math.max(0, bottom)
+	frame:SetHitRectInsets(left, right, top, bottom)
 	for _, name in ipairs(CHARACTERFRAME_SUBFRAMES or {}) do
 		local page = _G[name]
 		if page and page.SetHitRectInsets then
-			page:SetHitRectInsets(0, right, 0, bottom)
+			page:SetHitRectInsets(left, right, top, bottom)
 		end
 	end
 end
@@ -431,7 +433,7 @@ local function LayoutTabs()
 			if previous then
 				Point(tab, "TOPLEFT", previous, "TOPRIGHT", -TAB_OVERLAP, 0)
 			else
-				Point(tab, "TOPLEFT", frame, "TOPLEFT", TAB_X, TAB_Y)
+				Point(tab, "TOPLEFT", origin, "TOPLEFT", TAB_X, TAB_Y)
 			end
 			UpdateTab(tab)
 			previous = tab
@@ -447,7 +449,7 @@ local function DockRightPane()
 	local pane = frame.RightPaneHost
 	local width = pane:GetWidth()
 	pane:ClearAllPoints()
-	pane:SetPoint("TOPLEFT", frame, "TOPLEFT", DOCK_X + DOCK_INSET_LEFT, DOCK_Y - DOCK_INSET_TOP)
+	pane:SetPoint("TOPLEFT", origin, "TOPLEFT", DOCK_X + DOCK_INSET_LEFT, DOCK_Y - DOCK_INSET_TOP)
 	pane:SetSize(width, DOCK_HEIGHT - DOCK_INSET_TOP - DOCK_INSET_BOTTOM)
 
 	-- A child of the pane, so it shows and hides with it; at the frame's own
@@ -510,7 +512,7 @@ local function DockRightPane()
 
 	local toggle = frame.RightPaneToggleButton
 	if toggle then
-		Point(toggle, "CENTER", frame, "TOPLEFT", TOGGLE_X, TOGGLE_Y)
+		Point(toggle, "CENTER", origin, "TOPLEFT", TOGGLE_X, TOGGLE_Y)
 	end
 end
 
@@ -534,14 +536,14 @@ local function PlaceSlots()
 		local slot = _G[name]
 		if slot then
 			SkinSlot(slot)
-			Point(slot, "TOPLEFT", frame, "TOPLEFT", SLOT_LEFT_X, SLOT_Y - (index - 1) * SLOT_STRIDE)
+			Point(slot, "TOPLEFT", origin, "TOPLEFT", SLOT_LEFT_X, SLOT_Y - (index - 1) * SLOT_STRIDE)
 		end
 	end
 	for index, name in ipairs(RIGHT_SLOTS) do
 		local slot = _G[name]
 		if slot then
 			SkinSlot(slot)
-			Point(slot, "TOPLEFT", frame, "TOPLEFT", SLOT_RIGHT_X, SLOT_Y - (index - 1) * SLOT_STRIDE)
+			Point(slot, "TOPLEFT", origin, "TOPLEFT", SLOT_RIGHT_X, SLOT_Y - (index - 1) * SLOT_STRIDE)
 		end
 	end
 	-- Without a ranged slot (Blizzard hides it for good at load) the other
@@ -552,7 +554,7 @@ local function PlaceSlots()
 		local slot = _G[name]
 		if slot then
 			SkinSlot(slot)
-			Point(slot, "TOPLEFT", frame, "TOPLEFT", x + (index - 1) * WEAPON_STRIDE, WEAPON_Y)
+			Point(slot, "TOPLEFT", origin, "TOPLEFT", x + (index - 1) * WEAPON_STRIDE, WEAPON_Y)
 		end
 	end
 
@@ -573,10 +575,10 @@ end
 local function SetModelSpot(pet)
 	local scene = CharacterModelScene
 	if pet then
-		Point(scene, "TOPLEFT", frame, "TOPLEFT", PET_MODEL_X, PET_MODEL_Y)
+		Point(scene, "TOPLEFT", origin, "TOPLEFT", PET_MODEL_X, PET_MODEL_Y)
 		scene:SetSize(PET_MODEL_WIDTH, PET_MODEL_HEIGHT)
 	else
-		Point(scene, "TOPLEFT", frame, "TOPLEFT", MODEL_X, MODEL_Y)
+		Point(scene, "TOPLEFT", origin, "TOPLEFT", MODEL_X, MODEL_Y)
 		scene:SetSize(MODEL_WIDTH, MODEL_HEIGHT)
 	end
 end
@@ -637,13 +639,13 @@ local function CreateNameLines(parent)
 	lines:SetAllPoints(frame)
 	lines:SetFrameLevel(CharacterModelScene:GetFrameLevel() + 5)
 	levelText = lines:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	levelText:SetPoint("TOP", frame, "TOPLEFT", (TITLE_LEFT + TITLE_RIGHT) / 2, LEVEL_Y)
+	levelText:SetPoint("TOP", origin, "TOPLEFT", (TITLE_LEFT + TITLE_RIGHT) / 2, LEVEL_Y)
 	guildText = lines:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	guildText:SetPoint("TOP", levelText, "BOTTOM", 0, -1)
 	-- On the title bar (1.12's PetNameText), where Blizzard's title is faded.
 	petNameText = lines:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-	petNameText:SetPoint("TOPLEFT", frame, "TOPLEFT", TITLE_LEFT, TITLE_Y)
-	petNameText:SetPoint("TOPRIGHT", frame, "TOPLEFT", TITLE_RIGHT, TITLE_Y)
+	petNameText:SetPoint("TOPLEFT", origin, "TOPLEFT", TITLE_LEFT, TITLE_Y)
+	petNameText:SetPoint("TOPRIGHT", origin, "TOPLEFT", TITLE_RIGHT, TITLE_Y)
 	petNameText:SetHeight(frame.TitleContainer and frame.TitleContainer:GetHeight() or 20)
 	petNameText:Hide()
 	UpdateLevel()
@@ -872,7 +874,7 @@ local function CreateResistances(parent)
 		if previous then
 			resistance:SetPoint("TOP", previous, "BOTTOM", 0, 0)
 		else
-			resistance:SetPoint("TOPRIGHT", frame, "TOPLEFT", RESIST_RIGHT, RESIST_Y)
+			resistance:SetPoint("TOPRIGHT", origin, "TOPLEFT", RESIST_RIGHT, RESIST_Y)
 		end
 		local icon = resistance:CreateTexture(nil, "BACKGROUND")
 		ns.SetTexture(icon, T.RESISTANCE_ICONS, 0, 1, entry.top, entry.bottom)
@@ -894,7 +896,7 @@ local function CreateStats()
 	attributes = CreateFrame("Frame", nil, PaperDollFrame)
 	attributes:SetFrameLevel(level)
 	attributes:SetSize(2 * STAT_BOX_WIDTH, 85)
-	attributes:SetPoint("TOPLEFT", frame, "TOPLEFT", STATS_X, STATS_Y)
+	attributes:SetPoint("TOPLEFT", origin, "TOPLEFT", STATS_X, STATS_Y)
 	CreateStatBox(attributes, "left", 0)
 	CreateStatBox(attributes, "right", STAT_BOX_WIDTH)
 
@@ -941,7 +943,7 @@ local function CreatePetXPBar()
 	petXPBar = CreateFrame("StatusBar", nil, PaperDollFrame)
 	petXPBar:SetFrameLevel(CharacterModelScene:GetFrameLevel() + 5)
 	petXPBar:SetSize(PET_XP_WIDTH, PET_XP_HEIGHT)
-	petXPBar:SetPoint("TOPLEFT", frame, "TOPLEFT", PET_XP_X, PET_XP_Y)
+	petXPBar:SetPoint("TOPLEFT", origin, "TOPLEFT", PET_XP_X, PET_XP_Y)
 	ns.SetBarTexture(petXPBar, T.STATUS_BAR)
 	petXPBar:SetStatusBarColor(unpack(PET_XP_COLOR))
 	-- The border: two halves of the main menu bar's XP bar frame.
@@ -977,11 +979,11 @@ local function UpdatePetPage()
 	UpdateArt()
 	UpdatePortrait()
 	SetModelSpot(pet)
-	Point(attributes, "TOPLEFT", frame, "TOPLEFT", STATS_X, pet and PET_STATS_Y or STATS_Y)
+	Point(attributes, "TOPLEFT", origin, "TOPLEFT", STATS_X, pet and PET_STATS_Y or STATS_Y)
 	for _, box in pairs(statBoxes) do
 		box.dropdown:SetShown(not pet)
 	end
-	Point(resistances[1], "TOPRIGHT", frame, "TOPLEFT", pet and PET_RESIST_RIGHT or RESIST_RIGHT, RESIST_Y)
+	Point(resistances[1], "TOPRIGHT", origin, "TOPLEFT", pet and PET_RESIST_RIGHT or RESIST_RIGHT, RESIST_Y)
 	UpdateLevel()
 	UpdatePetLines()
 	UpdatePetXPBar()
@@ -993,7 +995,7 @@ end
 local function CreatePetPage()
 	CreatePetXPBar()
 	if PetPaperDollPetHappinessInfo then
-		Point(PetPaperDollPetHappinessInfo, "TOPLEFT", frame, "TOPLEFT", PET_HAPPINESS_X, PET_HAPPINESS_Y)
+		Point(PetPaperDollPetHappinessInfo, "TOPLEFT", origin, "TOPLEFT", PET_HAPPINESS_X, PET_HAPPINESS_Y)
 	end
 
 	ns.Hook("PaperDollFrame_ShowSidebar", UpdatePetPage)
@@ -1039,7 +1041,7 @@ function list.FadeAtlasRegions(owner)
 	end
 end
 
--- Puts a page's list on the vanilla list spot (offsets from the frame's top
+-- Puts a page's list on the vanilla list spot (offsets from the art's top
 -- left), scaled down: its own offsets and size are in its smaller units.
 -- The scroll lines and fading edges go, the scroll bar (Blizzard anchors it
 -- to the list's right edge) becomes the classic knob bar, and a frame over
@@ -1049,7 +1051,7 @@ function list.SkinList(page, left, top, right, bottom, scale)
 	local scrollBox = page.ScrollBox
 	scrollBox:SetScale(scale)
 	scrollBox:ClearAllPoints()
-	scrollBox:SetPoint("TOPLEFT", frame, "TOPLEFT", left / scale, top / scale)
+	scrollBox:SetPoint("TOPLEFT", origin, "TOPLEFT", left / scale, top / scale)
 	scrollBox:SetSize((right - left) / scale, (top - bottom) / scale)
 	for _, child in ipairs({ scrollBox:GetChildren() }) do
 		list.FadeAtlasRegions(child)

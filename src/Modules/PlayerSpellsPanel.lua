@@ -38,29 +38,6 @@ local retail               -- the panel state the classic pages replace
 local classicShown = false -- whether the classic chrome is on the panel
 local mouseQueued = false
 
--- The panel manager puts a panel's top TOP_OFFSET (-116) plus its yoffset
--- below UIParent's top, raised so that its bottom stays 140 above the
--- screen's bottom and its top at least 10 below the screen's top
--- (ClampUIPanelY). Returns that top offset for a panel of the given height.
-function panel.Top(yOffset, height, minYOffset, bottomClamp)
-	local y = (GetUIPanelLayoutAttribute and GetUIPanelLayoutAttribute("TOP_OFFSET") or -116) + yOffset
-	local bottom = UIParent:GetTop() + y - height
-	bottomClamp = bottomClamp or 140
-	if bottom < bottomClamp then
-		y = y + bottomClamp - bottom
-	end
-	return math.min(y, minYOffset or -10)
-end
-
--- The left edge of a "left" area panel (the character frame): LEFT_OFFSET
--- from UIParent's left, in UIParent units. The classic spellbook and talent
--- frames open there when the spellbook panel is on its own (the manager
--- centres the compact panel then), so all the classic windows open at the
--- same spot.
-function panel.Left()
-	return GetUIPanelLayoutAttribute and GetUIPanelLayoutAttribute("LEFT_OFFSET") or 16
-end
-
 local function SaveRetail()
 	local close = book.CloseButton
 	-- ignoreRect: the set size (the panel is still hidden, nothing is laid out yet)

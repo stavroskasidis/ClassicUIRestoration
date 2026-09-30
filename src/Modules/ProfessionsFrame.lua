@@ -19,10 +19,12 @@
 	right edge. The crafting page is re-skinned in place while it is shown;
 	the overview page keeps Blizzard's look:
 
-	  * the vanilla art is drawn at the frame's top left and Blizzard's
-	    border, background and portrait are faded; the frame keeps Blizzard's
-	    size (the panel manager positions it by its registered width) and
-	    takes the mouse only over the art. The title and the side tabs move
+	  * the vanilla art is drawn where the other windows open (the frame is
+	    registered 35px right of the panel spot and lifted higher on small
+	    screens, see UpdateOrigin) and Blizzard's border,
+	    background and portrait are faded; the frame keeps Blizzard's size
+	    (the panel manager positions it by its registered width) and takes
+	    the mouse only over the art. The title and the side tabs move
 	    to the vanilla frame's title bar and right edge; the round classic
 	    close button and Exit are this module's (secure buttons that click
 	    Blizzard's close button, so closing works in combat), Blizzard's
@@ -124,6 +126,8 @@ local REAGENT_ROW_HEIGHT = 43                     -- 41px buttons, 2px apart
 local REAGENTS_LABEL = strtrim(((SPELL_REAGENTS or "Reagents:"):gsub("%%s", "")))
 
 local frame, page                                 -- ProfessionsFrame, its CraftingPage
+local origin                                      -- the vanilla frame's top-left corner, which everything is placed from
+local originX, originY = 0, 0                     -- its offset from the frame's top left (see UpdateOrigin)
 local chrome = {}                                 -- the vanilla frame art (shown with the crafting page)
 local art = {}                                    -- this module's widgets on the crafting page
 local saved = {}                                  -- Blizzard's anchors / hit rect, restored for the overview page
@@ -173,12 +177,39 @@ local function Piece(file, width, height, x, y, layer)
 	local texture = frame:CreateTexture(nil, layer or "BORDER")
 	texture:SetTexture(file)
 	texture:SetSize(width, height)
-	texture:SetPoint("TOPLEFT", frame, "TOPLEFT", x, y)
+	texture:SetPoint("TOPLEFT", origin, "TOPLEFT", x, y)
 	table.insert(chrome, texture)
 	return texture
 end
 
+local function PanelAttribute(name)
+	return ns.PanelAttribute(frame, name)
+end
+
+-- Blizzard registers the frame with xoffset 35, and the manager lifts its
+-- 594px on small screens: the art goes where the other windows are, its
+-- border on the panel spot (ns.ClassicArtTop) and on the left edge the
+-- frame would have without the xoffset (the panel spot, or right after the
+-- panel next to it). Offsets in the frame's units (the manager scales it
+-- down to fit the screen); the art's own units are the frame's.
+local function UpdateOrigin()
+	local scale = frame:GetScale()
+	local height = ((PanelAttribute("height") or frame:GetHeight()) + (PanelAttribute("extraHeight") or 0)) * scale
+	local top = ns.PanelTop(PanelAttribute("yoffset") or 0, height, PanelAttribute("minYOffset"), PanelAttribute("bottomClampOverride"))
+	local x = -(PanelAttribute("xoffset") or 0) / scale - ns.CLASSIC_ART_X
+	local y = (ns.ClassicArtTop(scale) - top) / scale
+	if x ~= originX or y ~= originY or origin:GetNumPoints() == 0 then
+		originX, originY = x, y
+		Point(origin, "TOPLEFT", frame, "TOPLEFT", x, y)
+		return true
+	end
+end
+
 local function CreateChrome()
+	origin = CreateFrame("Frame", nil, frame)
+	origin:SetSize(1, 1)
+	UpdateOrigin()
+
 	local botLeft = ns.HasTexture(T.TRADESKILL_ART .. "BotLeft") and T.TRADESKILL_ART or T.TRAINER_ART
 	Piece(T.TRAINER_ART .. "TopLeft", 256, 256, 0, 0)
 	Piece(T.TRAINER_ART .. "TopRight", 128, 256, 256, 0)
@@ -215,31 +246,43 @@ local function CreateChrome()
 end
 
 -- The frame takes the mouse only over the vanilla art while the crafting
--- page is shown. The frame is protected (the overview page's spell buttons
--- are secure), so its hit rect cannot change in combat (the K binding shows
--- the frame in combat): it follows the page once combat ends.
-local hitRectQueued = false
-local function UpdateHitRect()
+-- page is shown (the art hangs out of the frame on the left and at the
+-- top: negative insets). The frame is protected (the overview page's spell
+-- buttons are secure), and so are the classic close and Exit buttons
+-- (anchored to the frame, never to the origin frame, which would become
+-- protected with them): the hit rect and their spots cannot change in
+-- combat (the K binding shows the frame in combat), they follow the page
+-- and the origin once combat ends.
+local protectedQueued = false
+local buttonsX, buttonsY -- the origin offsets the close / Exit buttons were placed for
+local function UpdateProtected()
 	if InCombatLockdown() then
-		if not hitRectQueued then
-			hitRectQueued = true
+		if not protectedQueued then
+			protectedQueued = true
 			ns:RunOutOfCombat(function()
-				hitRectQueued = false
-				UpdateHitRect()
+				protectedQueued = false
+				UpdateProtected()
 			end)
 		end
 		return
 	end
 	if page:IsShown() then
-		frame:SetHitRectInsets(0, math.max(0, frame:GetWidth() - HIT_WIDTH), 0, math.max(0, frame:GetHeight() - HIT_HEIGHT))
+		local top = -originY
+		frame:SetHitRectInsets(originX, frame:GetWidth() - originX - HIT_WIDTH, top, frame:GetHeight() - top - HIT_HEIGHT)
 	else
 		frame:SetHitRectInsets(unpack(saved.hitRect))
+	end
+	if art.close and (buttonsX ~= originX or buttonsY ~= originY) then
+		buttonsX, buttonsY = originX, originY
+		Point(art.close, "CENTER", frame, "TOPLEFT", originX + CLOSE_X, originY + CLOSE_Y)
+		Point(art.exit, "CENTER", frame, "TOPLEFT", originX + EXIT_X, originY + BUTTON_Y)
 	end
 end
 
 -- The vanilla window while the crafting page is shown, Blizzard's look on
 -- the overview page.
 local function UpdateChrome()
+	UpdateOrigin()
 	local classic = page:IsShown()
 	for _, region in ipairs(chrome) do
 		region:SetShown(classic)
@@ -258,7 +301,7 @@ local function UpdateChrome()
 		close:SetAlpha(blizzardClose and 1 or 0)
 		close:EnableMouse(blizzardClose)
 		if classic and blizzardClose then
-			Point(close, "CENTER", frame, "TOPLEFT", CLOSE_X, CLOSE_Y)
+			Point(close, "CENTER", origin, "TOPLEFT", CLOSE_X, CLOSE_Y)
 		elseif saved.close then
 			RestorePoints(close, saved.close)
 		end
@@ -268,15 +311,15 @@ local function UpdateChrome()
 	if classic then
 		if title then
 			title:ClearAllPoints()
-			title:SetPoint("TOPLEFT", frame, "TOPLEFT", TITLE_LEFT, TITLE_Y)
-			title:SetPoint("TOPRIGHT", frame, "TOPLEFT", TITLE_RIGHT, TITLE_Y)
+			title:SetPoint("TOPLEFT", origin, "TOPLEFT", TITLE_LEFT, TITLE_Y)
+			title:SetPoint("TOPRIGHT", origin, "TOPLEFT", TITLE_RIGHT, TITLE_Y)
 		end
-		if tab then Point(tab, "TOPLEFT", frame, "TOPLEFT", SIDE_TAB_X, SIDE_TAB_Y) end
+		if tab then Point(tab, "TOPLEFT", origin, "TOPLEFT", SIDE_TAB_X, SIDE_TAB_Y) end
 	else
 		if title and saved.title then RestorePoints(title, saved.title) end
 		if tab and saved.tab then RestorePoints(tab, saved.tab) end
 	end
-	UpdateHitRect()
+	UpdateProtected()
 end
 
 ---------------------------------------------------------------------------
@@ -308,12 +351,12 @@ local function PlaceControls()
 	local search = list.SearchBox
 	if search then
 		search:ClearAllPoints()
-		search:SetPoint("TOPLEFT", frame, "TOPLEFT", SEARCH_X, SEARCH_Y)
+		search:SetPoint("TOPLEFT", origin, "TOPLEFT", SEARCH_X, SEARCH_Y)
 		search:SetSize(SEARCH_WIDTH, 20)
 	end
 	local filter = list.FilterDropdown
 	if filter then
-		Point(filter, "TOPRIGHT", frame, "TOPLEFT", FILTER_RIGHT, FILTER_Y)
+		Point(filter, "TOPRIGHT", origin, "TOPLEFT", FILTER_RIGHT, FILTER_Y)
 		ns.SkinDropdownBox(filter, FILTER_WIDTH)
 		-- Its "reset filters" x never goes away on Forever: Blizzard counts
 		-- the filters as default only with unlearned recipes shown, and the
@@ -324,20 +367,20 @@ local function PlaceControls()
 		end
 	end
 	if list.NoResultsText then
-		Point(list.NoResultsText, "TOP", frame, "TOPLEFT", LIST_LEFT + LIST_WIDTH / 2, LIST_TOP - 24)
+		Point(list.NoResultsText, "TOP", origin, "TOPLEFT", LIST_LEFT + LIST_WIDTH / 2, LIST_TOP - 24)
 	end
 
 	-- The quantity spinner is already the classic one (Common-Input-Border,
 	-- the spellbook page arrows); it goes between Create All and Create.
 	local input = page.CreateMultipleInputBox
 	if input then
-		Point(input, "LEFT", frame, "TOPLEFT", INPUT_X, BUTTON_Y)
+		Point(input, "LEFT", origin, "TOPLEFT", INPUT_X, BUTTON_Y)
 		if input.DecrementButton then
 			Point(input.DecrementButton, "RIGHT", input, "LEFT", -INPUT_GAP, 0)
 		end
 	end
 	if page.ViewGuildCraftersButton then
-		Point(page.ViewGuildCraftersButton, "RIGHT", frame, "TOPLEFT", CREATE_X + BUTTON_WIDTH / 2, BUTTON_Y)
+		Point(page.ViewGuildCraftersButton, "RIGHT", origin, "TOPLEFT", CREATE_X + BUTTON_WIDTH / 2, BUTTON_Y)
 	end
 end
 
@@ -411,7 +454,7 @@ end
 local function CreateExpandTab()
 	local holder = CreateFrame("Frame", nil, page)
 	holder:SetSize(54, 32)
-	holder:SetPoint("TOPLEFT", frame, "TOPLEFT", EXPAND_TAB_X, EXPAND_TAB_Y)
+	holder:SetPoint("TOPLEFT", origin, "TOPLEFT", EXPAND_TAB_X, EXPAND_TAB_Y)
 	local left = holder:CreateTexture(nil, "BACKGROUND")
 	left:SetTexture(T.TRAINER_ART .. "ExpandTab-Left")
 	left:SetSize(8, 32)
@@ -577,7 +620,7 @@ local function SkinList()
 	local top = LIST_TOP + pad
 	scrollBox:SetScale(ROW_SCALE)
 	scrollBox:ClearAllPoints()
-	scrollBox:SetPoint("TOPLEFT", frame, "TOPLEFT", ROW_LEFT / ROW_SCALE, top / ROW_SCALE)
+	scrollBox:SetPoint("TOPLEFT", origin, "TOPLEFT", ROW_LEFT / ROW_SCALE, top / ROW_SCALE)
 	scrollBox:SetSize((ROW_WIDTH + pad) / ROW_SCALE, (LIST_HEIGHT + pad) / ROW_SCALE)
 	if scrollBox.GetUpperShadowTexture then
 		Fade(scrollBox:GetUpperShadowTexture())
@@ -589,13 +632,13 @@ local function SkinList()
 		ns.SkinScrollBar(scrollBar)
 		local x = LIST_LEFT + LIST_WIDTH + 6
 		scrollBar:ClearAllPoints()
-		scrollBar:SetPoint("TOPLEFT", frame, "TOPLEFT", x, LIST_TOP)
-		scrollBar:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", x, LIST_TOP - LIST_HEIGHT)
+		scrollBar:SetPoint("TOPLEFT", origin, "TOPLEFT", x, LIST_TOP)
+		scrollBar:SetPoint("BOTTOMLEFT", origin, "TOPLEFT", x, LIST_TOP - LIST_HEIGHT)
 		-- The trough is drawn on the bar, so it goes with it when the list fits.
 		local troughTop, troughBottom = ns.CreateScrollTrough(scrollBar, T.TRAINER_ART .. "ScrollBar", 0.0234375)
 		if troughTop then
-			troughTop:SetPoint("TOPLEFT", frame, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 3, LIST_TOP + 2)
-			troughBottom:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 3, LIST_TOP - LIST_HEIGHT - 2)
+			troughTop:SetPoint("TOPLEFT", origin, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 3, LIST_TOP + 2)
+			troughBottom:SetPoint("BOTTOMLEFT", origin, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 3, LIST_TOP - LIST_HEIGHT - 2)
 		end
 		if ScrollUtil.AddManagedScrollBarVisibilityBehavior then
 			ScrollUtil.AddManagedScrollBarVisibilityBehavior(scrollBox, scrollBar)
@@ -623,7 +666,7 @@ end
 local function CreateRankBar()
 	local bar = CreateFrame("Frame", nil, page)
 	bar:SetSize(RANK_WIDTH, RANK_HEIGHT)
-	bar:SetPoint("TOPLEFT", frame, "TOPLEFT", RANK_X, RANK_Y)
+	bar:SetPoint("TOPLEFT", origin, "TOPLEFT", RANK_X, RANK_Y)
 	-- White at 0.2 under the vertex colour (0, 0, 0.75, 0.5), as 1.12.
 	local background = bar:CreateTexture(nil, "BACKGROUND", nil, -8)
 	background:SetAllPoints(bar)
@@ -740,15 +783,15 @@ local function CreateDetailPane()
 	-- UIPanelScrollFrameTemplate is the classic knob scroll frame; with
 	-- scrollBarHideable the bar only appears when the details overflow.
 	local scroll = CreateFrame("ScrollFrame", nil, page, "UIPanelScrollFrameTemplate")
-	scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", DETAIL_X, DETAIL_Y)
+	scroll:SetPoint("TOPLEFT", origin, "TOPLEFT", DETAIL_X, DETAIL_Y)
 	scroll:SetSize(DETAIL_WIDTH, DETAIL_HEIGHT)
 	scroll.scrollBarHideable = 1
 	if scroll.ScrollBar then
 		scroll.ScrollBar:Hide() -- the template's OnLoad ran before scrollBarHideable was set
 		local troughTop, troughBottom = ns.CreateScrollTrough(scroll.ScrollBar, T.TRAINER_ART .. "ScrollBar", 0)
 		if troughTop then
-			troughTop:SetPoint("TOPLEFT", frame, "TOPLEFT", DETAIL_X + DETAIL_WIDTH - 2, DETAIL_Y + 5)
-			troughBottom:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", DETAIL_X + DETAIL_WIDTH - 2, DETAIL_Y - DETAIL_HEIGHT - 1)
+			troughTop:SetPoint("TOPLEFT", origin, "TOPLEFT", DETAIL_X + DETAIL_WIDTH - 2, DETAIL_Y + 5)
+			troughBottom:SetPoint("BOTTOMLEFT", origin, "TOPLEFT", DETAIL_X + DETAIL_WIDTH - 2, DETAIL_Y - DETAIL_HEIGHT - 1)
 		end
 	end
 	art.detail = scroll
@@ -971,7 +1014,7 @@ end
 
 local function CreateButtons()
 	art.create = CreateProxyButton(page.CreateButton, "Create")
-	art.create:SetPoint("CENTER", frame, "TOPLEFT", CREATE_X, BUTTON_Y)
+	art.create:SetPoint("CENTER", origin, "TOPLEFT", CREATE_X, BUTTON_Y)
 	art.createAll = CreateProxyButton(page.CreateAllButton, "CreateAll")
 	art.createAll:SetPoint("RIGHT", art.create, "LEFT", -CREATE_ALL_GAP, 0)
 end
@@ -995,11 +1038,10 @@ local function CreateCloseButtons()
 	end
 	art.close = Create()
 	ns.SkinCloseButton(art.close)
-	art.close:SetPoint("CENTER", frame, "TOPLEFT", CLOSE_X, CLOSE_Y)
 	art.exit = Create()
 	ns.SkinPanelTextButton(art.exit, EXIT or "Exit")
 	art.exit:SetSize(BUTTON_WIDTH, 22)
-	art.exit:SetPoint("CENTER", frame, "TOPLEFT", EXIT_X, BUTTON_Y)
+	-- Placed by UpdateProtected (UpdateChrome runs right after).
 end
 
 local function SyncButtons()
@@ -1013,7 +1055,7 @@ local function SyncButtons()
 	-- Blizzard puts its crafting cast bar at the bottom of the page on every
 	-- validation; the page is Blizzard's size, so it goes under the art.
 	if page.OverlayCastBarAnchor then
-		Point(page.OverlayCastBarAnchor, "BOTTOM", frame, "TOPLEFT", CASTBAR_X, CASTBAR_Y)
+		Point(page.OverlayCastBarAnchor, "BOTTOM", origin, "TOPLEFT", CASTBAR_X, CASTBAR_Y)
 	end
 end
 
@@ -1054,6 +1096,16 @@ local function Skin()
 	page:HookScript("OnShow", UpdateChrome)
 	page:HookScript("OnHide", UpdateChrome)
 	frame:HookScript("OnShow", UpdateChrome)
+	-- The manager scales the frame to fit the screen when it shows it or
+	-- lays the panels out again.
+	local function Reposition()
+		if frame:IsShown() and UpdateOrigin() then
+			UpdateProtected()
+		end
+	end
+	for _, name in ipairs({ "ShowUIPanel", "UpdateUIPanelPositions" }) do
+		ns.Hook(name, Reposition)
+	end
 	ns.Hook(page, "ValidateControls", function()
 		SyncButtons()
 		UpdateDetails()

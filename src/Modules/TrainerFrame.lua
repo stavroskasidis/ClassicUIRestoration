@@ -94,6 +94,7 @@ local TYPE_COLORS = {
 }
 
 local art = {}                                       -- regions/frames created by this module
+local origin                                         -- the vanilla art's top-left corner (ns.ArtOrigin), which everything is placed from
 local rows = setmetatable({}, { __mode = "k" })      -- skill row -> { bar = highlight texture }
 local headers = setmetatable({}, { __mode = "k" })   -- category row -> { icon = +/- texture }
 local artPrefix                                      -- T.TRAINER_ART or T.TRADESKILL_ART, whichever this client ships
@@ -177,7 +178,8 @@ end
 
 local function ApplyFrameArt(frame)
 	frame:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
-	frame:SetHitRectInsets(0, 34, 0, 75)
+	origin = ns.ArtOrigin(frame, FRAME_WIDTH, FRAME_HEIGHT)
+	ns.SetArtHitRect(frame, 0, 34, 0, 75)
 
 	if frame.NineSlice then frame.NineSlice:Hide() end
 	if frame.Bg then frame.Bg:Hide() end
@@ -192,7 +194,7 @@ local function ApplyFrameArt(frame)
 		local texture = frame:CreateTexture(nil, "BORDER")
 		texture:SetTexture(artPrefix .. name)
 		texture:SetSize(width, height)
-		texture:SetPoint(point, frame, point, 0, 0)
+		texture:SetPoint(point, origin, point, 0, 0)
 		return texture
 	end
 	art.topLeft = Piece("TopLeft", 256, 256, "TOPLEFT")
@@ -220,7 +222,7 @@ local function ApplyFrameArt(frame)
 	local portrait = container and container.portrait or ClassTrainerFramePortrait
 	if portrait then
 		portrait:SetSize(60, 60)
-		Point(portrait, "TOPLEFT", frame, "TOPLEFT", 7, -6)
+		Point(portrait, "TOPLEFT", origin, "TOPLEFT", 7, -6)
 		if container then
 			container:SetFrameStrata("LOW")
 			ns.StripMask(container.CircleMask, portrait)
@@ -229,7 +231,7 @@ local function ApplyFrameArt(frame)
 
 	local title = frame.TitleContainer and frame.TitleContainer.TitleText
 	if title then
-		Point(title, "TOP", frame, "TOP", 0, -17)
+		Point(title, "TOP", origin, "TOP", 0, -17)
 	end
 
 	-- The greeting API went away with the Cataclysm trainer; shown when present.
@@ -238,36 +240,36 @@ local function ApplyFrameArt(frame)
 		art.greeting:SetSize(260, 30)
 		art.greeting:SetJustifyH("LEFT")
 		art.greeting:SetJustifyV("TOP")
-		art.greeting:SetPoint("TOPLEFT", frame, "TOPLEFT", 76, -38)
+		art.greeting:SetPoint("TOPLEFT", origin, "TOPLEFT", 76, -38)
 	end
 
 	local close = frame.CloseButton
 	if close then
 		ns.SkinCloseButton(close)
-		Point(close, "TOPRIGHT", frame, "TOPRIGHT", -29, -8)
+		Point(close, "TOPRIGHT", origin, "TOPRIGHT", -29, -8)
 	end
 
 	local train = ClassTrainerTrainButton or frame.TrainButton
 	if train then
 		train:SetSize(80, 22)
-		Point(train, "CENTER", frame, "TOPLEFT", 224, -420)
+		Point(train, "CENTER", origin, "TOPLEFT", 224, -420)
 	end
 	art.exit = ns.CreatePanelCloseTextButton(frame, EXIT or "Exit")
-	art.exit:SetPoint("CENTER", frame, "TOPLEFT", 305, -420)
+	art.exit:SetPoint("CENTER", origin, "TOPLEFT", 305, -420)
 
 	local money = frame.money or ClassTrainerFrameMoneyFrame
 	if money then
-		Point(money, "BOTTOMRIGHT", frame, "BOTTOMLEFT", 180, 86)
+		Point(money, "BOTTOMRIGHT", origin, "BOTTOMLEFT", 180, 86)
 	end
 	-- Forever's pet trainer shows training points in place of the money.
 	if frame.trainingPoints then
-		Point(frame.trainingPoints, "BOTTOMLEFT", frame, "BOTTOMLEFT", 28, 84)
+		Point(frame.trainingPoints, "BOTTOMLEFT", origin, "BOTTOMLEFT", 28, 84)
 	end
 
 	-- The profession rank bar goes where vanilla had its "All" collapse tab
 	-- (retail has no headers to collapse).
 	if ClassTrainerStatusBar then
-		Point(ClassTrainerStatusBar, "TOPLEFT", frame, "TOPLEFT", 24, -75)
+		Point(ClassTrainerStatusBar, "TOPLEFT", origin, "TOPLEFT", 24, -75)
 	end
 end
 
@@ -277,7 +279,7 @@ end
 local function SkinFilterDropdown(frame)
 	local dropdown = frame.FilterDropdown
 	if not dropdown then return end
-	Point(dropdown, "TOPRIGHT", frame, "TOPRIGHT", -26, -64)
+	Point(dropdown, "TOPRIGHT", origin, "TOPRIGHT", -26, -64)
 	ns.SkinDropdownBox(dropdown, DROPDOWN_WIDTH)
 end
 
@@ -719,38 +721,38 @@ local function LayoutFrame()
 	local boxTop, boxHeight = rowsTop, rowsHeight
 	if step and IsStepPinned() then
 		step:SetSize(ROW_WIDTH, ROW_HEIGHT)
-		Point(step, "TOPLEFT", frame, "TOPLEFT", ROW_LEFT, rowsTop)
+		Point(step, "TOPLEFT", origin, "TOPLEFT", ROW_LEFT, rowsTop)
 		step:Show()
 		boxTop, boxHeight = rowsTop - ROW_HEIGHT, rowsHeight - ROW_HEIGHT
 	elseif step then
 		step:Hide()
 	end
 	-- The ScrollBox's offsets and size are in its own (scaled) units.
-	Point(scrollBox, "TOPLEFT", frame, "TOPLEFT", ROW_LEFT / listScale, boxTop / listScale)
+	Point(scrollBox, "TOPLEFT", origin, "TOPLEFT", ROW_LEFT / listScale, boxTop / listScale)
 	scrollBox:SetSize(ROW_WIDTH / listScale, boxHeight / listScale)
 
 	local scrollBar = frame.ScrollBar
 	if scrollBar then
 		local x = LIST_LEFT + LIST_WIDTH + 6
 		scrollBar:ClearAllPoints()
-		scrollBar:SetPoint("TOPLEFT", frame, "TOPLEFT", x, LIST_TOP)
-		scrollBar:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", x, listBottom)
+		scrollBar:SetPoint("TOPLEFT", origin, "TOPLEFT", x, LIST_TOP)
+		scrollBar:SetPoint("BOTTOMLEFT", origin, "TOPLEFT", x, listBottom)
 	end
 	if art.listTroughTop then
-		Point(art.listTroughTop, "TOPLEFT", frame, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 3, LIST_TOP + 2)
-		Point(art.listTroughBottom, "BOTTOMLEFT", frame, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 3, listBottom - 2)
+		Point(art.listTroughTop, "TOPLEFT", origin, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 3, LIST_TOP + 2)
+		Point(art.listTroughBottom, "BOTTOMLEFT", origin, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 3, listBottom - 2)
 	end
 	if art.barLeft then
-		Point(art.barLeft, "TOPLEFT", frame, "TOPLEFT", 15, listBottom + 5)
+		Point(art.barLeft, "TOPLEFT", origin, "TOPLEFT", 15, listBottom + 5)
 	end
 
 	local detailTop = listBottom - 8
 	local detailHeight = trade and DETAIL_HEIGHT_TRADE or DETAIL_HEIGHT_CLASS
-	Point(art.detail, "TOPLEFT", frame, "TOPLEFT", LIST_LEFT, detailTop)
+	Point(art.detail, "TOPLEFT", origin, "TOPLEFT", LIST_LEFT, detailTop)
 	art.detail:SetSize(LIST_WIDTH, detailHeight)
 	if art.detailTroughTop then
-		Point(art.detailTroughTop, "TOPLEFT", frame, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 2, detailTop + 5)
-		Point(art.detailTroughBottom, "BOTTOMLEFT", frame, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 2, detailTop - detailHeight - 1)
+		Point(art.detailTroughTop, "TOPLEFT", origin, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 2, detailTop + 5)
+		Point(art.detailTroughBottom, "BOTTOMLEFT", origin, "TOPLEFT", LIST_LEFT + LIST_WIDTH - 2, detailTop - detailHeight - 1)
 	end
 
 	if art.greeting then

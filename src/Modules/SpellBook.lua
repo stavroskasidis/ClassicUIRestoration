@@ -108,7 +108,7 @@ local PASSIVE_COLOR = PASSIVE_SPELL_FONT_COLOR or { r = 0.77, g = 0.64, b = 0 } 
 local book, page          -- PlayerSpellsFrame and its spellbook page (SpellBookFrame)
 local origin              -- the vanilla frame's top-left corner, which everything is placed from
 local originOffset = 0    -- origin's offset below the panel's top (see UpdateOrigin)
-local originX = 0         -- and right of the panel's left edge
+local originX = 0         -- and right of the panel's left edge (see OriginX)
 local art = {}            -- regions this module draws on the panel
 local skins = setmetatable({}, { __mode = "k" }) -- Blizzard frame -> what this module added to it
 local passiveHighlight
@@ -126,10 +126,9 @@ end
 -- The compact spellbook panel is registered with yoffset 75 and is 720
 -- tall, so the panel manager puts it above the line the other panels (the
 -- character frame: yoffset 0) share; the book is moved down to where the
--- manager would put a vanilla-sized panel (see PlayerSpellsPanel.Top).
-local STANDARD_PANEL_HEIGHT = 424 -- vanilla SpellBookFrame's panel height (the art without the tab shelf)
-
-local PanelTop = ns.PlayerSpellsPanel.Top
+-- manager would put a vanilla-sized panel, its border where the modern
+-- windows have theirs (ns.ClassicArtTop).
+local PanelTop = ns.PanelTop
 
 local function PanelAttribute(name)
 	return book:GetAttribute("UIPanelLayout-" .. name)
@@ -138,18 +137,19 @@ end
 -- On its own the compact panel is centred (anchored by its top); the book
 -- then goes where a left panel (the character frame) opens instead. Next to
 -- other panels the manager lines the panel up with them (by its top left)
--- and the book stays at its left edge.
+-- and the book's border stays on the panel's left edge (its art's margin
+-- out of it).
 local function OriginX()
 	local left = book:GetLeft()
-	if book:GetPoint(1) ~= "TOP" or not left then return 0 end
-	return ns.PlayerSpellsPanel.Left() * UIParent:GetEffectiveScale() / book:GetEffectiveScale() - left
+	if book:GetPoint(1) ~= "TOP" or not left then return -ns.CLASSIC_ART_X end
+	return ns.PanelLeft() * UIParent:GetEffectiveScale() / book:GetEffectiveScale() - left - ns.CLASSIC_ART_X
 end
 
 local function UpdateOrigin()
 	local scale = book:GetScale()
 	local height = book.GetDesiredMinimizedHeight and book:GetDesiredMinimizedHeight(book:GetTab()) or book:GetHeight(true)
 	local panelTop = PanelTop(PanelAttribute("yoffset") or 0, height * scale, PanelAttribute("minYOffset"), PanelAttribute("bottomClampOverride"))
-	local offset = math.min(0, (PanelTop(0, STANDARD_PANEL_HEIGHT) - panelTop) / scale)
+	local offset = math.min(0, (ns.ClassicArtTop(scale) - panelTop) / scale)
 	local x = OriginX()
 	if offset ~= originOffset or x ~= originX then
 		originOffset, originX = offset, x

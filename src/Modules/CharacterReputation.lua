@@ -211,10 +211,10 @@ function module:Apply()
 
 	local overlay = List.SkinList(page, LIST_LEFT, LIST_TOP, LIST_RIGHT, LIST_BOTTOM, ROW_SCALE)
 	local faction = overlay:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-	faction:SetPoint("TOPLEFT", CharacterFrame, "TOPLEFT", FACTION_LABEL_X, FACTION_LABEL_Y)
+	faction:SetPoint("TOPLEFT", ns.ArtOrigin(CharacterFrame), "TOPLEFT", FACTION_LABEL_X, FACTION_LABEL_Y)
 	faction:SetText(FACTION or "Faction")
 	local standing = overlay:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-	standing:SetPoint("TOPLEFT", CharacterFrame, "TOPLEFT", STANDING_LABEL_X, STANDING_LABEL_Y)
+	standing:SetPoint("TOPLEFT", ns.ArtOrigin(CharacterFrame), "TOPLEFT", STANDING_LABEL_X, STANDING_LABEL_Y)
 	standing:SetText(STANDING or "Standing")
 
 	List.OnRows(page, module, SkinRow, UpdateRow)

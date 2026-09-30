@@ -346,6 +346,14 @@ anything under `build/`.
   closes), for new installs and existing users alike (not in the session that
   shows the rename migration popup), and is the addon's own frame, never a UI panel:
   it closes on Esc through its own keyboard handler, not `UISpecialFrames`.
+- Every window opens where the modern ones (vendor, mailbox) do: frame
+  border on the panel spot. Vanilla art (384x512 files) has a 15px / 14px
+  transparent margin (`ns.CLASSIC_ART_X/Y`, measured 2026-09-29), so a
+  module drawing it on a Blizzard panel places everything from
+  `ns.ArtOrigin(panel)` (the art's corner, which also undoes the panel's
+  registered `xoffset`) and sets its hit rect with `ns.SetArtHitRect`; art
+  the addon places itself uses `ns.ClassicArtLeft/Top`. Never anchor a
+  secure widget to an origin frame (it would become protected).
 - Previews never touch Blizzard's frames: they are drawn with the addon's
   own textures and frames. Only instantiate Blizzard templates without
   `$parent`-named children (they would create globals) and without secure

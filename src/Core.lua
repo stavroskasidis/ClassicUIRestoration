@@ -398,6 +398,103 @@ function ns.HideBarDividers(bar)
 end
 
 ---------------------------------------------------------------------------
+-- The UI panel spot
+---------------------------------------------------------------------------
+
+-- The panel manager puts a panel's top TOP_OFFSET (-116) plus its yoffset
+-- below UIParent's top, raised so that its bottom stays 140 above the
+-- screen's bottom and its top at least 10 below the screen's top
+-- (ClampUIPanelY). Returns that top offset for a panel of the given height,
+-- in UIParent units.
+function ns.PanelTop(yOffset, height, minYOffset, bottomClamp)
+	local y = (GetUIPanelLayoutAttribute and GetUIPanelLayoutAttribute("TOP_OFFSET") or -116) + yOffset
+	local bottom = UIParent:GetTop() + y - height
+	bottomClamp = bottomClamp or 140
+	if bottom < bottomClamp then
+		y = y + bottomClamp - bottom
+	end
+	return math.min(y, minYOffset or -10)
+end
+
+-- The left edge of a "left" area panel (the character frame): LEFT_OFFSET
+-- from UIParent's left, in UIParent units.
+function ns.PanelLeft()
+	return GetUIPanelLayoutAttribute and GetUIPanelLayoutAttribute("LEFT_OFFSET") or 16
+end
+
+-- A panel's layout attribute (xoffset, yoffset, ...). The manager copies
+-- the panel's UIPanelWindows entry onto the frame the first time it
+-- positions it; until then the entry is read.
+function ns.PanelAttribute(panel, name)
+	if panel:GetAttribute("UIPanelLayout-defined") then
+		return panel:GetAttribute("UIPanelLayout-" .. name)
+	end
+	local attributes = UIPanelWindows and panel.GetName and UIPanelWindows[panel:GetName() or ""]
+	return attributes and attributes[name]
+end
+
+-- Every window opens where the modern ones (vendor, mailbox, ...) do: its
+-- frame border on the panel spot. The vanilla art (the 384x512 files of the
+-- spellbook, talents, trainer, trade skill and character windows, the
+-- auction house's) has a transparent margin around the border, which starts
+-- CLASSIC_ART_X right of and CLASSIC_ART_Y below the art's top-left corner
+-- (measured in game on the spellbook, 2026-09-29; the vanilla panels share
+-- its corner), so the art is drawn that far up and left of the spot.
+ns.CLASSIC_ART_X, ns.CLASSIC_ART_Y = 15, 14
+
+-- A vanilla window's art height without its tab shelf: the manager lines
+-- the art up as a panel of that height.
+ns.CLASSIC_PANEL_HEIGHT = 424
+
+-- Where the top-left corner of a vanilla window's art goes when the addon
+-- places it itself (the spellbook and talents, which are drawn on a larger
+-- panel), in UIParent units, for art drawn at `scale` (UIParent's = 1).
+function ns.ClassicArtLeft(scale)
+	return ns.PanelLeft() - ns.CLASSIC_ART_X * (scale or 1)
+end
+
+function ns.ClassicArtTop(scale)
+	scale = scale or 1
+	return ns.PanelTop(0, (ns.CLASSIC_PANEL_HEIGHT - ns.CLASSIC_ART_Y) * scale) + ns.CLASSIC_ART_Y * scale
+end
+
+-- A frame to lay a vanilla window drawn on a Blizzard panel out from: the
+-- size of the art (384x512 by default), at its top-left corner. That is the
+-- panel's top left moved up and left by the art's margin and back by the
+-- panel's registered xoffset (the auction house's), so the border sits
+-- where a modern window's frame would. Not protected: nothing secure may be
+-- anchored to it. One per panel.
+local artOrigins = setmetatable({}, { __mode = "k" })
+function ns.ArtOrigin(panel, width, height)
+	local origin = artOrigins[panel]
+	if not origin then
+		origin = CreateFrame("Frame", nil, panel)
+		origin:SetSize(width or 384, height or 512)
+		local x = -(ns.PanelAttribute(panel, "xoffset") or 0) / panel:GetScale() - ns.CLASSIC_ART_X
+		origin:SetPoint("TOPLEFT", panel, "TOPLEFT", x, ns.CLASSIC_ART_Y)
+		artOrigins[panel] = origin
+	end
+	return origin
+end
+
+-- The hit rect insets that put a panel's mouse (or that of a frame at its
+-- top left, as big as the panel) over a part of its art, at the art's
+-- origin: `left`, `right`, `top`, `bottom` are insets from the art's edges
+-- (the origin's size). They are negative where the art hangs out of the
+-- panel.
+function ns.ArtHitRectInsets(panel, left, right, top, bottom)
+	local origin = ns.ArtOrigin(panel)
+	local x, y = select(4, origin:GetPoint(1))
+	local artRight = x + origin:GetWidth()
+	local artBottom = -y + origin:GetHeight()
+	return x + left, panel:GetWidth() - artRight + right, -y + top, panel:GetHeight() - artBottom + bottom
+end
+
+function ns.SetArtHitRect(panel, left, right, top, bottom)
+	panel:SetHitRectInsets(ns.ArtHitRectInsets(panel, left, right, top, bottom))
+end
+
+---------------------------------------------------------------------------
 -- Classic widget skins shared by the panel modules (trainer, auction house,
 -- window frames)
 ---------------------------------------------------------------------------
