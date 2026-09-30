@@ -5,6 +5,18 @@ in `addon.json` is bumped, add a `## <version>` section here in the same
 commit; a version without a section here gets the list of its commit
 messages instead (see `publish.ps1`).
 
+## 1.25.0
+
+- New Looking For Group option (WoW Forever only): the classic Looking For
+  Group window, as Classic Era draws its group finder. The eye sits in the
+  panel's ring, the classic role icons in the dark band under the title,
+  the categories and activities in the panel's window, and Back / List
+  Self under it. Browse Groups and Who List get the raid browser's top,
+  with their filters in the top band and the lists in the window with the
+  classic scroll bar. The page tabs sit under the frame as vanilla tabs.
+  Listing, searching, inviting and whispering are Blizzard's and keep
+  working.
+
 ## 1.24.0
 
 - New Loot Rolls option: the vanilla need / greed roll box, with the item
