@@ -380,7 +380,9 @@ local function UpdateTab(tab)
 	skin.selected = selected
 end
 
-local function SkinTab(tab)
+-- `label` is the tab's text; Blizzard's tabs of this window are named by
+-- the page they show (TAB_LABELS).
+local function SkinTab(tab, label)
 	local skin = tabSkins[tab]
 	if skin then return skin end
 	skin = {}
@@ -402,7 +404,7 @@ local function SkinTab(tab)
 
 	skin.text = tab:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	skin.text:SetPoint("CENTER", tab, "CENTER", 0, 2)
-	skin.text:SetText(TAB_LABELS[tab.frameName] or "")
+	skin.text:SetText(label or TAB_LABELS[tab.frameName] or "")
 
 	if ns.HasTexture(T.TAB_HIGHLIGHT) then
 		local glow = tab:CreateTexture(nil, "HIGHLIGHT")
@@ -1224,6 +1226,13 @@ ns.CharacterWindow = {
 	CreateArt = CreateArt,
 	SkinSlot = SkinSlot,
 	LayoutModeTabs = LayoutModeTabs,
+	-- The vanilla tab skin on a Blizzard LargeSideTabButtonTemplate tab (the
+	-- group finder's, GroupFinder.lua): SkinTab(tab, label) returns the skin
+	-- (its label is skin.text, its middle piece skin.middle), UpdateTab
+	-- redraws it after a size change.
+	SkinTab = SkinTab,
+	UpdateTab = UpdateTab,
+	TAB_END = TAB_END, TAB_HEIGHT = TAB_HEIGHT, TAB_OVERLAP = TAB_OVERLAP, TAB_TEXT_INTO_END = TAB_TEXT_INTO_END,
 	PORTRAIT_X = PORTRAIT_X, PORTRAIT_Y = PORTRAIT_Y, PORTRAIT_SIZE = PORTRAIT_SIZE,
 	CLOSE_X = CLOSE_X, CLOSE_Y = CLOSE_Y,
 	TITLE_LEFT = TITLE_LEFT, TITLE_RIGHT = TITLE_RIGHT, TITLE_Y = TITLE_Y, LEVEL_Y = LEVEL_Y,

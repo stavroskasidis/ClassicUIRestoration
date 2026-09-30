@@ -23,7 +23,8 @@
 	  * bank: the slot atlases and uniform columns of Camelot\BankFrame.xml.
 	The windows (character, spellbook, talents, trainer, auction house,
 	professions, loot) are in-game screenshots of both looks instead, in
-	Textures\Previews.
+	Textures\Previews; the Looking For Group window has a screenshot of its
+	modern look and a drawing of its classic one (GroupFinder.lua's layout).
 ]]
 
 local _, ns = ...
@@ -66,6 +67,9 @@ ns.PreviewImages = {
 	lootframe = {
 		modern = Image("forever-lootframe-modern", 220, 145, 256, 256),
 		classic = Image("forever-lootframe-classic", 190, 245, 256, 256),
+	},
+	lfgframe = {
+		modern = Image("forever-lfgframe-modern", 240, 256, 256, 256),
 	},
 }
 local Atlas, At, Color, File, Fill, Layer, Mask = K.Atlas, K.At, K.Color, K.File, K.Fill, K.Layer, K.Mask
@@ -232,3 +236,85 @@ Previews.bank.modern = function(c)
 		return holdsItem and "bank-frame-bag-slotframe" or "bank-frame-item-slotframe"
 	end)
 end
+
+---------------------------------------------------------------------------
+-- Looking For Group (GroupFinder.lua: Classic Era's layout on UI-LFG-FRAME)
+---------------------------------------------------------------------------
+
+local LFG_FRAME = "Interface\\LFGFrame\\UI-LFG-FRAME"
+local LFG_ROLES = "Interface\\LFGFrame\\UI-LFG-ICON-ROLES"
+local LFG_ROLE_BACKGROUNDS = "Interface\\LFGFrame\\UI-LFG-ICONS-ROLEBACKGROUNDS"
+local LFG_ROLES_SHOWN = { { "TANK", 0.6 }, { "HEALER", 0.4 }, { "DAMAGER", 0.6, true } }
+local LFG_CATEGORIES = {
+	{ "groupfinder-button-dungeons", "Dungeons" },
+	{ "groupfinder-button-questing", "Quests & Zones" },
+	{ "groupfinder-button-battlegrounds", "Battlegrounds" },
+	{ "groupfinder-button-custom-pve", "Custom" },
+}
+local LFG_TAB_LABELS = { LFG_LIST_TAB_1 or "List Self", LFG_LIST_TAB_2 or "Browse Groups", LFG_LIST_TAB_3 or "Who" }
+
+-- A vanilla tab (UI-Character-InActiveTab, 20px ends) sized to its label;
+-- returns its width.
+local function LfgTab(c, x, y, label, selected)
+	local text = K.Text(c, selected and "GameFontHighlightSmall" or "GameFontNormalSmall", label, "CENTER", 0, 0)
+	local middle = math.max(1, math.ceil(text:GetStringWidth()) - 14)
+	local width = middle + 40
+	File(c, ns.T.TAB_INACTIVE, 20, 32, x, y, "BACKGROUND", 2, { 0, 0.15625, 0, 1 })
+	File(c, ns.T.TAB_INACTIVE, middle, 32, x + 20, y, "BACKGROUND", 2, { 0.15625, 0.84375, 0, 1 })
+	File(c, ns.T.TAB_INACTIVE, 20, 32, x + 20 + middle, y, "BACKGROUND", 2, { 0.84375, 1, 0, 1 })
+	text:ClearAllPoints()
+	At(text, "CENTER", x + width / 2, y - 14, c, "TOPLEFT")
+	return width
+end
+
+-- A disabled red panel button in the band under the window.
+local function LfgButton(c, x, width, label)
+	File(c, "Interface\\Buttons\\UI-Panel-Button-Disabled", width, 22, x, -411, "ARTWORK", 0, { 0, 0.625, 0, 0.6875 })
+	K.Text(c, "GameFontDisable", label, "CENTER", x + width / 2, -422, "TOPLEFT")
+end
+
+Previews.lfgframe = {
+	width = 384, height = 470,
+	classic = function(c)
+		File(c, "Interface\\LFGFrame\\UI-LFG-PORTRAIT", 64, 64, 9, -5, "BACKGROUND", -2)
+		File(c, LFG_FRAME, 512, 256, 0, 0, "BACKGROUND", -1, { 0, 1, 0, 0.5 })
+		local background = Atlas(c, "groupfinder-background-classic", "BACKGROUND", 0, 324, 282)
+		if not background:IsShown() then
+			background = Atlas(c, "groupfinder-background", "BACKGROUND", 0, 324, 282)
+		end
+		At(background, "TOPLEFT", 22, -129)
+		File(c, LFG_FRAME, 512, 256, 0, -256, "BACKGROUND", 1, { 0, 1, 0.5, 1 })
+		K.Text(c, "GameFontNormal", LFG_TITLE or "Looking For Group", "TOP", 192, -17, "TOPLEFT")
+		File(c, "Interface\\Buttons\\UI-Panel-MinimizeButton-Up", 32, 32, 323, -9, "ARTWORK")
+
+		for i, role in ipairs(LFG_ROLES_SHOWN) do
+			local x, y = 67 + (i - 1) * 73, -60
+			File(c, LFG_ROLE_BACKGROUNDS, 80, 80, x - 16, y + 16, "BORDER", 0, { GetBackgroundTexCoordsForRole(role[1]) }):SetAlpha(role[2])
+			File(c, LFG_ROLES, 48, 48, x, y, "ARTWORK", 0, { GetTexCoordsForRole(role[1]) })
+			File(c, "Interface\\Buttons\\UI-CheckBox-Up", 24, 24, x - 5, y - 29, "OVERLAY", 0)
+			if role[3] then
+				File(c, "Interface\\Buttons\\UI-CheckBox-Check", 24, 24, x - 5, y - 29, "OVERLAY", 1)
+			end
+		end
+		File(c, LFG_ROLES, 48, 48, 289, -60, "ARTWORK", 0, { GetTexCoordsForRole("GUIDE") })
+		File(c, "Interface\\Buttons\\UI-CheckBox-Up", 24, 24, 284, -89, "OVERLAY", 0)
+		local badge = Atlas(c, "newplayerchat-chaticon-newcomer", "OVERLAY", 1, 20, 20)
+		At(badge, "BOTTOMRIGHT", 338, -109, c, "TOPLEFT")
+
+		for i, category in ipairs(LFG_CATEGORIES) do
+			local x, y = 40, -143 - (i - 1) * 52
+			local icon = Atlas(c, category[1], "BORDER", 1, 277, 34)
+			At(icon, "TOPLEFT", x + 5, y - 5)
+			local cover = Atlas(c, "groupfinder-button-cover", "ARTWORK", 1, 287, 44)
+			At(cover, "TOPLEFT", x, y)
+			K.Text(c, "GameFontNormal", category[2], "LEFT", x + 20, y - 22, "TOPLEFT")
+		end
+		LfgButton(c, 19, 111, BACK or "Back")
+		LfgButton(c, 235, 109, LFG_POST_GROUP or "List Self")
+
+		local x = 16
+		for i, label in ipairs(LFG_TAB_LABELS) do
+			x = x + LfgTab(c, x, -435, label, i == 1) - 16
+		end
+	end,
+}

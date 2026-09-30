@@ -77,6 +77,8 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/CharacterInspect.lua the vanilla inspect window, Forever only (part of Character Window; its art, slots and tab row
                            through ns.CharacterWindow; Window Frames skips the window through ns.windowOwners)
   Modules/ProfessionsFrame.lua vanilla trade skill window, Forever only (reload; crafting page re-skinned in place, Blizzard's recipe list scaled with its row heights overridden, own detail pane / rank bar / "All" tab / proxy create buttons)
+  Modules/GroupFinder.lua classic Looking For Group window, Forever only (reload; Blizzard_GroupFinder_VanillaStyle's Mainline
+                           frame sized to Classic Era's UI-LFG-FRAME art, pages / lists re-anchored, side tabs as bottom tabs)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
   README.md             user-facing description of every option (both flavors)
 addon.json              addon name, version (single source; the .toc carries @project-version@),
@@ -107,7 +109,7 @@ which hooks the same Blizzard functions *after* the other modules, and
 `Modules/ComboPoints.lua` / `Modules/SpellBook.lua` / `Modules/TalentFrame.lua` /
 `Modules/CharacterFrame.lua` / `Modules/CharacterReputation.lua` / `Modules/CharacterSkills.lua` /
 `Modules/CharacterInspect.lua` /
-`Modules/ProfessionsFrame.lua`, options only Forever has, with
+`Modules/ProfessionsFrame.lua` / `Modules/GroupFinder.lua`, options only Forever has, with
 `Modules/PlayerSpellsPanel.lua` shared by the spellbook and talents), each starting with `if not ns.IS_FOREVER then return end` right
 after `local _, ns = ...`, so on retail they register nothing.
 `ns.IS_FOREVER` (set in `Core.lua` from the Interface version) is the only
@@ -380,6 +382,18 @@ for the token in chat or put it in a file).
   training). A tainted layout (from writing the view's extent or padding)
   gets pet training blocked (2026-09-29), so the trainer list is scaled
   down, never re-extented. Retail rows select through `GetID()`.
+- Looking For Group (Forever only): `Blizzard_GroupFinder_VanillaStyle`
+  (load-on-demand) ships a `Classic\` layout (Classic Era's, drawn with
+  `UI-LFG-FRAME`) and the `Mainline\` one Forever loads
+  (`LFGVANILLA_SETTING_MODERN_STYLE`): `LFGParentFrame` with three
+  PortraitFrameTemplate pages (listing, browse, Forever's who list) and
+  LargeSideTabButtonTemplate tabs. Its bottom tabs `Tab1`-`Tab3` are hidden
+  on every `UpdateTabs`, and their click handler calls a global
+  `LFGParentFrame_SetActiveTab` that is local to another file: use the side
+  tabs. The browse list's anchors come from a
+  `ScrollUtil.AddManagedScrollBarVisibilityBehavior` (offsets from the page's
+  corners, re-applied when its scroll bar shows or hides): move the page,
+  not the list.
 - A texture's `SetAlpha` is its vertex alpha: `GetVertexColor()` on a faded
   texture returns alpha 0, so copy only r, g, b from it.
 - Minimap: `MinimapCluster` is a `ResizeLayoutFrame` (sizes itself to its shown
