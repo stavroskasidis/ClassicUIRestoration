@@ -5,6 +5,16 @@ in `addon.json` is bumped, add a `## <version>` section here in the same
 commit; a version without a section here gets the list of its commit
 messages instead (see `publish.ps1`).
 
+## 1.24.0
+
+- New Loot Rolls option: the vanilla need / greed roll box, with the item
+  in its slot, the name on the classic label plate, the dice (Need) and
+  coin (Greed) buttons, the round close button as Pass and the time left
+  as a yellow bar. Bind on pickup items get the gold box with the gold
+  dragon. Rolling, the bind on pickup question and the tooltips are
+  Blizzard's and keep working; turning the option off brings back the
+  modern box at once.
+
 ## 1.23.0
 
 - New Buffs option: the modern arrow that folds your long and permanent
