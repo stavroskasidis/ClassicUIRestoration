@@ -8,56 +8,164 @@ messages instead (see `publish.ps1`).
 ## 1.25.0
 
 - New Looking For Group option (WoW Forever only): the classic Looking For
-  Group window, as Classic Era draws its group finder. The eye sits in the
-  panel's ring, the classic role icons in the dark band under the title,
-  the categories and activities in the panel's window, and Back / List
-  Self under it. Browse Groups and Who List get the raid browser's top,
-  with their filters in the top band and the lists in the window with the
-  classic scroll bar. The page tabs sit under the frame as vanilla tabs.
-  Listing, searching, inviting and whispering are Blizzard's and keep
-  working.
+  Group window, as Classic Era draws it.
 
 ## 1.24.0
 
-- New Loot Rolls option: the vanilla need / greed roll box, with the item
-  in its slot, the name on the classic label plate, the dice (Need) and
-  coin (Greed) buttons, the round close button as Pass and the time left
-  as a yellow bar. Bind on pickup items get the gold box with the gold
-  dragon. Rolling, the bind on pickup question and the tooltips are
-  Blizzard's and keep working; turning the option off brings back the
-  modern box at once.
+- New Loot Rolls option: the vanilla need / greed roll box, with the gold
+  dragon box for bind on pickup items.
 
 ## 1.23.0
 
-- New Buffs option: the modern arrow that folds your long and permanent
-  buffs away is gone, so every buff always shows, as in classic.
-  Right-click to cancel, tooltips and Edit Mode keep working.
-- Quest Log: with the world map's Show Quest Levels filter on (or colour
-  blind mode), each quest's level shows before its title, as on the map's
-  quest list.
+- New Buffs option: no arrow folding buffs away, every buff always shows.
+- Quest Log: quest levels before the titles when the map's Show Quest
+  Levels filter is on.
 
 ## 1.22.1
 
-- WoW Forever: the Character Window option now also gives the inspect
-  window the vanilla look: the same paperdoll art as your character
-  window, the inspected player's portrait in the ring, name and level line,
-  the slots in the classic frames round the model, the Talents button under
-  the title and the Character / Guild tabs under the frame.
-- Window Frames now also covers the inspect window (on retail, and on WoW
-  Forever with Character Window off).
+- Character Window (WoW Forever): the inspect window gets the vanilla look.
+- Window Frames now also covers the inspect window.
 
 ## 1.22.0
 
-- New Bank option: the vanilla bank window, with the stone panel, the slot
-  wells on their riveted lattice, "Item Slots" / "Bag Slots" labels and the
-  money bar, grown to fit the whole bank. On WoW Forever the bank bags sit
-  in the bag slot row (slots not bought yet tinted red) with the purchase
-  question and cost under them, and the page tabs are the classic side tabs;
-  on retail the Bank / Warband Bank tabs are the vanilla tabs.
-- Window Frames no longer covers the bank (the Bank option draws it).
+- New Bank option: the vanilla bank window, grown to fit the whole bank.
 
 ## 1.21.0
 
-- Classic quest tracker: the objective tracker gets the vanilla quest watch
-  look (no header plates, glows or quest POI buttons, +/- collapse buttons,
-  completed objectives in white, vanilla spacing).
+- New Quest Tracker option: the vanilla quest watch look on the objective
+  tracker.
+
+## 1.20.1
+
+- Classic windows now open in the same spot as the modern ones.
+
+## 1.20.0
+
+- New Window Frames option: the classic border and close button on the
+  other windows (vendor, mailbox, ...).
+- New Quest Log option: the vanilla quest log window.
+
+## 1.19.2
+
+- Trainer Window: fixed pet training at the hunter trainer.
+
+## 1.19.1
+
+- Nameplates: now drawn by the addon, which fixes the broken friendly
+  nameplates in dungeons and raids (those keep the modern look).
+- Setup wizard fix.
+
+## 1.18.2
+
+- Fixed errors from nameplates in retail dungeons.
+
+## 1.18.1
+
+- New XP & Reputation Bars option: the vanilla experience and reputation
+  bars.
+- Character Window (WoW Forever): the vanilla pet page.
+
+## 1.18.0
+
+- New setup wizard on first login (and with `/fmcui setup`) to pick the
+  classic or modern look of each element.
+
+## 1.17.0
+
+- New Game Menu option: the vanilla Esc menu.
+- New Professions Window option (WoW Forever only): the vanilla trade skill
+  window.
+- Error fixes.
+
+## 1.16.0
+
+- New Character Window option (WoW Forever only): the vanilla character
+  window, with its Reputation and Skills tabs.
+
+## 1.15.0
+
+- The addon is now Forevermore Classic UI (formerly Classic UI
+  Restoration); your settings carry over.
+
+## 1.14.1
+
+- One download now serves both retail and WoW Forever.
+- Trainer Window: fixed a glitch at profession trainers on WoW Forever.
+
+## 1.14.0
+
+- New Micro Menu option: the classic micro buttons.
+
+## 1.13.1
+
+- Bags fixes; the key ring gets its own slot on WoW Forever.
+
+## 1.13.0
+
+- New Talents option (WoW Forever only): the vanilla talent frame.
+
+## 1.12.0
+
+- New Combo Points option (WoW Forever only): the classic combo points on
+  the target frame.
+
+## 1.11.0
+
+- New Group Finder Eye option: the classic eye on the minimap.
+
+## 1.10.0
+
+- New Spellbook option (WoW Forever only): the vanilla spellbook.
+
+## 1.9.0
+
+- New Bags option: the vanilla bags bar and bag windows.
+
+## 1.8.1
+
+- Action Bar Art: fixed button borders and padding.
+
+## 1.8.0
+
+- New Action Bar Art option: the vanilla action bar buttons.
+
+## 1.7.0
+
+- New Vendor Window Icons option: the classic repair, sell junk and buyback
+  icons.
+
+## 1.6.0
+
+- New Auction House option: the vanilla auction house.
+
+## 1.5.0
+
+- New Trainer Window option: the vanilla trainer window.
+
+## 1.4.0
+
+- New Breath & Fatigue Bars option: the classic breath and fatigue bars.
+
+## 1.3.0
+
+- New Action Bar Gryphons option: the vanilla gryphons at the ends of the
+  action bar.
+- Fixed health bars flashing red.
+
+## 1.2.1
+
+- Fixed the rested icon overlapping the level in the portrait.
+
+## 1.2.0
+
+- New Loot Window option: the vanilla loot window.
+
+## 1.1.0
+
+- New Minimap option: the classic minimap.
+- Fixed mana bars on WoW Forever.
+
+## 1.0.0
+
+- First release: classic unit frames, cast bars and nameplates, for retail
+  and WoW Forever.

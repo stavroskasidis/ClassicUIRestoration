@@ -185,7 +185,11 @@ back, so follow the steps in order:
    version list in `CHANGELOG.md`: one bullet per player-visible change, in
    players' words (option names as the options page shows them, which
    flavor when only one is affected), no internal refactors, file names or
-   commit hashes.
+   commit hashes. Keep it compact: a bullet is one or two short lines that
+   say what changed or was fixed, not a tour of every piece of art, anchor
+   or behaviour kept from Blizzard (a new option: its name, the flavor and
+   what it restores, e.g. "New Loot Rolls option: the vanilla need / greed
+   roll box."). Small related fixes share one bullet.
 4. **Commit and push.** Change `"version"` in `addon.json` and add the
    `CHANGELOG.md` section in one commit, message `Release <version>` (plus
    the attribution lines), nothing else in it. `git push origin master`.
