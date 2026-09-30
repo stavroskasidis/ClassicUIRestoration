@@ -50,8 +50,8 @@ local GROUPS = {
 		keys = { "minimap", "groupfindereye" } },
 	{ title = "Your Character", text = "Your character window, spellbook, talents, quest log and the quests you track.",
 		keys = { "characterframe", "spellbook", "talents", "questlog", "questtracker" } },
-	{ title = "Out in the World", text = "Looting, training, the bank, and the vendor, mail, quest and other windows.",
-		keys = { "lootframe", "windows", "trainer", "bank" } },
+	{ title = "Out in the World", text = "Looting and rolling on loot, training, the bank, and the vendor, mail, quest and other windows.",
+		keys = { "lootframe", "lootroll", "windows", "trainer", "bank" } },
 	{ title = "Trade", text = "The auction house and your professions.",
 		keys = { "auctionhouse", "professions" } },
 }
@@ -77,6 +77,7 @@ local SUMMARIES = {
 	questlog = "The vanilla quest log window: the quest list with zone headers over the quest's details, opened with the quest log key.",
 	questtracker = "The vanilla quest watch: compact gold titles and objectives, without the modern header plates, quest markers, glows and check marks.",
 	lootframe = "The vanilla loot panel with the skull and the classic item rows.",
+	lootroll = "The vanilla need / greed box: dice, coin and close buttons, gold for bind on pickup items.",
 	windows = "The pre-Dragonflight metal frame, round close button and classic tabs on the vendor, mail, quest, trade and other windows.",
 	trainer = "The vanilla trainer window with the colour-coded skill list.",
 	bank = "The vanilla bank window: the stone panel with its riveted slot wells, the bag slot row and the money bar.",
@@ -136,7 +137,7 @@ end
 -- The options that restyle a window (everything else is part of the HUD),
 -- for the presets.
 local WINDOWS = {
-	gamemenu = true, characterframe = true, spellbook = true, talents = true, questlog = true, lootframe = true,
+	gamemenu = true, characterframe = true, spellbook = true, talents = true, questlog = true, lootframe = true, lootroll = true,
 	windows = true, trainer = true, auctionhouse = true, professions = true,
 }
 

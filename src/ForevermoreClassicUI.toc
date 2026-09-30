@@ -21,6 +21,7 @@ Modules\BuffFrame.lua
 Modules\Nameplates.lua
 Modules\Minimap.lua
 Modules\LootFrame.lua
+Modules\LootRoll.lua
 Modules\TrainerFrame.lua
 Modules\AuctionHouse.lua
 Modules\EndCaps.lua

@@ -1597,6 +1597,76 @@ Previews.lootframe = {
 }
 
 ---------------------------------------------------------------------------
+-- Loot rolls
+---------------------------------------------------------------------------
+
+local ROLL_ITEM = { "Interface\\Icons\\INV_Sword_27", "Cruel Barb" }
+local ROLL_BLUE = { 0, 0.44, 0.87 }
+
+Previews.lootroll = {
+	width = 290, height = 96,
+	classic = function(c)
+		-- LootRoll.lua (Classic Era's GroupLootFrameTemplate): the 243x84
+		-- dialog box, the slot at (3, -3), the plate 9px into its right
+		-- edge, Pass in the corner, the dice over the coin, the timer bar.
+		local box = CreateFrame("Frame", nil, c, "BackdropTemplate")
+		box:SetSize(243, 84)
+		box:SetPoint("TOPLEFT", c, "TOPLEFT", 23, -6)
+		box:SetBackdrop({
+			bgFile = T.ROLL_DIALOG .. "Background", edgeFile = T.ROLL_DIALOG .. "Border",
+			tile = true, tileSize = 32, edgeSize = 32,
+			insets = { left = 11, right = 12, top = 12, bottom = 11 },
+		})
+		File(box, T.ROLL_SLOT, 64, 64, 3, -3, "ARTWORK")
+		File(box, T.ROLL_NAME_FRAME, 128, 64, 58, -13, "ARTWORK")
+		File(box, ROLL_ITEM[1], 34, 34, 18, -18, "ARTWORK", 1)
+		local name = box:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+		name:SetText(ROLL_ITEM[2])
+		name:SetTextColor(unpack(ROLL_BLUE))
+		name:SetJustifyH("LEFT")
+		name:SetSize(90, 30)
+		name:SetPoint("LEFT", box, "TOPLEFT", 62, -30)
+		File(box, T.ROLL_DIALOG .. "Corner", 32, 32, 243 - 6 - 32, -7, "OVERLAY")
+		File(box, T.PANEL_CLOSE .. "Up", 32, 32, 243 - 32 - 1, -2, "OVERLAY", 1)
+		File(box, T.ROLL_NEED .. "Up", 32, 32, 243 - 37 - 32, -14, "OVERLAY")
+		File(box, T.ROLL_GREED .. "Up", 32, 32, 243 - 37 - 32 - 2, -14 - 32 + 2, "OVERLAY")
+		Color(box, 0, 0, 0, 1, 152, 10, 16, -57, "ARTWORK", 2)
+		Fill(box, "Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar", 152, 10, 0.6, YELLOW, "ARTWORK", 3)
+			:SetPoint("TOPLEFT", box, "TOPLEFT", 16, -57)
+		File(box, T.ROLL_BAR_BORDER, 156, 20, 14, -52, "OVERLAY")
+	end,
+	modern = function(c)
+		-- GroupLootFrame.xml: the 277x67 loot toast, the need / pass /
+		-- greed icons at the right, the timer along the bottom.
+		local box = CreateFrame("Frame", nil, c)
+		box:SetSize(277, 67)
+		box:SetPoint("CENTER", c, "CENTER", 0, 0)
+		local background = File(box, "Interface\\LootFrame\\LootToast", 277, 67, 0, 0, "BACKGROUND", 0,
+			{ 0.28222656, 0.55273438, 0.30859375, 0.57031250 })
+		local border = File(box, "Interface\\LootFrame\\LootToast", 286, 76, 0, 0, "BORDER", 0,
+			{ 0.00097656, 0.28027344, 0.43750000, 0.73437500 })
+		border:ClearAllPoints()
+		border:SetPoint("CENTER", box, "CENTER", 0, 0)
+		border:SetVertexColor(unpack(ROLL_BLUE))
+		File(box, ROLL_ITEM[1], 34, 34, 10, -13, "ARTWORK")
+		local itemBorder = Atlas(box, "loottoast-itemborder-blue", "OVERLAY", 0, 42, 42)
+		itemBorder:SetPoint("CENTER", background, "TOPLEFT", 27, -30)
+		local name = box:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+		name:SetText(ROLL_ITEM[2])
+		name:SetTextColor(unpack(ROLL_BLUE))
+		name:SetJustifyH("LEFT")
+		name:SetSize(125, 30)
+		name:SetPoint("TOPLEFT", box, "TOPLEFT", 60, -15)
+		Atlas(box, "lootroll-toast-icon-need-up", "OVERLAY", 0, 32, 32):SetPoint("TOPRIGHT", box, "TOPRIGHT", -44, -6)
+		Atlas(box, "lootroll-toast-icon-pass-up", "OVERLAY", 0, 32, 32):SetPoint("TOPLEFT", box, "TOPRIGHT", -44 + 6, -6 + 2)
+		Atlas(box, "lootroll-toast-icon-greed-up", "OVERLAY", 0, 32, 32):SetPoint("TOPRIGHT", box, "TOPRIGHT", -44, -6 - 32 + 5)
+		Color(box, 0, 0, 0, 1, 190, 8, 3, -57, "ARTWORK", 1)
+		Fill(box, "Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar", 190, 8, 0.6, YELLOW, "ARTWORK", 2)
+			:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -57)
+	end,
+}
+
+---------------------------------------------------------------------------
 -- Panels: trainer, professions, auction house, character, spellbook, talents
 ---------------------------------------------------------------------------
 

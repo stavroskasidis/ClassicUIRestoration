@@ -42,7 +42,7 @@ every supported version in the file's Game Version field:
 - **Action bars:** Bar Art, Gryphons, XP & Reputation Bars, Bags, Micro Menu
 - **Minimap:** Minimap, Group Finder Eye
 - **Windows:** Window Frames (vendor, mail, quests, trade, social,
-  inspect and more), Quest Log, Game Menu, Loot, Trainer, Bank, Auction House,
+  inspect and more), Quest Log, Game Menu, Loot, Loot Rolls, Trainer, Bank, Auction House,
   Character\*, Spellbook\*, Talents\*, Professions\*
 
 \* _WoW Forever only_
