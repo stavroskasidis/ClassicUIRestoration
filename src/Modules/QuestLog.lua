@@ -160,9 +160,18 @@ local function QuestTag(info)
 	return tagInfo and tagInfo.tagName or nil
 end
 
--- 1.x listed the titles two spaces in, without the level Forever's map adds.
+-- 1.x listed the titles two spaces in, without a level. The level goes in
+-- front when the game shows it on the map's quest list too (its Show Quest
+-- Levels filter, or colour blind mode: QuestMapFrameOverrides.GetQuestTitlePrefix).
+local LEVEL_CVARS = { showquestlevel = true, colorblindmode = true }
+
 local function TitleText(info)
-	return "  " .. (info.title or "")
+	local title = info.title or ""
+	if GetCVarBool("showQuestLevel") or GetCVarBool("colorblindMode") then
+		local level = info.difficultyLevel or info.level
+		if level then title = "[" .. level .. "] " .. title end
+	end
+	return "  " .. title
 end
 
 local function DifficultyColor(info)
@@ -766,10 +775,13 @@ local function CreateWindow()
 		PlaySound(SOUNDKIT.IG_QUEST_LOG_CLOSE)
 		UpdateMicroButton()
 	end)
-	for _, event in ipairs({ "QUEST_LOG_UPDATE", "QUEST_WATCH_LIST_CHANGED", "GROUP_ROSTER_UPDATE" }) do
+	for _, event in ipairs({ "QUEST_LOG_UPDATE", "QUEST_WATCH_LIST_CHANGED", "GROUP_ROSTER_UPDATE", "CVAR_UPDATE" }) do
 		frame:RegisterEvent(event)
 	end
-	frame:SetScript("OnEvent", Update)
+	frame:SetScript("OnEvent", function(_, event, name)
+		if event == "CVAR_UPDATE" and not LEVEL_CVARS[tostring(name):lower()] then return end
+		Update()
+	end)
 
 	-- Redraw the details once another user of QuestInfo lets go of it.
 	for _, other in ipairs({ QuestFrame, QuestLogPopupDetailFrame, QuestMapFrame and QuestMapFrame.DetailsFrame }) do

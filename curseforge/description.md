@@ -38,7 +38,7 @@ every supported version in the file's Game Version field:
 
 ## What it changes
 
-- **HUD:** Unit Frames, Combo Points\*, Cast Bars, Nameplates, Breath & Fatigue Bars, Quest Tracker
+- **HUD:** Unit Frames, Combo Points\*, Cast Bars, Buffs, Nameplates, Breath & Fatigue Bars, Quest Tracker
 - **Action bars:** Bar Art, Gryphons, XP & Reputation Bars, Bags, Micro Menu
 - **Minimap:** Minimap, Group Finder Eye
 - **Windows:** Window Frames (vendor, mail, quests, trade, social,

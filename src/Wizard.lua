@@ -38,8 +38,8 @@ UI.ICON = "Interface\\AddOns\\" .. ns.ADDON_NAME .. "\\Icon.png"
 ---------------------------------------------------------------------------
 
 local GROUPS = {
-	{ title = "Unit Frames", text = "The frames of you, your target, your party and bosses, and the bars that go with them.",
-		keys = { "unitframes", "combopoints", "castbars" } },
+	{ title = "Unit Frames", text = "The frames of you, your target, your party and bosses, the bars that go with them and your buffs.",
+		keys = { "unitframes", "combopoints", "castbars", "buffs" } },
 	{ title = "Nameplates & Timers", text = "The bars over the heads of the creatures around you, and the breath and fatigue timers.",
 		keys = { "nameplates", "mirrortimers" } },
 	{ title = "Action Bars", text = "The bars your spells live on, their gryphons, the XP bar over them and the bags next to them.",
@@ -60,6 +60,7 @@ local SUMMARIES = {
 	unitframes = "The classic player, target, focus, party and boss frames, with round portraits and flat health and power bars.",
 	combopoints = "Combo points down the side of the target's portrait instead of in an arc over its top.",
 	castbars = "The classic cast bar: its border, spark and colours.",
+	buffs = "Your buffs without the modern arrow that folds them away: every buff shows, as in classic.",
 	nameplates = "The classic nameplate: its border, a flat health bar and the level in its bubble.",
 	mirrortimers = "The classic breath, fatigue and feign death bars.",
 	actionbars = "Square button borders and the embossed vanilla bar behind the main bar's buttons.",

@@ -535,6 +535,42 @@ Previews.mirrortimers = {
 }
 
 ---------------------------------------------------------------------------
+-- Buffs
+---------------------------------------------------------------------------
+
+local BUFFS = {
+	{ "Interface\\Icons\\Spell_Holy_WordFortitude", "30 m" },
+	{ "Interface\\Icons\\Spell_Nature_Regeneration", "28 m" },
+	{ "Interface\\Icons\\Spell_Holy_MagicalSentry", "15 m" },
+	{ "Interface\\Icons\\Spell_Holy_FistOfJustice", "4 m" },
+}
+local BUFF_SIZE, BUFF_PADDING, BUFF_ARROW_WIDTH = 30, 5, 15
+local BUFFS_RIGHT = 8 + #BUFFS * (BUFF_SIZE + BUFF_PADDING) - BUFF_PADDING
+
+-- BuffFrame.lua: the icons added leftwards from the arrow's left edge, the
+-- duration under each; the arrow keeps its place with the option on.
+local function BuffIcons(c)
+	for i, buff in ipairs(BUFFS) do
+		local x = BUFFS_RIGHT - i * BUFF_SIZE - (i - 1) * BUFF_PADDING
+		File(c, buff[1], BUFF_SIZE, BUFF_SIZE, x, -6, "ARTWORK")
+		Text(c, "GameFontNormalSmall", buff[2], "TOP", x + BUFF_SIZE / 2, -6 - BUFF_SIZE, "TOPLEFT")
+	end
+end
+
+Previews.buffs = {
+	width = BUFFS_RIGHT + BUFF_ARROW_WIDTH + 8, height = 56,
+	classic = BuffIcons,
+	modern = function(c)
+		BuffIcons(c)
+		-- BuffFrame.xml: "bag-arrow" 10x16 in the 15x30 button, turned half
+		-- round (UpdateOrientation) while the buffs are expanded.
+		local arrow = Atlas(c, "bag-arrow", "ARTWORK", 0, 10, 16)
+		arrow:SetPoint("CENTER", c, "TOPLEFT", BUFFS_RIGHT + BUFF_ARROW_WIDTH / 2, -6 - BUFF_SIZE / 2)
+		arrow:SetRotation(math.pi)
+	end,
+}
+
+---------------------------------------------------------------------------
 -- Nameplates
 ---------------------------------------------------------------------------
 
