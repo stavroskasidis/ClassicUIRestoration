@@ -1293,6 +1293,107 @@ Previews.questlog = {
 }
 
 ---------------------------------------------------------------------------
+-- Quest tracker
+---------------------------------------------------------------------------
+
+local FALLBACK_TRACKED = {
+	{ title = "Kobold Camp Cleanup", objectives = { { "Kobold Vermin slain: 10/10", true }, { "Kobold Worker slain: 4/10" } } },
+	{ title = "Bounty on Murlocs", objectives = { { "Torn Murloc Fin: 3/8" } } },
+}
+
+-- The player's first tracked quests (two objectives each), or stock ones.
+local function TrackedQuests(count)
+	local quests = {}
+	if C_QuestLog and C_QuestLog.GetNumQuestWatches then
+		for i = 1, C_QuestLog.GetNumQuestWatches() do
+			if #quests >= count then break end
+			local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
+			local title = questID and C_QuestLog.GetTitleForQuestID(questID)
+			local objectives = questID and C_QuestLog.GetQuestObjectives(questID)
+			if title and type(objectives) == "table" and #objectives > 0 then
+				local quest = { title = title, complete = C_QuestLog.IsComplete(questID), objectives = {} }
+				for j = 1, math.min(#objectives, 2) do
+					quest.objectives[j] = { objectives[j].text or "", objectives[j].finished }
+				end
+				quests[#quests + 1] = quest
+			end
+		end
+	end
+	if #quests == 0 then
+		quests = FALLBACK_TRACKED
+	end
+	return quests
+end
+
+local TRACKER_X, TRACKER_WIDTH = 12, 260
+local TRACKER_TITLE = { 0.75, 0.61, 0 }      -- OBJECTIVE_TRACKER_COLOR Header
+local TRACKER_LINE = { 0.8, 0.8, 0.8 }       -- Normal
+local TRACKER_LINE_MET = { 0.6, 0.6, 0.6 }   -- Complete
+
+-- Blizzard_ObjectiveTracker's layout: the 32px "All Objectives" header,
+-- the first section 38px down with its 26px header, blocks 20px in and 10px
+-- apart, lines 4px apart.
+local function TrackerPicture(c, classic)
+	local function Header(y, height, plate, label, buttonAtlas, buttonX)
+		local centerY = y - height / 2
+		if not classic then
+			Atlas(c, plate, "BACKGROUND", 0):SetPoint("CENTER", c, "TOPLEFT", TRACKER_X + TRACKER_WIDTH / 2, centerY)
+		end
+		Text(c, "GameFontNormalMed2", label, "LEFT", TRACKER_X + 7, centerY, "TOPLEFT")
+		local button
+		if classic then
+			button = File(c, T.MINUS_BUTTON .. "Up", 16, 16, 0, 0, "ARTWORK")
+			button:ClearAllPoints()
+		else
+			button = Atlas(c, buttonAtlas, "ARTWORK", 0)
+		end
+		button:SetPoint("CENTER", c, "TOPLEFT", TRACKER_X + TRACKER_WIDTH + buttonX, centerY)
+	end
+	Header(0, 32, "ui-questtracker-primary-objective-header", TRACKER_ALL_OBJECTIVES or "All Objectives",
+		"ui-questtrackerbutton-collapse-all", -10)
+	Header(-38, 26, "UI-QuestTracker-Secondary-Objective-Header", TRACKER_HEADER_QUESTS or "Quests",
+		"ui-questtrackerbutton-secondary-collapse", -7)
+
+	-- QuestTracker.lua's vanilla spacing: no POI button, titles in line with
+	-- the section name, objectives 1px apart, 4px between quests.
+	local lineGap, blockGap = classic and 1 or 4, classic and 4 or 10
+	local x, y = TRACKER_X + (classic and 7 or 20), -38 - 26 - 10
+	for i, quest in ipairs(TrackedQuests(2)) do
+		if i > 2 then break end
+		local titleColor = (classic and quest.complete) and { 1, 0.82, 0 } or TRACKER_TITLE
+		local title = Text(c, "GameFontHighlight", quest.title, "TOPLEFT", x, y, nil, titleColor)
+		title:SetWidth(TRACKER_WIDTH - 20)
+		title:SetJustifyH("LEFT")
+		title:SetWordWrap(false)
+		y = y - 12
+		for _, objective in ipairs(quest.objectives) do
+			y = y - lineGap
+			local met = objective[2]
+			local color = met and (classic and WHITE or TRACKER_LINE_MET) or TRACKER_LINE
+			local dash = Text(c, "GameFontHighlight", QUEST_DASH or "- ", "TOPLEFT", x, y + 1, nil, color)
+			if met and not classic then
+				dash:SetAlpha(0)
+				Atlas(c, "ui-questtracker-tracker-check", "ARTWORK", 0, 16, 16):SetPoint("TOPLEFT", c, "TOPLEFT", x - 10, y + 2)
+			end
+			local text = Text(c, "GameFontHighlight", objective[1], "TOPLEFT", 0, 0, nil, color)
+			text:ClearAllPoints()
+			text:SetPoint("TOPLEFT", dash, "TOPRIGHT", 0, -1)
+			text:SetWidth(TRACKER_WIDTH - 20 - dash:GetStringWidth())
+			text:SetJustifyH("LEFT")
+			text:SetWordWrap(false)
+			y = y - 12
+		end
+		y = y - blockGap
+	end
+end
+
+Previews.questtracker = {
+	width = TRACKER_X + TRACKER_WIDTH + 8, height = 172,
+	classic = function(c) TrackerPicture(c, true) end,
+	modern = function(c) TrackerPicture(c, false) end,
+}
+
+---------------------------------------------------------------------------
 -- Loot window
 ---------------------------------------------------------------------------
 

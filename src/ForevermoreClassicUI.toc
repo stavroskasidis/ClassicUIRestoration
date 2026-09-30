@@ -32,6 +32,7 @@ Modules\BagFrames.lua
 Modules\MicroMenu.lua
 Modules\GameMenu.lua
 Modules\QuestLog.lua
+Modules\QuestTracker.lua
 Modules\PlayerSpellsPanel.lua
 Modules\SpellBook.lua
 Modules\TalentFrame.lua

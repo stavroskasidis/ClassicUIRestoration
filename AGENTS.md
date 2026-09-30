@@ -57,6 +57,9 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/QuestLog.lua     vanilla quest log (reload; the addon's own window, since the modern quest log is the world map's
                            side panel: list from C_QuestLog, details by QuestInfo_Display, opened by override bindings and a
                            button over the micro button)
+  Modules/QuestTracker.lua vanilla quest watch look on the objective tracker (live; header plates, glows, check marks and
+                           quest POI buttons hidden, +/- collapse buttons, met objectives white, quest blocks / lines
+                           re-anchored to vanilla spacing, all from hooks on each module's EndLayout)
   Textures/                bundled art (UI-Merchant-SellJunk.tga, the vanilla-style Sell All Junk icon;
                            UI-Character-ReputationBar.tga, the 1.12 reputation row art;
                            UI-MicroButton-MainMenu/Quest/Socials-*.tga, the vanilla micro buttons from the

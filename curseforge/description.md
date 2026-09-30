@@ -13,7 +13,7 @@ UI"; the addon folder is `ForevermoreClassicUI`.)
 
 ## Summary (short field, under 250 characters)
 
-The best Classic UI addon. Make the UI as Classic as you want. Every UI feature and Edit Mode keeps working. Classic unit frames, action bars, minimap, bags, nameplates and more, each switchable. For Forever & Retail.
+The best Classic UI addon. Make the UI as Classic as you want. It's a reskin the UI, not replaces it so all features keeps working. Classic unit frames, action bars, minimap, bags, nameplates and more, each switchable. For Forever & Retail.
 
 ## Categories
 
@@ -38,7 +38,7 @@ every supported version in the file's Game Version field:
 
 ## What it changes
 
-- **HUD:** Unit Frames, Combo Points\*, Cast Bars, Nameplates, Breath & Fatigue Bars
+- **HUD:** Unit Frames, Combo Points\*, Cast Bars, Nameplates, Breath & Fatigue Bars, Quest Tracker
 - **Action bars:** Bar Art, Gryphons, XP & Reputation Bars, Bags, Micro Menu
 - **Minimap:** Minimap, Group Finder Eye
 - **Windows:** Window Frames (vendor, mail, quests, trade, bank, social and
