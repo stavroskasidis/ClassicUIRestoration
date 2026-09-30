@@ -5,6 +5,16 @@ in `addon.json` is bumped, add a `## <version>` section here in the same
 commit; a version without a section here gets the list of its commit
 messages instead (see `publish.ps1`).
 
+## 1.22.1
+
+- WoW Forever: the Character Window option now also gives the inspect
+  window the vanilla look: the same paperdoll art as your character
+  window, the inspected player's portrait in the ring, name and level line,
+  the slots in the classic frames round the model, the Talents button under
+  the title and the Character / Guild tabs under the frame.
+- Window Frames now also covers the inspect window (on retail, and on WoW
+  Forever with Character Window off).
+
 ## 1.22.0
 
 - New Bank option: the vanilla bank window, with the stone panel, the slot
