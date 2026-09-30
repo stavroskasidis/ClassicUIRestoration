@@ -152,7 +152,7 @@ UI.PRESETS = {
 	{ title = "Classic HUD, modern windows", text = "Classic frames, bars and minimap; the windows keep their modern look.", hud = true, windows = false },
 	{ title = "Classic windows, modern HUD", text = "Classic character, spellbook, trade and other windows; a modern HUD.", hud = false, windows = true },
 	-- Not a preset: opens the page-by-page choice.
-	{ title = "Custom", text = "Pick Modern or Classic for each element, with a picture of both.", choose = true },
+	{ title = "Custom", text = "Pick and choose which parts of the UI to convert to Classic.", choose = true },
 }
 
 local function PresetLook(preset, module)
