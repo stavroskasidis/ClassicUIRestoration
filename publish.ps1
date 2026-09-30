@@ -27,7 +27,7 @@
 	Release type: a version with "alpha" or "beta" in its suffix
 	(1.22.0-beta1) is uploaded as that type, any other as a release.
 
-	The CurseForge API token (https://legacy.curseforge.com/account/api-tokens)
+	The CurseForge API token (https://authors.curseforge.com/#/settings/api-tokens)
 	is read from the CURSEFORGE_API_TOKEN environment variable; in CI it is the
 	repository secret of the same name.
 
@@ -196,7 +196,7 @@ if (-not $Token) {
 		Write-Host "Dry run without CURSEFORGE_API_TOKEN: game versions not resolved, nothing uploaded."
 		exit 0
 	}
-	throw "Set CURSEFORGE_API_TOKEN to a CurseForge API token (https://legacy.curseforge.com/account/api-tokens)."
+	throw "Set CURSEFORGE_API_TOKEN to a CurseForge API token (https://authors.curseforge.com/#/settings/api-tokens)."
 }
 $Headers = @{ "X-Api-Token" = $Token }
 

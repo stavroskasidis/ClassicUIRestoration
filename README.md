@@ -94,7 +94,7 @@ Details:
   (`1.22.0-beta1`) goes to CurseForge as that type and is a pre-release on
   GitHub; any other version is a release.
 - **Token:** the repository secret `CURSEFORGE_API_TOKEN` (a CurseForge API
-  token from https://legacy.curseforge.com/account/api-tokens).
+  token from https://authors.curseforge.com/#/settings/api-tokens).
 - **Retrying:** a version is released once (its `v<version>` tag marks it).
   If a release job fails, fix the cause and use *Run workflow* on the Build
   workflow in the Actions tab: a manual run releases the current version if
