@@ -1,6 +1,9 @@
 {
 	"name": "ForevermoreClassicUI",
 	"version": "1.21.0",
+	"curseforge": {
+		"projectId": 1700272
+	},
 	"flavors": {
 		"Retail": {
 			"gameDir": "_retail_"

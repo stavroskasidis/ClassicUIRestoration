@@ -74,13 +74,20 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/ProfessionsFrame.lua vanilla trade skill window, Forever only (reload; crafting page re-skinned in place, Blizzard's recipe list scaled with its row heights overridden, own detail pane / rank bar / "All" tab / proxy create buttons)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
   README.md             user-facing description of every option (both flavors)
-addon.json              addon name, version (single source; the .toc carries @project-version@)
-                        and the flavors with the game folder each deploys to ("gameDir")
+addon.json              addon name, version (single source; the .toc carries @project-version@),
+                        the CurseForge project id ("curseforge") and the flavors with the game
+                        folder each deploys to ("gameDir")
 build.ps1               copies src\ into build\ForevermoreClassicUI\ and zips it as
                         build\ForevermoreClassicUI-<version>.zip (CurseForge layout, one file for every flavor)
 build/                  build output (git-ignored); what deploy.ps1 copies into the game
 deploy.ps1              builds once + mirrors the build into every installed flavor (-Flavor X for one)
 deploy.config.json      machine-specific WoW path (git-ignored, never commit)
+publish.ps1             build + changelog (build\CHANGELOG.md) + CurseForge upload (API token from
+                        CURSEFORGE_API_TOKEN; -DryRun uploads nothing); run by CI
+CHANGELOG.md            release notes, a "## <version>" section per release (else commit subjects)
+.github/workflows/build.yml  CI, master only: Lua 5.1 syntax + .toc file list + build on every push;
+                        a push that changes addon.json's version runs publish.ps1 and creates the
+                        GitHub release v<version>
 tools/make_previews.py  crops in-game screenshots into src/Textures/Previews (see its header)
 curseforge/             project page material: logo.png (+ make_logo.py to regenerate it), description.md
 ```
@@ -130,12 +137,72 @@ anything under `build/`.
   module no group lists lands in "Other") and a picture in `Previews.lua`
   (`classic` / `modern` builders drawing the same files, coordinates and
   atlases the module and Blizzard's frame use).
-- For a user-visible release bump `"version"` in `addon.json` (`x.y.z`);
-  never write a literal version into the `.toc` — it contains
+- The version lives only in `addon.json`, and a version bump pushed to
+  `master` is a public release (see "Releasing to CurseForge" below): only
+  bump it when the user asks for a release. Never write a literal version into the `.toc` — it contains
   `## Version: @project-version@`, which `build.ps1` replaces (in `.toc`,
   `.lua` and `.md` files) and uses for the zip name. `ns.VERSION` in
   `Core.lua` reads it back from the TOC.
 - Do not commit unless asked. Never commit `deploy.config.json`.
+
+## Releasing to CurseForge
+
+"Deploy" on its own means `.\deploy.ps1` (copy into the local game). When the
+user asks to *release*, *publish*, or *deploy to CurseForge* (or to "ship" /
+"push a new version"), the release is done by CI
+(`.github/workflows/build.yml`, details in the root `README.md`): a push to
+`master` that changes `"version"` in `addon.json` uploads the zip to
+CurseForge and creates the GitHub release `v<version>`. If it is unclear
+which of the two the user means, ask. A release request authorizes the
+commit and push below (and only those); it is public and cannot be taken
+back, so follow the steps in order:
+
+1. **Check the tree.** `git fetch --tags origin`, then `git status`: be on
+   `master`, not behind `origin/master`. Uncommitted changes: ask whether
+   they belong in the release (commit them first, as their own commit with a
+   normal message) or stay out (then leave them uncommitted and out of the
+   release commit). Run the Lua syntax check (as in CI: `luac5.1 -p` on every
+   file under `src/`, or another Lua 5.1 parser) and `.\publish.ps1 -DryRun`;
+   stop and report on any failure.
+2. **Pick the version.** The previous release is the newest `v*` tag (or,
+   before the first tag, the version in `addon.json` of `origin/master`). Use
+   the version the user named; otherwise bump the minor version when the
+   release adds a feature or option (1.20.1 -> 1.21.0) and the patch version
+   for fixes only (1.21.0 -> 1.21.1). "beta" / "alpha" releases get
+   `-beta1` / `-alpha1` (next number if that one is tagged). State the
+   version you chose in the reply.
+3. **Write the changelog.** Read the commits since the previous release
+   (`git log --no-merges v<previous>..HEAD`, and their diffs when the
+   subjects are terse) and add a `## <version>` section at the top of the
+   version list in `CHANGELOG.md`: one bullet per player-visible change, in
+   players' words (option names as the options page shows them, which
+   flavor when only one is affected), no internal refactors, file names or
+   commit hashes.
+4. **Commit and push.** Change `"version"` in `addon.json` and add the
+   `CHANGELOG.md` section in one commit, message `Release <version>` (plus
+   the attribution lines), nothing else in it. `git push origin master`.
+   Never create or push the `v<version>` tag yourself: the workflow skips a
+   version that is already tagged, and the GitHub release creates the tag.
+5. **Follow the run.** With `gh` available: `gh run list --workflow build.yml
+   --branch master --limit 1`, then `gh run watch <id> --exit-status`. Without
+   it, give the user the Actions link
+   (https://github.com/stavroskasidis/ForevermoreClassicUI/actions) instead of
+   polling. Report the outcome: the CurseForge file and the GitHub release on
+   success, the failing step's log on failure.
+6. **If it failed:** fix the cause (never by bumping the version again) and
+   re-run it on the user's go-ahead with `gh workflow run build.yml --ref master`
+   (or *Run workflow* in the Actions tab), which releases the current version
+   while it has no `v<version>` tag. If the CurseForge upload succeeded but the
+   GitHub release step failed, do not re-run (it would upload to CurseForge a
+   second time): create the release by hand
+   (`gh release create v<version> build/ForevermoreClassicUI-<version>.zip
+   --target <release commit> --notes-file build/CHANGELOG.md`, plus
+   `--prerelease` for a beta / alpha, after a local `.\publish.ps1 -DryRun`
+   on that commit).
+
+The CI needs the repository secret `CURSEFORGE_API_TOKEN`; a run failing with
+"Set CURSEFORGE_API_TOKEN" means the user has to add or renew it (never ask
+for the token in chat or put it in a file).
 
 ## Client facts (retail 12.x) that shape the code
 

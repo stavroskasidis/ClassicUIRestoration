@@ -1,0 +1,113 @@
+# Runs on master only (pushes, and "Run workflow" on master): checks and
+# builds, and releases to CurseForge and GitHub when a push changes the
+# version in addon.json.
+#
+# Release: publish.ps1 builds the zip, writes the changelog and uploads to
+# CurseForge (secret CURSEFORGE_API_TOKEN), then the GitHub release v<version>
+# is created from the same files. A version that already has its v<version>
+# tag is never released again. Retry a failed release with "Run workflow"
+# (workflow_dispatch), which releases the current version if it is untagged.
+name: Build
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # "Run workflow" can pick any branch; only master runs.
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # WoW runs Lua 5.1.
+      - name: Check Lua syntax
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.1 > /dev/null
+          find src -name '*.lua' -print0 | xargs -0 luac5.1 -p
+
+      - name: Check .toc file list
+        shell: pwsh
+        run: |
+          $toc = Get-Content src/ForevermoreClassicUI.toc
+          $missing = $toc | Where-Object { $_ -and $_ -notmatch '^#' } |
+            ForEach-Object { $_.Trim() -replace '\\', '/' } |
+            Where-Object { -not (Test-Path (Join-Path src $_)) }
+          if ($missing) { throw "Files listed in the .toc but missing from src/: $($missing -join ', ')" }
+
+      - name: Build
+        shell: pwsh
+        run: ./build.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ForevermoreClassicUI
+          path: build/ForevermoreClassicUI/
+
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Push: release when the push changed the version and it is not tagged
+      # yet. Manual run: release whenever the version is not tagged yet.
+      - name: Decide
+        id: decide
+        shell: pwsh
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          $version = (Get-Content addon.json -Raw | ConvertFrom-Json).version
+          $release = $true
+          git rev-parse -q --verify "refs/tags/v$version" > $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "v$version is already tagged."
+            $release = $false
+          } elseif ($env:GITHUB_EVENT_NAME -eq 'push') {
+            $before = $null
+            if ($env:BEFORE -and $env:BEFORE -notmatch '^0+$') {
+              $json = git show "$($env:BEFORE):addon.json" 2>$null
+              if ($LASTEXITCODE -eq 0) { $before = (($json -join "`n") | ConvertFrom-Json).version }
+            }
+            if ($before -eq $version) {
+              Write-Host "Version unchanged ($version)."
+              $release = $false
+            } else {
+              Write-Host "Version changed: $before -> $version."
+            }
+          }
+          $global:LASTEXITCODE = 0
+          Add-Content $env:GITHUB_OUTPUT "release=$($release.ToString().ToLower())"
+
+      - name: Upload to CurseForge
+        id: publish
+        if: steps.decide.outputs.release == 'true'
+        shell: pwsh
+        env:
+          CURSEFORGE_API_TOKEN: ${{ secrets.CURSEFORGE_API_TOKEN }}
+        run: ./publish.ps1
+
+      - name: Create GitHub release
+        if: steps.decide.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.publish.outputs.tag }}
+          ZIP: ${{ steps.publish.outputs.zip }}
+          NOTES: ${{ steps.publish.outputs.changelog }}
+          PRERELEASE: ${{ steps.publish.outputs.prerelease }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" "$ZIP" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$NOTES" "${flags[@]}"
