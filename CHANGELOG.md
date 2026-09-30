@@ -5,6 +5,15 @@ in `addon.json` is bumped, add a `## <version>` section here in the same
 commit; a version without a section here gets the list of its commit
 messages instead (see `publish.ps1`).
 
+## 1.23.0
+
+- New Buffs option: the modern arrow that folds your long and permanent
+  buffs away is gone, so every buff always shows, as in classic.
+  Right-click to cancel, tooltips and Edit Mode keep working.
+- Quest Log: with the world map's Show Quest Levels filter on (or colour
+  blind mode), each quest's level shows before its title, as on the map's
+  quest list.
+
 ## 1.22.1
 
 - WoW Forever: the Character Window option now also gives the inspect
