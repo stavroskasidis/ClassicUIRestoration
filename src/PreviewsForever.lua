@@ -19,7 +19,8 @@
 	  * micro menu: the retail buttons on the action bar plate
 	    (MainMenuBarMicroMenu.xml), with Forever's spellbook button;
 	  * minimap: the UI-HUD-Minimap-Frame art around the map cut by its
-	    generic mask (Skin.lua).
+	    generic mask (Skin.lua);
+	  * bank: the slot atlases and uniform columns of Camelot\BankFrame.xml.
 	The windows (character, spellbook, talents, trainer, auction house,
 	professions, loot) are in-game screenshots of both looks instead, in
 	Textures\Previews.
@@ -216,4 +217,18 @@ Previews.minimap.modern = function(c)
 	zoomIn:SetPoint("CENTER", art, "TOPLEFT", mapX + 72, mapY - 62)
 	local zoomOut = Atlas(art, "ui-hud-minimap-zoom-out", "OVERLAY")
 	zoomOut:SetPoint("CENTER", art, "TOPLEFT", mapX + 56, mapY - 76)
+end
+
+-- Bank: Camelot\BankFrame.xml's slots, 13px apart across from 47px in (eight
+-- columns; the picture shows seven), 47px down, on bags-item-bankslot64
+-- under bank-frame-item-slotframe (bank-frame-bag-slotframe while the slot
+-- holds an item; BankFrame.lua's CamelotBankPanelItemButtonMixin:Refresh).
+local BANK_WIDTH = 47 + 6 * 50 + 37 + 47
+Previews.bank.width = 18 + BANK_WIDTH + 12
+Previews.bank.modern = function(c)
+	K.ModernBank(c, BANK_WIDTH, function(column)
+		return 47 + column * 50
+	end, "bags-item-bankslot64", function(holdsItem)
+		return holdsItem and "bank-frame-bag-slotframe" or "bank-frame-item-slotframe"
+	end)
 end

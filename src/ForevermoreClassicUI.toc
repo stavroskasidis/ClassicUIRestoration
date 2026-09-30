@@ -29,6 +29,7 @@ Modules\MerchantFrame.lua
 Modules\ActionBars.lua
 Modules\BagsBar.lua
 Modules\BagFrames.lua
+Modules\BankFrame.lua
 Modules\MicroMenu.lua
 Modules\GameMenu.lua
 Modules\QuestLog.lua

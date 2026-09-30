@@ -52,6 +52,9 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/ActionBars.lua   vanilla action bar art (reload; button borders, per-button strip cells, page arrows)
   Modules/BagsBar.lua      "Bags" option, bags bar (reload; square equal-size slots, backpack icon, strip cells, Forever key ring)
   Modules/BagFrames.lua    vanilla bag / backpack / combined windows   (part of Bags; slots re-anchored from Blizzard's grid)
+  Modules/BankFrame.lua    vanilla bank (reload; UI-BankFrame cut through its lattice bars and repeated to the bank's grid,
+                           Blizzard's window sized to it and its pooled slots moved onto the wells after
+                           GenerateItemSlotsForSelectedTab; classic tabs; Forever's bag slots and page tabs)
   Modules/MicroMenu.lua    classic micro buttons (reload; UI-MicroButton-* files re-applied from hooks on the buttons' Set*Atlas)
   Modules/GameMenu.lua     vanilla game menu / Esc menu (reload; dialog box drawn behind GameMenuFrame, pooled buttons re-skinned and re-stacked after its Layout)
   Modules/QuestLog.lua     vanilla quest log (reload; the addon's own window, since the modern quest log is the world map's
@@ -385,6 +388,18 @@ for the token in chat or put it in a file).
   Forever's `Blizzard_Minimap\Camelot\Skin.lua` re-sizes the container/backdrop
   and swaps the compass atlas on every rotate change; `Diel.lua` adds a day/night
   frame (`MinimapCluster.DielFrame`) and replaces `MinimapCluster.SetEditModeScale`.
+- Bank: `BankFrame` (Blizzard_UIPanels_Game) differs per flavor. Retail
+  (`Mainline\BankFrame.*`): one bank tab (98 slots, 7 rows filled column by
+  column in pairs of columns) at a time, the Bank / Warband Bank tabs a
+  `TabSystem` under the frame, the bank tabs (`BankPanelTabTemplate`, already
+  the SpellBook-SkillLineTab art) down its side. Forever
+  (`Camelot\BankFrame.*` over the Mainline `BankFrameTemplates.*`,
+  `C_Bank.ShouldUsePlayerBagsInBank()` true): every slot of the bank and its
+  bags on 8 columns, 88 a page (the frame grows 47px a row past six), the
+  bag slots (`itemButtonBagPool`, 3/4 scale) under `BagText`, and one
+  `LargeSideTabButtonTemplate` page tab per page (`bankPageTabPool`). Both
+  build the slots from `BankPanel.itemButtonPool`, chaining each slot's
+  anchor to the one before it; the bank holds no secure widgets.
 - XP / reputation bars: `StatusTrackingBarManager` holds two containers
   (`MainStatusTrackingBarContainer`, `SecondaryStatusTrackingBarContainer`,
   Edit Mode systems), each with one bar per kind (`container.bars[barIndex]`,

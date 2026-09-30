@@ -1173,6 +1173,117 @@ Previews.windows = {
 }
 
 ---------------------------------------------------------------------------
+-- Bank
+---------------------------------------------------------------------------
+
+-- A small bank window: three rows of slots from Blizzard's first row
+-- (63px down), a few holding items, the rest empty.
+local BANK_X, BANK_Y, BANK_WIDTH, BANK_HEIGHT = 18, -16, 395, 226
+local BANK_FIRST_Y, BANK_ROWS, BANK_COLUMNS = -63, 3, 7
+local BANK_PORTRAIT = "Interface\\Icons\\INV_Misc_Coin_02"
+local BANK_ITEMS = {
+	[1] = "Interface\\Icons\\INV_Fabric_Linen_01", [2] = "Interface\\Icons\\INV_Misc_Pelt_Wolf_01",
+	[3] = "Interface\\Icons\\INV_Sword_04", [8] = "Interface\\Icons\\INV_Misc_Bag_10",
+}
+
+local function BankPortrait(parent)
+	local texture = File(parent, BANK_PORTRAIT, 62, 62, -5, 7, "OVERLAY")
+	Mask(parent, texture)
+	return texture
+end
+
+-- BankFrameTemplate's stone over the portrait frame's rock.
+local function BankStone(frame)
+	RockBackground(frame)
+	local stone = Tex(frame, "BACKGROUND", -5)
+	if ns.SetAtlas(stone, "bank-frame-background") then
+		stone:SetHorizTile(true)
+		stone:SetVertTile(true)
+		stone:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -21)
+		stone:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+	else
+		stone:Hide()
+	end
+end
+
+-- Calls draw(index, x, y) for each slot, row by row.
+local function BankSlots(pitchY, ColumnX, draw)
+	for row = 0, BANK_ROWS - 1 do
+		for column = 0, BANK_COLUMNS - 1 do
+			draw(row * BANK_COLUMNS + column + 1, ColumnX(column), BANK_FIRST_Y - row * pitchY, column, row)
+		end
+	end
+end
+
+-- A modern bank window of `width`: the slots at ColumnX(column), 47px
+-- apart down, on the `background` atlas under FrameAtlas(holdsItem) (or the
+-- ItemButton's UI-Quickslot2 when nil). Forever's picture uses it too.
+local function ModernBank(c, width, ColumnX, background, FrameAtlas)
+	local frame, _, border = ModernWindow(c, width, BANK_HEIGHT, BANK or "Bank", BankPortrait)
+	frame:ClearAllPoints()
+	frame:SetPoint("TOPLEFT", c, "TOPLEFT", BANK_X, BANK_Y)
+	BankStone(frame)
+	local slots = Layer(frame, 10)
+	BankSlots(47, ColumnX, function(index, x, y)
+		At(Atlas(slots, background, "BACKGROUND", 0, 37, 37), "TOPLEFT", x, y)
+		if BANK_ITEMS[index] then
+			File(slots, BANK_ITEMS[index], 37, 37, x, y, "ARTWORK")
+		end
+		if FrameAtlas then
+			At(Atlas(slots, FrameAtlas(BANK_ITEMS[index] ~= nil), "OVERLAY", 0, 37, 37), "TOPLEFT", x, y)
+		else
+			local normal = Tex(slots, "OVERLAY")
+			normal:SetTexture(T.QUICKSLOT2)
+			normal:SetSize(64, 64)
+			normal:SetPoint("CENTER", slots, "TOPLEFT", x + 18.5, y - 19.5)
+		end
+	end)
+	local buttons = CreateFrame("Frame", nil, frame)
+	buttons:SetAllPoints(frame)
+	buttons:SetFrameLevel(border:GetFrameLevel() + 10)
+	At(Atlas(buttons, "RedButton-Exit", "OVERLAY", 0, 24, 24), "TOPRIGHT", 1, 0)
+end
+
+Previews.bank = {
+	width = BANK_X + BANK_WIDTH + 12, height = -BANK_Y + BANK_HEIGHT + 12,
+	classic = function(c)
+		-- BankFrame.lua: the vanilla UI-BankFrame (its own 7x4 grid here),
+		-- the portrait under its ring, slots 49 x 44px apart from (40, -73)
+		-- under UI-Quickslot2; the picture shows its top.
+		local frame = CreateFrame("Frame", nil, c)
+		frame:SetSize(400, 424)
+		frame:SetPoint("TOPLEFT", c, "TOPLEFT", BANK_X - 10, BANK_Y + 13)
+		local portrait = BankPortrait(frame)
+		portrait:SetDrawLayer("BACKGROUND")
+		portrait:SetSize(60, 60)
+		portrait:ClearAllPoints()
+		portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", 7, -6)
+		File(frame, T.BANK_FRAME, 512, 512, 0, 0, "BORDER")
+		local slots = Layer(frame, 10)
+		for index = 1, 3 * 7 do
+			local x, y = 40 + (index - 1) % 7 * 49, -73 - math.floor((index - 1) / 7) * 44
+			if BANK_ITEMS[index] then
+				File(slots, BANK_ITEMS[index], 37, 37, x, y, "ARTWORK")
+			end
+			local normal = Tex(slots, "OVERLAY")
+			normal:SetTexture(T.QUICKSLOT2)
+			normal:SetSize(64, 64)
+			normal:SetPoint("CENTER", slots, "TOPLEFT", x + 18.5, y - 19.5)
+		end
+		Text(slots, "GameFontHighlight", BANK or "Bank", "CENTER", 220, -24, "TOPLEFT")
+		Text(slots, "GameFontNormal", ITEMSLOTTEXT or "Item Slots", "CENTER", 202, -62, "TOPLEFT")
+		File(slots, T.PANEL_CLOSE .. "Up", 32, 32, 400 - 12 - 16, -24 + 16, "OVERLAY")
+	end,
+	modern = function(c)
+		-- Retail (Mainline\BankFrame.lua): pairs of columns 8px apart,
+		-- 19px between pairs, from 26px in, on bags-item-slot64.
+		ModernBank(c, BANK_WIDTH, function(column)
+			return 26 + column * 45 + math.floor(column / 2) * 11
+		end, "bags-item-slot64")
+	end,
+}
+
+---------------------------------------------------------------------------
 -- Quest log
 ---------------------------------------------------------------------------
 
@@ -1677,6 +1788,7 @@ ns.PreviewKit = {
 	MapDisc = MapDisc, ZoneText = ZoneText, ActionIcons = ActionIcons, BagIcon = BagIcon,
 	PlayerName = PlayerName, PlayerLevel = PlayerLevel, PlayerSpells = PlayerSpells,
 	ModernActionButton = ModernActionButton, EndCapBar = EndCapBar, StatusBarPictures = StatusBarPictures,
+	ModernBank = ModernBank,
 	ACTION_SIZE = ACTION_SIZE, ACTION_PADDING = ACTION_PADDING, ENDCAP_BAR_WIDTH = ENDCAP_BAR_WIDTH,
 	NAMEPLATE_NAME = NAMEPLATE_NAME, MODERN_MICRO = MODERN_MICRO,
 }

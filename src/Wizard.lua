@@ -50,8 +50,8 @@ local GROUPS = {
 		keys = { "minimap", "groupfindereye" } },
 	{ title = "Your Character", text = "Your character window, spellbook, talents, quest log and the quests you track.",
 		keys = { "characterframe", "spellbook", "talents", "questlog", "questtracker" } },
-	{ title = "Out in the World", text = "Looting, training, and the vendor, mail, quest and other windows.",
-		keys = { "lootframe", "windows", "trainer" } },
+	{ title = "Out in the World", text = "Looting, training, the bank, and the vendor, mail, quest and other windows.",
+		keys = { "lootframe", "windows", "trainer", "bank" } },
 	{ title = "Trade", text = "The auction house and your professions.",
 		keys = { "auctionhouse", "professions" } },
 }
@@ -78,6 +78,7 @@ local SUMMARIES = {
 	lootframe = "The vanilla loot panel with the skull and the classic item rows.",
 	windows = "The pre-Dragonflight metal frame, round close button and classic tabs on the vendor, mail, quest, trade and other windows.",
 	trainer = "The vanilla trainer window with the colour-coded skill list.",
+	bank = "The vanilla bank window: the stone panel with its riveted slot wells, the bag slot row and the money bar.",
 	auctionhouse = "The vanilla auction house: the classic panel, filter column and Bid / Buyout buttons.",
 	professions = "The vanilla trade skill window: the rank bar, the compact recipe list and the reagents below it.",
 }
