@@ -5,6 +5,18 @@ in `addon.json` is bumped, add a `## <version>` section here in the same
 commit; a version without a section here gets the list of its commit
 messages instead (see `publish.ps1`).
 
+## 1.26.0
+
+- Controller support (WoW Forever only): with the controller UI on, the
+  focus glow, button prompts and L1 / R1 tab prompts follow the classic
+  windows (character, inspect, trainer, auction house, spellbook, talents,
+  professions).
+- Talents (WoW Forever only): controller navigation reaches the lower tiers
+  of every tree, and the right stick scrolls the tree.
+- Professions Window (WoW Forever only): with the controller UI on, the
+  Create prompts and Set Amount show in the button row, and closing the
+  window no longer gets blocked.
+
 ## 1.25.0
 
 - New Looking For Group option (WoW Forever only): the classic Looking For
