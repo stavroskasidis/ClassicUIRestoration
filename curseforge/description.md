@@ -35,7 +35,7 @@ every supported version in the file's Game Version field:
 - **Reskin, not replacement:** Blizzard's own frames with the vanilla art. Every new Blizzard feature keep working.
 - **Pick what you want:** every element has its own Modern / Classic switch.
 - **User Fiendly:** setup wizard on first login: one-click presets, or choose element by element.
-- **Controller support:** works with WoW Forever's controller UI: the focus glow, button prompts and L1 / R1 tab prompts follow the classic windows, and controller navigation (talents, professions, spellbook) keeps working.
+- **Controller support:** works with WoW Forever's controller UI.
 
 ## What it changes
 
