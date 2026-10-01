@@ -33,17 +33,25 @@
 	    changes out of combat,
 	  * the recipe list stays Blizzard's ScrollBox, so selecting a recipe,
 	    collapsing a category, favourites and links stay Blizzard's own,
-	    clicks. The list is scaled down (ROW_SCALE) and the rows' text is
+	    clicks. The list is scaled down (rowScale) and the rows' text is
 	    enlarged back; the rows are flattened (Blizzard indents each tree
 	    level) and re-coloured after each Initialize. Vanilla's gapless
-	    16px rows need the view's element heights and spacing: this is the
-	    one place Lua state of Blizzard's is set (the view's extent
-	    calculator and padding). The list lays out while the panel manager
-	    shows the window, so that code runs there; tested in game
-	    (2026-09-27): the K binding, the spellbook / talents and crafting
-	    in combat work without blocked actions,
+	    16px rows need the view's element heights and spacing (its extent
+	    calculator and padding, Lua state Blizzard's layout reads, so every
+	    layout runs tainted). With the mouse and keyboard nothing protected
+	    follows a layout (tested 2026-09-27: the K binding, the spellbook /
+	    talents and crafting in combat work without blocked actions), but
+	    the controller UI lays the list out from its own code and then sets
+	    override bindings, which are Blizzard-only (closing the window was
+	    blocked, 2026-10-01). With the controller UI on, the view keeps
+	    Blizzard's extents: recipe rows are still 16px, category rows a
+	    little taller, with Blizzard's small gap after each category. The
+	    choice is made when the window is skinned (taking the calculator
+	    off again would be another write); a later switch of the input
+	    style asks for a reload,
 	  * the vanilla "All" tab collapses / expands every category through
-	    Blizzard's data provider,
+	    Blizzard's data provider (its nodes' collapsed state, read by every
+	    layout: with the controller UI on, the tab only shows the state),
 	  * the schematic form, rank bar, tool slots and Blizzard's create
 	    buttons are moved into a hidden frame (Blizzard's code keeps driving
 	    them: the form still holds the recipe's transaction that Create
@@ -51,11 +59,14 @@
 	    module's, filled from the form's recipe whenever Blizzard validates
 	    its controls (every selection, bag change and every 0.75s); the
 	    buttons call Blizzard's Create / CreateAll and mirror its buttons'
-	    state. The quantity box is Blizzard's (already the classic spinner).
+	    state, and with the controller UI Blizzard's button prompt. The
+	    quantity box is Blizzard's (already the classic spinner), and so is
+	    the controller UI's "Set Amount" prompt shown in its slot.
 
-	Apart from the list view's heights and the "All" tab's collapsing, only
-	widget state is touched (sizes, anchors, parents, textures, colours,
-	alpha, hit rects). Applied once at login (reload to switch off).
+	Apart from the list view's heights and the "All" tab's collapsing
+	(without the controller UI), only widget state is touched (sizes,
+	anchors, parents, textures, colours, alpha, hit rects). Applied once at
+	login (reload to switch off).
 ]]
 
 local _, ns = ...
@@ -90,6 +101,12 @@ local SKILL_BORDER_X, SKILL_BORDER_Y = 63, -50    -- TradeSkillSkillBorderLeft
 local EXPAND_TAB_X, EXPAND_TAB_Y = 15, -71        -- TradeSkillExpandButtonFrame (the "All" tab)
 local SEARCH_X, SEARCH_Y, SEARCH_WIDTH = 80, -70, 125 -- where vanilla had its subclass dropdown
 local FILTER_RIGHT, FILTER_Y, FILTER_WIDTH = 358, -64, 110
+local FILTER_CLEAR_LEFT = 13                      -- the dropdown box art's see-through left end
+-- The controller UI's prompts for the search box and the filter (28px
+-- icons Blizzard hangs off their left edges): the first right of the "All"
+-- tab, the second against the filter box, the search box between them.
+local SEARCH_ICON_X, ICON_SIZE, ICON_GAP = 70, 28, 2
+local BAND_CENTER_Y = -80                         -- the search box's and the filter box's middle
 local LIST_LEFT, LIST_TOP, LIST_WIDTH, LIST_HEIGHT = 21, -96, 296, 130 -- TradeSkillListScrollFrame
 local ROW_LEFT, ROW_WIDTH = 22, 293               -- TradeSkillSkill1..8
 local BAR_X, BAR_Y = 15, -221                     -- TradeSkillHorizontalBarLeft
@@ -98,13 +115,18 @@ local BUTTON_Y = -422                             -- the bottom row's centre lin
 local CREATE_X, EXIT_X, BUTTON_WIDTH = 224, 305, 80 -- centres
 local CREATE_ALL_GAP = 86                         -- between Create All's right and Create's left
 local INPUT_X, INPUT_GAP = 128, 4                 -- TradeSkillInputBox's left; the - button 4px left of it
+local SET_AMOUNT_X = 101                          -- the controller UI's "Set Amount" prompt, in the box's slot
+local PROMPT_GAP = 3                              -- between a create button's controller prompt and its text
 local CASTBAR_X, CASTBAR_Y = 175, -470            -- Blizzard's crafting cast bar, under the art (bottom centre)
 
 -- The recipe list: Blizzard's rows are 20 units tall, drawn at vanilla's
 -- 16px; its row fonts are sized for 12px text at this scale (Game15Font
 -- headers). Every row (category ones too) gets that height, with no spacing
--- and no spacer rows, as in 1.12.
-local ROW_SCALE = 0.8
+-- and no spacer rows, as in 1.12. With the controller UI on, the view keeps
+-- Blizzard's extents (recipe rows 1 unit apart, category rows 25 units, a
+-- 10 unit gap after each category) and the recipe rows are 16px a row at
+-- CONTROLLER_ROW_SCALE.
+local VANILLA_ROW_SCALE, CONTROLLER_ROW_SCALE = 0.8, 16 / 21
 local ROW_HEIGHT = 20                             -- list units
 local LIST_PAD = 5                                -- Blizzard's view padding (top, bottom, right), list units
 local ROW_TEXT_X, ROW_TEXT_Y = 24, 1              -- the name (vanilla: 21px in, after a space)
@@ -128,6 +150,9 @@ local REAGENTS_LABEL = strtrim(((SPELL_REAGENTS or "Reagents:"):gsub("%%s", ""))
 local frame, page                                 -- ProfessionsFrame, its CraftingPage
 local origin                                      -- the vanilla frame's top-left corner, which everything is placed from
 local originX, originY = 0, 0                     -- its offset from the frame's top left (see UpdateOrigin)
+local gamepadBox                                  -- round the vanilla window, for the controller UI (ns.SetGamepadBox)
+local controllerList                              -- the list was skinned for the controller UI (Blizzard's extents, no "All" collapsing)
+local rowScale = VANILLA_ROW_SCALE                -- the list's scale, set when it is skinned
 local chrome = {}                                 -- the vanilla frame art (shown with the crafting page)
 local art = {}                                    -- this module's widgets on the crafting page
 local saved = {}                                  -- Blizzard's anchors / hit rect, restored for the overview page
@@ -209,6 +234,7 @@ local function CreateChrome()
 	origin = CreateFrame("Frame", nil, frame)
 	origin:SetSize(1, 1)
 	UpdateOrigin()
+	gamepadBox = ns.CreateArtBox(frame, origin, HIT_WIDTH, HIT_HEIGHT)
 
 	local botLeft = ns.HasTexture(T.TRADESKILL_ART .. "BotLeft") and T.TRADESKILL_ART or T.TRAINER_ART
 	Piece(T.TRAINER_ART .. "TopLeft", 256, 256, 0, 0)
@@ -291,6 +317,9 @@ local function UpdateChrome()
 	if frame.NineSlice then frame.NineSlice:SetAlpha(blizzardAlpha) end
 	if frame.Bg then frame.Bg:SetAlpha(blizzardAlpha) end
 	if frame.PortraitContainer then frame.PortraitContainer:SetAlpha(blizzardAlpha) end
+	-- The controller UI's focus glow and button prompts: round the vanilla
+	-- window, or Blizzard's on the overview page.
+	ns.SetGamepadBox(frame, classic and gamepadBox or nil)
 	-- Blizzard's close button, unless the classic one stands in for it. The
 	-- classic X is only created out of combat (see CreateCloseButtons): if
 	-- the window first loads in combat, Blizzard's sits on its spot until
@@ -334,7 +363,7 @@ local function HideBlizzardPieces()
 	hidden = CreateFrame("Frame")
 	hidden:Hide()
 	for _, key in ipairs({ "SchematicForm", "RankBar", "LinkButton", "TutorialButton", "ConcentrationDisplay",
-		"CreateButton", "CreateAllButton", "GearSlotDivider", "GamepadCreateMultiple" }) do
+		"CreateButton", "CreateAllButton", "GearSlotDivider" }) do
 		if page[key] then page[key]:SetParent(hidden) end
 	end
 	for _, slot in ipairs(page.InventorySlots or {}) do
@@ -345,17 +374,65 @@ local function HideBlizzardPieces()
 	FadeAtlasRegions(page.RecipeList)
 end
 
+-- The search box on vanilla's subclass dropdown spot; while the controller
+-- UI shows the prompts beside it and the filter, it makes room for them
+-- (their icons show and hide with the crafting page's prompt footer).
+-- Blizzard's controller setup anchors the box to the filter's prompt.
+local function LayoutSearchBand()
+	local list = page.RecipeList
+	local search, filter = list.SearchBox, list.FilterDropdown
+	if not search then return end
+	local left, right = SEARCH_X, SEARCH_X + SEARCH_WIDTH
+	local searchIcon = search.GamepadFocusIcon
+	if searchIcon and searchIcon:IsShown() then
+		left = SEARCH_ICON_X + ICON_SIZE + ICON_GAP
+	end
+	local filterIcon = filter and filter.GamepadFocusIcon
+	if filterIcon and filterIcon:IsShown() then
+		right = math.min(right, FILTER_RIGHT - FILTER_WIDTH - 50 + FILTER_CLEAR_LEFT - ICON_SIZE - 2 * ICON_GAP)
+	end
+	search:ClearAllPoints()
+	search:SetPoint("TOPLEFT", origin, "TOPLEFT", left, SEARCH_Y)
+	search:SetSize(right - left, 20)
+end
+
+-- The controller UI's "Set Amount" prompt (R3), which Blizzard shows
+-- instead of the quantity box, takes the box's slot between Create All and
+-- Create: one line in the small font (Blizzard wraps it to two 60px lines,
+-- again whenever the controller UI starts, so this runs with every update
+-- of the buttons).
+local function FitSetAmount()
+	local prompt = page.GamepadCreateMultiple
+	local label = prompt and prompt.ControlDescText
+	if not (label and label.FontString) then return end
+	label.FontString:SetFontObject(GameFontNormalSmall)
+	label.FontString:SetMaxLines(1)
+	label.FontString:SetWidth(0)
+	label:SetWidth(label.FontString:GetStringWidth())
+	Point(prompt, "LEFT", origin, "TOPLEFT", SET_AMOUNT_X, BUTTON_Y)
+end
+
 local function PlaceControls()
 	local list = page.RecipeList
 
 	local search = list.SearchBox
-	if search then
-		search:ClearAllPoints()
-		search:SetPoint("TOPLEFT", origin, "TOPLEFT", SEARCH_X, SEARCH_Y)
-		search:SetSize(SEARCH_WIDTH, 20)
-	end
 	local filter = list.FilterDropdown
+	if search then
+		LayoutSearchBand()
+		local icon = search.GamepadFocusIcon
+		if icon then
+			Point(icon, "LEFT", origin, "TOPLEFT", SEARCH_ICON_X, BAND_CENTER_Y)
+			icon:HookScript("OnShow", LayoutSearchBand)
+			icon:HookScript("OnHide", LayoutSearchBand)
+		end
+	end
 	if filter then
+		local icon = filter.GamepadFocusIcon
+		if icon then
+			Point(icon, "RIGHT", filter, "LEFT", FILTER_CLEAR_LEFT - ICON_GAP, 0)
+			icon:HookScript("OnShow", LayoutSearchBand)
+			icon:HookScript("OnHide", LayoutSearchBand)
+		end
 		Point(filter, "TOPRIGHT", origin, "TOPLEFT", FILTER_RIGHT, FILTER_Y)
 		ns.SkinDropdownBox(filter, FILTER_WIDTH)
 		-- Its "reset filters" x never goes away on Forever: Blizzard counts
@@ -379,6 +456,7 @@ local function PlaceControls()
 			Point(input.DecrementButton, "RIGHT", input, "LEFT", -INPUT_GAP, 0)
 		end
 	end
+	FitSetAmount()
 	if page.ViewGuildCraftersButton then
 		Point(page.ViewGuildCraftersButton, "RIGHT", origin, "TOPLEFT", CREATE_X + BUTTON_WIDTH / 2, BUTTON_Y)
 	end
@@ -388,14 +466,21 @@ end
 -- Recipe list
 ---------------------------------------------------------------------------
 
+-- A row's list data. Blizzard takes GetElementData off a row when the list
+-- releases it (a rebuild), and the controller UI's smart navigation can
+-- still run the scripts of the row it last selected.
+local function NodeOf(row)
+	return row.GetElementData and row:GetElementData()
+end
+
 local function Indent(row)
-	local node = row:GetElementData()
+	local node = NodeOf(row)
 	local depth = node and node.GetDepth and node:GetDepth() or 1
 	return math.max(0, depth - 1) * TREE_INDENT
 end
 
 local function RecipeInfoOf(row)
-	local node = row:GetElementData()
+	local node = NodeOf(row)
 	local data = node and node.GetData and node:GetData()
 	local info = data and data.recipeInfo
 	if info and Professions.GetHighestLearnedRecipe then
@@ -412,7 +497,7 @@ end
 -- Blizzard's row fonts at vanilla size in the scaled-down list.
 local function EnlargeFont(fontString)
 	local file, size, flags = GameFontNormal:GetFont()
-	fontString:SetFont(file, size / ROW_SCALE, flags or "")
+	fontString:SetFont(file, size / rowScale, flags or "")
 	fontString:SetShadowColor(0, 0, 0, 1)
 	fontString:SetShadowOffset(1, -1)
 	fontString:SetHeight(20)
@@ -481,6 +566,12 @@ local function CreateExpandTab()
 	tab.text = tab:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 	tab.text:SetPoint("LEFT", tab, "LEFT", HEADER_TEXT_X, 1)
 	tab.text:SetText(ALL or "All")
+	art.expandTab = tab
+	-- With the controller UI the tab only shows whether any category is open.
+	if controllerList then
+		tab:EnableMouse(false)
+		return
+	end
 	tab:SetScript("OnEnter", function(self) self.text:SetFontObject(GameFontHighlight) end)
 	tab:SetScript("OnLeave", function(self) self.text:SetFontObject(GameFontNormal) end)
 	tab:SetScript("OnClick", function(self)
@@ -495,7 +586,6 @@ local function CreateExpandTab()
 		UpdateExpandTab()
 		PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
 	end)
-	art.expandTab = tab
 end
 
 -- Name and count in the difficulty colour (white while hovered or
@@ -540,7 +630,7 @@ end
 
 local function UpdateRecipe(row, skin)
 	local indent = Indent(row)
-	Point(row.Label, "LEFT", row, "LEFT", ROW_TEXT_X / ROW_SCALE - indent, ROW_TEXT_Y)
+	Point(row.Label, "LEFT", row, "LEFT", ROW_TEXT_X / rowScale - indent, ROW_TEXT_Y)
 	-- The bar spans the list whatever the row's tree level.
 	skin.bar:ClearAllPoints()
 	skin.bar:SetPoint("TOPLEFT", row, "TOPLEFT", -indent, 0)
@@ -556,7 +646,7 @@ local function SkinCategory(row)
 	FadeAtlasRegions(row)
 	Fade(row.CollapseButton)
 	skin.button = row:CreateTexture(nil, "ARTWORK")
-	skin.button:SetSize(EXPAND_SIZE / ROW_SCALE, EXPAND_SIZE / ROW_SCALE)
+	skin.button:SetSize(EXPAND_SIZE / rowScale, EXPAND_SIZE / rowScale)
 	local glow = row:CreateTexture(nil, "HIGHLIGHT")
 	glow:SetTexture(T.PLUS_HILIGHT)
 	glow:SetBlendMode("ADD")
@@ -570,14 +660,14 @@ end
 
 local function UpdateCategory(row, skin)
 	local indent = Indent(row)
-	Point(skin.button, "LEFT", row, "LEFT", HEADER_BUTTON_X / ROW_SCALE - indent, 0)
+	Point(skin.button, "LEFT", row, "LEFT", HEADER_BUTTON_X / rowScale - indent, 0)
 	local text = row.ButtonText
 	if text then
 		text:ClearAllPoints()
-		text:SetPoint("LEFT", row, "LEFT", HEADER_TEXT_X / ROW_SCALE - indent, 0)
+		text:SetPoint("LEFT", row, "LEFT", HEADER_TEXT_X / rowScale - indent, 0)
 		text:SetPoint("RIGHT", row, "RIGHT", -5, 0)
 	end
-	local node = row:GetElementData()
+	local node = NodeOf(row)
 	SetExpandTexture(skin.button, node and node.IsCollapsed and node:IsCollapsed())
 end
 
@@ -604,7 +694,7 @@ local function SkinList()
 	local list = page.RecipeList
 	local scrollBox = list.ScrollBox
 	local view = scrollBox:GetView()
-	if view and view.SetElementExtentCalculator and view.SetPadding then
+	if not controllerList and view and view.SetElementExtentCalculator and view.SetPadding then
 		view:SetPadding(LIST_PAD, LIST_PAD, 0, LIST_PAD, 0)
 		view:SetElementExtentCalculator(function(_, node)
 			local data = node:GetData()
@@ -616,12 +706,12 @@ local function SkinList()
 			return 0.001
 		end)
 	end
-	local pad = LIST_PAD * ROW_SCALE
+	local pad = LIST_PAD * rowScale
 	local top = LIST_TOP + pad
-	scrollBox:SetScale(ROW_SCALE)
+	scrollBox:SetScale(rowScale)
 	scrollBox:ClearAllPoints()
-	scrollBox:SetPoint("TOPLEFT", origin, "TOPLEFT", ROW_LEFT / ROW_SCALE, top / ROW_SCALE)
-	scrollBox:SetSize((ROW_WIDTH + pad) / ROW_SCALE, (LIST_HEIGHT + pad) / ROW_SCALE)
+	scrollBox:SetPoint("TOPLEFT", origin, "TOPLEFT", ROW_LEFT / rowScale, top / rowScale)
+	scrollBox:SetSize((ROW_WIDTH + pad) / rowScale, (LIST_HEIGHT + pad) / rowScale)
 	if scrollBox.GetUpperShadowTexture then
 		Fade(scrollBox:GetUpperShadowTexture())
 		Fade(scrollBox:GetLowerShadowTexture())
@@ -993,6 +1083,8 @@ end
 -- A classic panel button standing in for one of Blizzard's (hidden) create
 -- buttons: it calls the page's own method and shows the Blizzard button's
 -- state, text (without the " [count]" Create All gets) and failure tooltip.
+-- With the controller UI it gets Blizzard's button prompt (Square: tap to
+-- create, hold to create all) before its text, as Blizzard's buttons do.
 local function CreateProxyButton(source, method)
 	local button = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
 	button:SetSize(BUTTON_WIDTH, 22)
@@ -1009,7 +1101,28 @@ local function CreateProxyButton(source, method)
 	end)
 	button:SetScript("OnLeave", GameTooltip_Hide)
 	button.source = source
+	if GAMEPAD_FACE_LEFT then
+		local ok, icon = pcall(CreateFrame, "Frame", nil, button, "InputIconTextureFrameTemplate")
+		if ok and icon then
+			icon:SetInputKey(GAMEPAD_FACE_LEFT)
+			icon:SetSize(22, 22)
+			icon:Hide()
+			button.prompt = icon
+		end
+	end
 	return button
+end
+
+-- The prompt shows while the button can be pressed, its text moving right
+-- to make room (GamepadMode.UpdateGamepadIconAnchor).
+local function UpdatePrompt(button)
+	local prompt, text = button.prompt, button:GetFontString()
+	if not (prompt and text) then return end
+	local shown = ns.IsControllerUI() and button:IsEnabled()
+	prompt:SetShown(shown)
+	text:ClearAllPoints()
+	text:SetPoint("CENTER", button, "CENTER", shown and (prompt:GetWidth() + PROMPT_GAP) / 2 or 0, 0)
+	Point(prompt, "RIGHT", text, "LEFT", -PROMPT_GAP, 0)
 end
 
 local function CreateButtons()
@@ -1049,9 +1162,16 @@ local function SyncButtons()
 		local source = button.source
 		button:SetShown(source:IsShown())
 		button:SetEnabled(source:IsEnabled())
-		local text = (source:GetText() or ""):gsub("%s*%[%d+%]$", "")
+		-- Create keeps the amount set with the controller UI ("Create [3]"),
+		-- which has no quantity box to show it.
+		local text = source:GetText() or ""
+		if not (button == art.create and ns.IsControllerUI()) then
+			text = text:gsub("%s*%[%d+%]$", "")
+		end
 		button:SetText(text)
+		UpdatePrompt(button)
 	end
+	FitSetAmount()
 	-- Blizzard puts its crafting cast bar at the bottom of the page on every
 	-- validation; the page is Blizzard's size, so it goes under the art.
 	if page.OverlayCastBarAnchor then
@@ -1079,6 +1199,16 @@ local function Skin()
 		end
 	end
 	highlightFile = ns.HasTexture(T.LISTBOX_HIGHLIGHT) and T.LISTBOX_HIGHLIGHT or T.LISTBOX_HIGHLIGHT1
+	controllerList = ns.IsControllerUI()
+	rowScale = controllerList and CONTROLLER_ROW_SCALE or VANILLA_ROW_SCALE
+	-- The list keeps the input style it was skinned for (see the header).
+	local styleWatcher = CreateFrame("Frame")
+	styleWatcher:RegisterEvent("INPUT_DEVICE_INTERFACE_TRANSITION")
+	styleWatcher:SetScript("OnEvent", function()
+		if ns.IsControllerUI() ~= controllerList then
+			ns.Print("/reload to fit the professions window's recipe list to the " .. (controllerList and "mouse and keyboard." or "controller UI."))
+		end
+	end)
 
 	CreateChrome()
 	HideBlizzardPieces()

@@ -41,7 +41,12 @@
 	    and drawn as the vanilla tabs (so a click stays Blizzard's),
 	  * the stat boxes and resistances are this module's frames, filled by
 	    Blizzard's own stat functions (PAPERDOLL_STATINFO) whenever Blizzard
-	    updates its stats.
+	    updates its stats,
+	  * with the controller UI on, Blizzard's focus glow goes round the
+	    vanilla window (and the docked pane), its L1 / R1 tab prompts under
+	    the two ends of the tab row (Blizzard puts them over and under its
+	    tab column) and the button prompt footers under those. Blizzard
+	    hides the close button in that mode (B closes the window).
 
 	Only widget state is touched (sizes, anchors, textures, colours, alpha,
 	hit rects); no Lua field is written on Blizzard's frames. Nothing here
@@ -94,6 +99,9 @@ local RESIST_RIGHT, RESIST_Y, RESIST_WIDTH, RESIST_HEIGHT = 297, -77, 32, 29
 -- also takes the flat inner 7px of each end.
 local TAB_X, TAB_Y, TAB_OVERLAP, TAB_END, TAB_HEIGHT = 12, -434, 16, 20, 32
 local TAB_TEXT_INTO_END = 7
+-- The controller UI's L1 / R1 prompts (26px) under the tab row's ends, and
+-- the row they take there.
+local TAB_INDICATOR_INSET, TAB_INDICATOR_ROW = 6, 28
 -- The docked right pane: the 1.12 dialog box (as 1.12's reputation detail
 -- frame, 33px into the frame's transparent right edge) and the pane inside
 -- its border. It runs from the frame's top border down to the bottom of the
@@ -184,6 +192,8 @@ local paperdollArt, generalArt, petArt = {}, {}, {}
 local portrait, levelText, guildText, petNameText
 local attributes           -- the stat boxes' frame
 local petXPBar
+local dockBox              -- the docked right pane's dialog box
+local controllerBox        -- what the controller UI's glow and footers go round (SetUpController)
 local statBoxes = {}       -- "left" / "right" -> { rows = { stat frames }, dropdown }
 local resistances = {}     -- the resistance frames, in RESISTANCES order
 local tabSkins = setmetatable({}, { __mode = "k" }) -- Blizzard tab frame -> what this module added to it
@@ -422,6 +432,26 @@ local function SkinTab(tab, label)
 	return skin
 end
 
+-- The controller UI's L1 / R1 prompts (the window's TabIndicators):
+-- Blizzard puts them over the first and under the last of its tab column;
+-- on the tab row they go under its two ends (left of it, L1 would leave the
+-- screen: the window opens at its left edge), with the footers under them.
+local function PlaceTabIndicators(owner)
+	local indicators = owner.TabIndicators
+	local tabs = owner.ModeTabs and owner.ModeTabs.Tabs
+	if not (indicators and indicators.LeftTabButton and indicators.RightTabButton and tabs) then return end
+	local first, last
+	for _, tab in ipairs(tabs) do
+		if tab:IsShown() then
+			first = first or tab
+			last = tab
+		end
+	end
+	if not first then return end
+	Point(indicators.LeftTabButton, "TOPLEFT", first, "BOTTOMLEFT", TAB_INDICATOR_INSET, 0)
+	Point(indicators.RightTabButton, "TOPRIGHT", last, "BOTTOMRIGHT", -TAB_INDICATOR_INSET, 0)
+end
+
 -- After Blizzard's tab layout (a column down the frame's right side): the
 -- shown tabs of `owner` (the character or the inspect window) go into a row
 -- under its art (`ownerOrigin`), each sized to its label.
@@ -444,6 +474,26 @@ local function LayoutModeTabs(owner, ownerOrigin)
 			previous = tab
 		end
 	end
+	PlaceTabIndicators(owner)
+end
+
+-- The controller UI's focus glow (ns.SetGamepadBox) goes round the vanilla
+-- window of `owner` (the character or the inspect window): from the art's
+-- border down to the bottom of the tab row, which 1.12's hit rect also took
+-- in. The jump hints and footers go under the L1 / R1 prompts. Blizzard
+-- places those prompts again whenever they show; they go back under the
+-- tab row after it. Returns the box.
+local function SetUpController(owner, ownerOrigin)
+	local box = ns.CreateArtBox(owner, ownerOrigin, HIT_WIDTH, TAB_HEIGHT - TAB_Y)
+	local footerBox = CreateFrame("Frame", nil, owner)
+	footerBox:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
+	footerBox:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", 0, -TAB_INDICATOR_ROW)
+	ns.SetGamepadBox(owner, box, footerBox)
+	if owner.TabIndicators then
+		ns.Hook(owner.TabIndicators, "UpdateTabVisibility", function() PlaceTabIndicators(owner) end)
+	end
+	PlaceTabIndicators(owner)
+	return box
 end
 
 local function LayoutTabs()
@@ -464,6 +514,7 @@ local function DockRightPane()
 	-- A child of the pane, so it shows and hides with it; at the frame's own
 	-- level, behind the pane's contents (the frame's children).
 	local box = CreateFrame("Frame", nil, pane, "BackdropTemplate")
+	dockBox = box
 	box:SetFrameLevel(frame:GetFrameLevel())
 	box:SetPoint("TOPLEFT", pane, "TOPLEFT", -DOCK_INSET_LEFT, DOCK_INSET_TOP)
 	box:SetPoint("BOTTOMRIGHT", pane, "BOTTOMRIGHT", DOCK_INSET_RIGHT, -DOCK_INSET_BOTTOM)
@@ -1180,6 +1231,18 @@ local function StartCollapsed()
 	C_CVar.SetCVar(COLLAPSED_CVAR, "1")
 end
 
+-- With the right pane open the controller UI's glow and footers go round
+-- the vanilla window and the docked pane together (the dialog box ends at
+-- the bottom of the tab row too).
+local function UpdateControllerBox()
+	if not controllerBox then return end
+	if dockBox and frame.RightPaneHost:IsShown() then
+		controllerBox:SetPoint("BOTTOMRIGHT", dockBox, "BOTTOMRIGHT", 0, 0)
+	else
+		controllerBox:SetPoint("BOTTOMRIGHT", origin, "TOPLEFT", HIT_WIDTH, TAB_Y - TAB_HEIGHT)
+	end
+end
+
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:SetScript("OnEvent", function()
@@ -1213,6 +1276,9 @@ function module:Apply()
 	LayoutTabs()
 	ns.Hook(frame, "UpdateSize", UpdateHitRects)
 	UpdateHitRects()
+	controllerBox = SetUpController(frame, origin)
+	ns.Hook(frame, "UpdateSize", UpdateControllerBox)
+	UpdateControllerBox()
 	StartCollapsed()
 	-- The tab pages (CharacterReputation.lua, ...) and the inspect window
 	-- (CharacterInspect.lua) are skinned only with it.
@@ -1226,6 +1292,7 @@ ns.CharacterWindow = {
 	CreateArt = CreateArt,
 	SkinSlot = SkinSlot,
 	LayoutModeTabs = LayoutModeTabs,
+	SetUpController = SetUpController,
 	-- The vanilla tab skin on a Blizzard LargeSideTabButtonTemplate tab (the
 	-- group finder's, GroupFinder.lua): SkinTab(tab, label) returns the skin
 	-- (its label is skin.text, its middle piece skin.middle), UpdateTab

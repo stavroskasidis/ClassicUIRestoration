@@ -494,6 +494,104 @@ function ns.SetArtHitRect(panel, left, right, top, bottom)
 	panel:SetHitRectInsets(ns.ArtHitRectInsets(panel, left, right, top, bottom))
 end
 
+-- The controller UI (Forever's Blizzard_Gamepad) draws on the window that
+-- has the focus a gold glow (FrameGlow, anchored round its NineSlice), the
+-- jump hints (LeftJumpHint, RightJumpHint, FocusJumpHint, centred on its
+-- bottom edge) and footers of button prompts (each footer's legend: a child
+-- of the window anchored under its bottom edge, built the first time the
+-- footer shows). On a window whose vanilla art is smaller than Blizzard's
+-- frame they would sit round the invisible modern frame, so
+-- ns.SetGamepadBox(panel, box, footerBox) moves them onto `box`, an addon
+-- frame round the vanilla window (ns.CreateArtBox), the hints and footers
+-- onto `footerBox` if given (a window that puts more prompts under its
+-- tabs): every anchor they hold on the window, its NineSlice or another box
+-- of the window goes to the same point of the box, with Blizzard's
+-- offsets. A window that switches
+-- between a vanilla and a modern page (the spells panel, the professions
+-- window) calls it again on every switch, with nil for the modern look
+-- (back onto the window). Blizzard anchors the glow and the hints once, at
+-- load; a legend is anchored whenever its footer is built or moved to
+-- another window, so the legends' SetPoint is hooked. On retail nothing of
+-- this exists.
+local gamepadBoxes = setmetatable({}, { __mode = "k" }) -- panel -> its box, false for none (once it had one)
+local footerBoxes = setmetatable({}, { __mode = "k" })  -- panel -> the box its hints and footers go under, if not its box
+local boxOwners = setmetatable({}, { __mode = "k" })    -- box -> its panel
+local hookedLegends = setmetatable({}, { __mode = "k" })
+
+local function MoveToGamepadBox(region)
+	local panel = region:GetParent()
+	local box = panel and gamepadBoxes[panel]
+	if box == nil then return end
+	local target = box and region ~= panel.FrameGlow and footerBoxes[panel] or box or panel
+	local points, moved = {}, false
+	for i = 1, region:GetNumPoints() do
+		local point, relativeTo, relativePoint, x, y = region:GetPoint(i)
+		if relativeTo ~= target and relativeTo ~= nil and (relativeTo == panel or relativeTo == panel.NineSlice
+			or boxOwners[relativeTo] == panel) then
+			relativeTo, moved = target, true
+		end
+		points[i] = { point, relativeTo, relativePoint, x, y }
+	end
+	if not moved then return end
+	region:ClearAllPoints()
+	for _, p in ipairs(points) do
+		region:SetPoint(p[1], p[2], p[3], p[4], p[5])
+	end
+end
+
+local function HookLegend(legend)
+	if hookedLegends[legend] then return end
+	hookedLegends[legend] = true
+	ns.Hook(legend, "SetPoint", MoveToGamepadBox)
+	MoveToGamepadBox(legend)
+end
+
+local legendFactoryHooked
+function ns.SetGamepadBox(panel, box, footerBox)
+	if box then boxOwners[box] = panel end
+	if footerBox then boxOwners[footerBox] = panel end
+	if (gamepadBoxes[panel] or nil) == box and footerBoxes[panel] == footerBox then return end
+	gamepadBoxes[panel] = box or false
+	footerBoxes[panel] = footerBox
+	-- Every legend built from now on (a footer can be moved to another
+	-- window later); the ones built before are the window's children.
+	if not legendFactoryHooked and InputPromptLegends then
+		legendFactoryHooked = ns.Hook(InputPromptLegends, "CreateInputLegend", function(parent, key)
+			local legend = parent and key and parent[key]
+			if type(legend) == "table" and legend.promptContainerFrame then HookLegend(legend) end
+		end)
+	end
+	for _, child in ipairs({ panel:GetChildren() }) do
+		if child.promptContainerFrame then
+			HookLegend(child)
+			MoveToGamepadBox(child)
+		end
+	end
+	for _, key in ipairs({ "FrameGlow", "LeftJumpHint", "RightJumpHint", "FocusJumpHint" }) do
+		local region = panel[key]
+		if type(region) == "table" and region.GetPoint then MoveToGamepadBox(region) end
+	end
+end
+
+-- Whether the controller UI is on (Forever; the style can change in a
+-- session, INPUT_DEVICE_INTERFACE_TRANSITION).
+function ns.IsControllerUI()
+	return C_InputInterfaceStyle ~= nil and Enum.InputDeviceInterfaceType ~= nil
+		and C_InputInterfaceStyle.GetCurrentStyle() == Enum.InputDeviceInterfaceType.Gamepad
+end
+
+-- A box round a vanilla window for ns.SetGamepadBox: from its border's
+-- top-left corner (the art's margin in from `origin`, the art's top-left
+-- corner) to `right`, `bottom` px right of and below the art's corner (the
+-- border's right edge, and the bottom of the tab row when tabs hang under
+-- it). A child of `parent`; not protected.
+function ns.CreateArtBox(parent, origin, right, bottom)
+	local box = CreateFrame("Frame", nil, parent)
+	box:SetPoint("TOPLEFT", origin, "TOPLEFT", ns.CLASSIC_ART_X, -ns.CLASSIC_ART_Y)
+	box:SetPoint("BOTTOMRIGHT", origin, "TOPLEFT", right, -bottom)
+	return box
+end
+
 ---------------------------------------------------------------------------
 -- Classic widget skins shared by the panel modules (trainer, auction house,
 -- window frames)

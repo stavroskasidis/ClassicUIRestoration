@@ -180,6 +180,8 @@ local function ApplyFrameArt(frame)
 	frame:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
 	origin = ns.ArtOrigin(frame, FRAME_WIDTH, FRAME_HEIGHT)
 	ns.SetArtHitRect(frame, 0, 34, 0, 75)
+	-- The controller UI's focus glow and button prompts go round the art.
+	ns.SetGamepadBox(frame, ns.CreateArtBox(frame, origin, FRAME_WIDTH - 34, FRAME_HEIGHT - 75))
 
 	if frame.NineSlice then frame.NineSlice:Hide() end
 	if frame.Bg then frame.Bg:Hide() end

@@ -42,7 +42,12 @@
 	  * "Activate" (for the inactive spec) and the undo / reset button go to
 	    the right end of the box under the title, the search box into the
 	    bar at the bottom (the bar is its border), and "Apply Changes"
-	    becomes 3.x's "Learn" button in the box at the bottom right.
+	    becomes 3.x's "Learn" button in the box at the bottom right,
+	  * with the controller UI on, every talent button stays inside the
+	    scroll frame (smart navigation sorts the buttons when the window
+	    gets the focus and scrolls only to reach a scroll frame's own), the
+	    right stick scrolls the tree and the L1 / R1 spec prompts go over
+	    and under the spec tabs.
 
 	Only widget state is touched (parents, sizes, anchors, textures, colours,
 	alpha); no Lua field is written on Blizzard's frames. Applied once at
@@ -108,6 +113,7 @@ local BOX_LEFT, BOX_Y, BOX_RIGHT, BOX_HEIGHT = 75, -48, 339, 20
 -- The bar and the box at the bottom (UI-TalentFrame-BotLeft / -BotRight).
 local BAR_Y = -420                              -- their centre line
 local BAR_LEFT, POINTS_RIGHT = 32, 252          -- search box start, talent points' right end
+local ICON_GAP = 4                              -- between a controller UI prompt and its control
 local LEARN_X = 305                             -- 1.12's Close button, centre
 -- Tabs: the first one's bottom left from the frame's bottom left, each one
 -- 15px into the previous one (PanelTemplates_TabResize(10, tab): the text
@@ -115,6 +121,9 @@ local LEARN_X = 305                             -- 1.12's Close button, centre
 local TAB_X, TAB_Y, TAB_OVERLAP, TAB_END, TAB_PADDING = 15, 46, 15, 20, 10
 -- 3.x's spec tabs (PlayerSpecTab1 / 2) down the right edge.
 local SPEC_TAB_X, SPEC_TAB_Y, SPEC_TAB_SIZE, SPEC_TAB_GAP = 352, -65, 32, 22
+-- The controller's right stick (its config name), the tilt it ignores and
+-- the scroll speed (px a second at full tilt) if the CVar cannot be read.
+local STICK, STICK_DEAD_ZONE, STICK_SPEED = "Camera", 0.2, 600
 
 -- Blizzard's node coordinates are tenths of a pixel, 600 between columns and
 -- between tiers; a node may be off its grid point by a pixel or so.
@@ -152,6 +161,7 @@ local book, talents        -- PlayerSpellsFrame and its talents page (TalentsFra
 local VisualState          -- TalentButtonUtil.BaseVisualState
 local frame                -- the vanilla frame
 local scroll, canvas, arrowLayer, parking -- scroll frame, its child (the buttons' parent), the arrows above the buttons, the hidden frame
+local stash               -- the hidden frame for the other trees' buttons, inside the scroll frame (see CreateScrollFrame)
 local scrollBar, scrollUp, scrollDown, scrollThumb
 local portrait, spentText, pointsText, pointsLabel
 local background = {}      -- the tree background's four pieces
@@ -357,7 +367,7 @@ local function PlaceButton(button)
 		button:SetParent(canvas)
 		Point(button, "TOPLEFT", canvas, "TOPLEFT", FIRST_X + (cell.column - 1) * SPACING, -(FIRST_Y + (cell.tier - 1) * SPACING))
 	else
-		button:SetParent(parking)
+		button:SetParent(stash)
 	end
 	button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
 	for _, key in ipairs({ "Icon", "DisabledOverlay" }) do
@@ -650,6 +660,14 @@ local function CreateScrollFrame()
 	parking = CreateFrame("Frame", nil, frame)
 	parking:SetFrameLevel(level)
 	parking:Hide()
+	-- The controller UI's smart navigation sorts a window's buttons into
+	-- scroll frames when it scans the window (and scrolls a frame only to
+	-- reach its own buttons). It scans when the window gets the focus, not
+	-- when the tree changes, so the other trees' buttons wait inside the
+	-- scroll frame too.
+	stash = CreateFrame("Frame", nil, canvas)
+	stash:SetFrameLevel(level)
+	stash:Hide()
 	-- 1.12's arrows were drawn over the buttons.
 	arrowLayer = CreateFrame("Frame", nil, canvas)
 	arrowLayer:SetAllPoints(canvas)
@@ -678,13 +696,42 @@ local function CreateScrollFrame()
 	scrollUp = CreateScrollButton(T.SCROLL_UP, "BOTTOM", "TOP", -1)
 	scrollDown = CreateScrollButton(T.SCROLL_DOWN, "TOP", "BOTTOM", 1)
 	scrollBar:SetScript("OnValueChanged", function(_, value)
-		scroll:SetVerticalScroll(value)
+		if math.abs(scroll:GetVerticalScroll() - value) > 0.5 then
+			scroll:SetVerticalScroll(value)
+		end
 		UpdateScrollButtons()
+	end)
+	-- Smart navigation scrolls the frame itself to the button it moves to.
+	scroll:SetScript("OnVerticalScroll", function(_, offset)
+		scrollBar:SetValue(offset)
 	end)
 	scroll:EnableMouseWheel(true)
 	scroll:SetScript("OnMouseWheel", function(_, delta)
 		ScrollBy(-delta)
 	end)
+
+	-- Smart navigation scrolls with the right stick only a frame Blizzard's
+	-- code registers with it (registering one from here would taint it), so
+	-- the stick is read here while the controller UI navigates the panel,
+	-- at the player's smart navigation scroll speed.
+	if C_GamePad and C_GamePad.GetDeviceMappedState and C_GamePad.StickIndexToConfigName then
+		local stickReader = CreateFrame("Frame", nil, scroll)
+		stickReader:SetScript("OnUpdate", function(_, elapsed)
+			if not (SmartNavigation and SmartNavigation:GetActiveFrame() == book) then return end
+			local state = C_GamePad.GetDeviceMappedState()
+			if not state then return end
+			for i = 1, state.stickCount do
+				if C_GamePad.StickIndexToConfigName(i - 1) == STICK then
+					local y = state.sticks[i].y
+					if math.abs(y) > STICK_DEAD_ZONE then
+						local speed = GetCVarNumberOrDefault and GetCVarNumberOrDefault("SmartNavigationScrollSpeed") or STICK_SPEED
+						scrollBar:SetValue(scrollBar:GetValue() - y * speed * elapsed)
+					end
+					return
+				end
+			end
+		end)
+	end
 end
 
 ---------------------------------------------------------------------------
@@ -828,8 +875,11 @@ end
 -- go down the frame's right edge. The bar itself stays invisible.
 local function LayoutSpecTabs()
 	local index = 0
+	local first, last
 	for _, tab in ipairs(talents.TabSystem.tabs or {}) do
 		if tab:IsShown() then
+			first = first or tab
+			last = tab
 			SkinSpecTab(tab)
 			for _, key in ipairs(SIDE_TAB_ART) do
 				if tab[key] then tab[key]:SetAlpha(0) end
@@ -839,6 +889,13 @@ local function LayoutSpecTabs()
 			UpdateSpecTab(tab)
 			index = index + 1
 		end
+	end
+	-- The controller UI's L1 / R1 prompts for the two specs, which Blizzard
+	-- puts at the ends of the (now invisible) bar: over the first tab and
+	-- under the last.
+	if first and talents.GamepadPrimaryTabIcon and talents.GamepadSecondaryTabIcon then
+		Point(talents.GamepadPrimaryTabIcon, "BOTTOM", first, "TOP", 0, 2)
+		Point(talents.GamepadSecondaryTabIcon, "TOP", last, "BOTTOM", 0, -2)
 	end
 end
 
@@ -879,18 +936,31 @@ local function LayoutBox()
 end
 
 -- The search box sits in the bottom bar without its own border, then its
--- options arrow, then the talent points (1.12's place).
+-- options arrow, then the talent points (1.12's place). The controller UI's
+-- prompts for the two (Blizzard hangs them off their left edges, and puts
+-- the box and the arrow elsewhere when the controller UI starts) go before
+-- each, the box making room for them while they show.
 local function LayoutBar()
 	local search, options = talents.SearchBox, talents.SearchOptionsDropdown
-	local right, relativePoint = pointsLabel, "LEFT"
+	local searchIcon, optionsIcon = talents.SearchBoxIcon, talents.SettingsTopFaceIcon
+	local right = pointsLabel
 	if options then
 		Point(options, "RIGHT", pointsLabel, "LEFT", -4, 0)
 		right = options
+		if optionsIcon then
+			Point(optionsIcon, "RIGHT", options, "LEFT", -ICON_GAP, 0)
+			if optionsIcon:IsShown() then right = optionsIcon end
+		end
+	end
+	local left = BAR_LEFT
+	if searchIcon then
+		Point(searchIcon, "LEFT", frame, "TOPLEFT", BAR_LEFT, BAR_Y)
+		if searchIcon:IsShown() then left = BAR_LEFT + searchIcon:GetWidth() + ICON_GAP end
 	end
 	if search then
 		search:ClearAllPoints()
-		search:SetPoint("LEFT", frame, "TOPLEFT", BAR_LEFT, BAR_Y)
-		search:SetPoint("RIGHT", right, relativePoint, -4, 0)
+		search:SetPoint("LEFT", frame, "TOPLEFT", left, BAR_Y)
+		search:SetPoint("RIGHT", right, "LEFT", -4, 0)
 	end
 end
 
@@ -1117,6 +1187,11 @@ local function SkinPage()
 		Point(talents.SearchPreviewContainer, "TOPLEFT", search, "BOTTOMLEFT", 0, 2)
 	end
 	ns.Hook(talents, "UpdateInspecting", LayoutBar)
+	talents:HookScript("OnShow", LayoutBar)
+	for _, icon in ipairs({ talents.SearchBoxIcon, talents.SettingsTopFaceIcon }) do
+		icon:HookScript("OnShow", LayoutBar)
+		icon:HookScript("OnHide", LayoutBar)
+	end
 
 	-- "Apply Changes" is 3.x's "Learn" (its talent preview) in 1.12's slot of
 	-- the Close button; while inspecting, the copy button takes the slot.
@@ -1144,7 +1219,7 @@ local function Skin()
 	-- The round classic close button sits in the frame's top right corner.
 	ns.PlayerSpellsPanel.Register(talents, function(close)
 		Point(close, "CENTER", frame, "TOPLEFT", CLOSE_X, CLOSE_Y)
-	end)
+	end, ns.CreateArtBox(frame, frame, FRAME_WIDTH - HIT_INSET_RIGHT, FRAME_HEIGHT - HIT_INSET_BOTTOM))
 	talents:HookScript("OnShow", UpdateFrame)
 	LayoutBox()
 	LayoutBar()

@@ -85,6 +85,7 @@ local module = ns:RegisterModule({
 -- x 19..208 in four boxes: y 71..207 (item and prices), 214..357, 360..383
 -- and the Create Auction button slot 386..408.
 local FRAME_WIDTH, FRAME_HEIGHT = 832, 447
+local TAB_HANG = 21                                                     -- the bottom tabs' reach under the art (11px into it, 32 tall)
 local COLUMN_LEFT, COLUMN_RIGHT, COLUMN_TOP, COLUMN_BOTTOM = 16, 190, -103, -410
 local LIST_LEFT, LIST_RIGHT, LIST_TOP, LIST_BOTTOM = 188, -13, -80, 34 -- an ItemList (its headers sit 2px below its top, in the strip above the inset)
 local ITEM_LIST_TOP = -170                                              -- the list under an item header (item buy / own auctions of one item)
@@ -419,6 +420,9 @@ local function ApplyFrameChrome(frame)
 	-- frame 20px right of the panel spot); the frame's mouse follows it.
 	origin = ns.ArtOrigin(frame, FRAME_WIDTH, FRAME_HEIGHT)
 	ns.SetArtHitRect(frame, 0, 0, 0, 0)
+	-- The controller UI's focus glow and button prompts go round the art and
+	-- the tabs hanging under it.
+	ns.SetGamepadBox(frame, ns.CreateArtBox(frame, origin, FRAME_WIDTH, FRAME_HEIGHT + TAB_HANG))
 	Hide(frame.NineSlice)
 	Hide(frame.Bg)
 	Hide(frame.TopTileStreaks)

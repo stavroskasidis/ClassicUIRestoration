@@ -7,6 +7,8 @@ and colours, so no functionality is lost. Edit Mode, heal prediction, absorbs,
 auras, vehicles, the search boxes and sort buttons, the modern auction house,
 staged talent changes and casting from the spellbook all keep working. Every
 element has its own option and can be switched back to the modern look.
+On WoW Forever it also works with the controller UI: the focus glow,
+button prompts and tab prompts follow the classic windows.
 
 Ships for retail 12.1 (`## Interface: 120100`) and for World of Warcraft:
 Forever 1.60 (`## Interface: 16001`). No external libraries.
@@ -92,6 +94,9 @@ and trade skill windows) has a transparent margin around its border, so it
 is drawn that much up and to the left of Blizzard's frame, and the offsets
 Blizzard gives some windows (the auction house, professions) are taken back
 out.
+With WoW Forever's controller UI on, the gold focus glow, the button prompt
+bar under a window and the L1 / R1 tab prompts follow the vanilla art
+instead of Blizzard's (now invisible) modern frame.
 
 Cast bars are re-textured from script hooks on the bars themselves (their
 cast methods must not be hooked on 12.x, see `Modules\CastBars.lua`), the

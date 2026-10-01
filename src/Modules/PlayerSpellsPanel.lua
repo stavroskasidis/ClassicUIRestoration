@@ -14,7 +14,9 @@
 	  * the panel's mouse is switched off, so the invisible panel does not
 	    block clicks around the classic frame (each classic frame takes its
 	    own). The spellbook page holds a secure button, which makes the panel
-	    protected, so this waits for the end of combat.
+	    protected, so this waits for the end of combat,
+	  * the controller UI's focus glow and button prompt footers go round
+	    the page's classic frame (ns.SetGamepadBox, the box the page gives).
 
 	The modules register their pages here. On a tab change Blizzard shows the
 	new page and hides the old one one after the other (in the order of its
@@ -34,6 +36,7 @@ local BUTTON_STATES = { "Normal", "Pushed", "Disabled", "Highlight" }
 
 local book                 -- PlayerSpellsFrame
 local pages = {}           -- registered page -> function(closeButton) placing the classic close button
+local boxes = {}           -- registered page -> the box round its classic frame (ns.CreateArtBox)
 local retail               -- the panel state the classic pages replace
 local classicShown = false -- whether the classic chrome is on the panel
 local mouseQueued = false
@@ -112,18 +115,21 @@ function panel.Update()
 	else
 		RestoreCloseButton()
 	end
+	ns.SetGamepadBox(book, page and boxes[page])
 	UpdateMouse()
 end
 
 -- page: a page of PlayerSpellsFrame that draws its own classic frame;
--- placeCloseButton(close): anchors the classic close button to that frame.
-function panel.Register(page, placeCloseButton)
+-- placeCloseButton(close): anchors the classic close button to that frame;
+-- box: the controller UI's box round that frame (ns.CreateArtBox).
+function panel.Register(page, placeCloseButton, box)
 	if not book then
 		book = PlayerSpellsFrame
 		SaveRetail()
 		book:HookScript("OnShow", panel.Update)
 	end
 	pages[page] = placeCloseButton
+	boxes[page] = box
 	-- The tab tracker shows / hides the pages on every tab change.
 	ns.Hook(page, "SetShown", panel.Update)
 	panel.Update()

@@ -76,7 +76,7 @@ src/                    the addon folder, one build for every flavor (copied as 
   Modules/CharacterSkills.lua its Skills tab, Forever only           (part of Character Window; same row skinning, own 1.12 detail pane)
   Modules/CharacterInspect.lua the vanilla inspect window, Forever only (part of Character Window; its art, slots and tab row
                            through ns.CharacterWindow; Window Frames skips the window through ns.windowOwners)
-  Modules/ProfessionsFrame.lua vanilla trade skill window, Forever only (reload; crafting page re-skinned in place, Blizzard's recipe list scaled with its row heights overridden, own detail pane / rank bar / "All" tab / proxy create buttons)
+  Modules/ProfessionsFrame.lua vanilla trade skill window, Forever only (reload; crafting page re-skinned in place, Blizzard's recipe list scaled with its row heights overridden (not with the controller UI on), own detail pane / rank bar / "All" tab / proxy create buttons)
   Modules/GroupFinder.lua classic Looking For Group window, Forever only (reload; Blizzard_GroupFinder_VanillaStyle's Mainline
                            frame sized to Classic Era's UI-LFG-FRAME art, pages / lists re-anchored, side tabs as bottom tabs)
   Modules/Forever.lua   Forever-only adjustments for the "camelot" UI overlay (loaded last)
@@ -386,6 +386,14 @@ for the token in chat or put it in a file).
   training). A tainted layout (from writing the view's extent or padding)
   gets pet training blocked (2026-09-29), so the trainer list is scaled
   down, never re-extented. Retail rows select through `GetID()`.
+  The professions recipe list keeps its extent calculator (and the "All"
+  tab its node collapsing) only without the controller UI (2026-10-01):
+  they make every layout tainted, and the controller UI lays the list out
+  from Blizzard's code and then sets override bindings, which are
+  Blizzard-only ("only available to the Blizzard UI"; clicking either
+  button of that popup crashed the 1.60.1 client). The choice is made when
+  the window is skinned (`ns.IsControllerUI()`); a later switch asks for a
+  reload.
 - Looking For Group (Forever only): `Blizzard_GroupFinder_VanillaStyle`
   (load-on-demand) ships a `Classic\` layout (Classic Era's, drawn with
   `UI-LFG-FRAME`) and the `Mainline\` one Forever loads
@@ -398,6 +406,26 @@ for the token in chat or put it in a file).
   `ScrollUtil.AddManagedScrollBarVisibilityBehavior` (offsets from the page's
   corners, re-applied when its scroll bar shows or hides): move the page,
   not the list.
+- Controller UI (Forever only: `Blizzard_Gamepad*`, game type `camelot`):
+  the focused window gets a gold glow (`FrameGlow`, from
+  `PortraitFrameBaseTemplate` / `DefaultPanelBaseTemplate`, anchored round
+  its `NineSlice` once at load), jump hints (`LeftJumpHint` / `RightJumpHint`
+  / `FocusJumpHint`, centred on its bottom edge) and footers of button
+  prompts (`GamepadSharedUtility.CreatePromptedBindingFooter`; the legend is
+  a child of the window built on the footer's first show, anchored under the
+  window's bottom edge). Windows with tabs have a `TabIndicators` frame (L1 /
+  R1 prompts, placed in `UpdateTabVisibility` beside or, with `isVertical`,
+  above and under the tab list). A window whose vanilla art is smaller than
+  (or offset from) Blizzard's frame registers a box round the art
+  (`ns.CreateArtBox`: border corner to the border's right edge and the
+  bottom of the tab row) with `ns.SetGamepadBox` (`Core.lua`), which moves
+  the glow, hints and footers onto it; windows switching between a vanilla
+  and a modern page (spells panel, professions) switch the box with the
+  page (nil: back to Blizzard's frame). Windows sized to their art (bags,
+  bank, loot, game menu) and the Window Frames ones (same frame) need none.
+  A module that lays bottom tabs out of a side tab column re-places the
+  `TabIndicators` buttons (see `CharacterFrame.lua`). Blizzard hides some
+  windows' close buttons in that mode (B closes them).
 - A texture's `SetAlpha` is its vertex alpha: `GetVertexColor()` on a faded
   texture returns alpha 0, so copy only r, g, b from it.
 - Minimap: `MinimapCluster` is a `ResizeLayoutFrame` (sizes itself to its shown

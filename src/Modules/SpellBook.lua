@@ -97,6 +97,7 @@ local PAGE_TEXT_X, PAGE_TEXT_Y, PAGE_TEXT_WIDTH = 178, -416, 102 -- bottom centr
 -- ring (the classic "show all ranks" checkbox sat there): the search box
 -- and the settings button.
 local BAND_Y, BAND_LEFT, BAND_RIGHT = -55, 84, 338
+local BAND_ICON_GAP = 4                           -- between a controller UI prompt and its control
 
 -- See the header: 345px takes a header and four rows (61 + 4 * 70 = 341) or
 -- four rows (280), but not five (350).
@@ -284,12 +285,17 @@ end
 
 -- After the category tab bar's Layout: Blizzard re-creates the tabs (from a
 -- pool) on every show and spell change and lines them up; they are moved
--- down the book's right edge instead.
+-- down the book's right edge instead. The controller UI's L1 / R1 prompts,
+-- which Blizzard puts at the ends of the bar, go over the first tab and
+-- under the last.
 local function LayoutSideTabs()
 	local tabs = page.CategoryTabSystem
 	local index = 0
+	local first, last
 	for _, tab in ipairs(tabs.tabs or {}) do
 		if tab:IsShown() then
+			first = first or tab
+			last = tab
 			local skin = SkinSideTab(tab)
 			for _, key in ipairs(SIDE_TAB_ART) do
 				if tab[key] then tab[key]:SetAlpha(0) end
@@ -300,6 +306,10 @@ local function LayoutSideTabs()
 			skin.checked:SetShown(tab.isSelected == true)
 			index = index + 1
 		end
+	end
+	if first and page.PreviousCategoryIcon and page.NextCategoryIcon then
+		Point(page.PreviousCategoryIcon, "BOTTOM", first, "TOP", 0, 2)
+		Point(page.NextCategoryIcon, "TOP", last, "BOTTOM", 0, -2)
 	end
 end
 
@@ -414,6 +424,7 @@ end
 -- protected spell button, never the other way round).
 function LayoutBand()
 	local gear, search, rotation = page.SettingsDropdown, page.SearchBox, page.AssistedCombatRotationSpellFrame
+	local searchIcon, gearIcon = page.SearchBoxIcon, page.SettingsTopFaceIcon
 	local anchor, relativePoint, x, y = origin, "TOPLEFT", BAND_RIGHT, BAND_Y
 	if rotationOffset and rotation:IsShown() then
 		anchor, relativePoint, x, y = rotation, "LEFT", -6, 0
@@ -421,10 +432,25 @@ function LayoutBand()
 	if gear and gear:IsShown() then
 		Point(gear, "RIGHT", anchor, relativePoint, x, y)
 		anchor, relativePoint, x, y = gear, "LEFT", -8, 0
+		-- The controller UI's prompts (Blizzard hangs them off the left
+		-- edges of the gear and the box, and moves the box when the
+		-- controller UI starts): each before its control, the box making
+		-- room for them while they show.
+		if gearIcon then
+			Point(gearIcon, "RIGHT", gear, "LEFT", -BAND_ICON_GAP, 0)
+			if gearIcon:IsShown() then
+				anchor, relativePoint, x, y = gearIcon, "LEFT", -BAND_ICON_GAP, 0
+			end
+		end
+	end
+	local left = BAND_LEFT
+	if searchIcon then
+		Point(searchIcon, "LEFT", origin, "TOPLEFT", BAND_LEFT, BAND_Y)
+		if searchIcon:IsShown() then left = BAND_LEFT + searchIcon:GetWidth() + BAND_ICON_GAP end
 	end
 	if search then
 		search:ClearAllPoints()
-		search:SetPoint("LEFT", origin, "TOPLEFT", BAND_LEFT, BAND_Y)
+		search:SetPoint("LEFT", origin, "TOPLEFT", left, BAND_Y)
 		search:SetPoint("RIGHT", anchor, relativePoint, x, y)
 	end
 end
@@ -462,6 +488,11 @@ local function SkinPage()
 	LayoutPaging(controls)
 
 	ns.Hook(page, "UpdateAttic", LayoutBand)
+	page:HookScript("OnShow", LayoutBand)
+	for _, icon in ipairs({ page.SearchBoxIcon, page.SettingsTopFaceIcon }) do
+		icon:HookScript("OnShow", LayoutBand)
+		icon:HookScript("OnHide", LayoutBand)
+	end
 	LayoutBand()
 
 	-- The tab bar itself is invisible, its tabs are anchored one by one. It
@@ -537,7 +568,7 @@ local function Skin()
 	-- The round classic close button sits inside the book's border.
 	ns.PlayerSpellsPanel.Register(page, function(close)
 		Point(close, "CENTER", origin, "TOPLEFT", CLOSE_X, CLOSE_Y)
-	end)
+	end, ns.CreateArtBox(book, origin, HIT_WIDTH, HIT_HEIGHT))
 	-- The panel manager moves the panel (centred on its own, lined up next to
 	-- other panels) when a panel opens or closes; its own frame cannot be
 	-- hooked, these are the calls that start it.

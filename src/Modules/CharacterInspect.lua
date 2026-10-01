@@ -31,7 +31,10 @@
 	    vanilla spots; the Talents button sits in the band under the title,
 	    where Blizzard puts it,
 	  * the icon tabs are Blizzard's own tab frames, moved under the frame and
-	    drawn as the vanilla tabs (so a click stays Blizzard's).
+	    drawn as the vanilla tabs (so a click stays Blizzard's),
+	  * with the controller UI on, its focus glow, footer and L1 / R1 tab
+	    prompts go round the vanilla window and its tab row, as on the
+	    character window.
 
 	Blizzard_InspectUI is load-on-demand: the window is skinned when it
 	loads. Window Frames (Windows.lua) leaves it to this part. Only widget
@@ -244,6 +247,7 @@ local function Skin()
 	frame:HookScript("OnShow", LayoutTabs)
 	LayoutTabs()
 	SetHitRects()
+	CW.SetUpController(frame, origin)
 end
 
 function module:Apply()
