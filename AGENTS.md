@@ -96,7 +96,8 @@ CHANGELOG.md            release notes, a "## <version>" section per release (els
                         a push that changes addon.json's version runs publish.ps1 and creates the
                         GitHub release v<version>
 tools/make_previews.py  crops in-game screenshots into src/Textures/Previews (see its header)
-curseforge/             project page material: logo.png (+ make_logo.py to regenerate it), description.md
+curseforge/             project page material: logo.png, logo_alt.png, logo_large.png (rendered from
+                        logo-src\*.html by make_logo.ps1, headless Chrome / Edge), description.md
 ```
 
 Flavors: `Retail` -> `_retail_`, `Forever` -> `_classic_beta_` (declared in
