@@ -11,9 +11,9 @@ Forevermore Classic UI - Forever & Retail
 (The in-game title, `## Title:` in the `.toc`, is the short "Forevermore Classic
 UI"; the addon folder is `ForevermoreClassicUI`.)
 
-## Summary (short field, under 250 characters)
+## Summary (short field, under 256 characters)
 
-The best Classic UI addon. Make the UI as Classic as you want. It's a reskin the UI, not replaces it so all features keeps working. Classic unit frames, action bars, minimap, bags, nameplates and more, each switchable. For Forever & Retail.
+The best Classic UI addon. Make the UI as Classic as you want. Reskins the UI, does not replace it, so everything keeps working. Classic unit frames, action bars, minimap, nameplates and many more, each switchable. Controller UI also supported.
 
 ## Categories
 
