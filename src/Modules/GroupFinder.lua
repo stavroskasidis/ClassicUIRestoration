@@ -85,6 +85,11 @@ local BUTTON_LEFT, BUTTON_RIGHT, BUTTON_BOTTOM, BUTTON_HEIGHT = 19, 344, 79, 22 
 local COMMENT_WIDTH = 285
 local BAR_Y = 80                                    -- the activity view's bars (centres): above the comment box, from its bottom,
 local BAR_TOP_Y = -41                               -- and under the level range checkbox, from its top (Blizzard's BarTop: -42)
+-- The row over the activity list: the playstyle dropdown (1.60.1 build
+-- 70170, 210px, laid out for Blizzard's 444px view) on its left and the
+-- level range checkbox, its label wrapped to LEVEL_RANGES_WIDTH, on its right.
+local PLAYSTYLE_X, ROW_Y = 8, -22.5                 -- the row's centre (Blizzard's dropdown: 25px at -10)
+local LEVEL_RANGES_RIGHT, LEVEL_RANGES_WIDTH = -30, 72 -- the label's right edge (the checkbox follows), from the view's right
 -- The browse page's dropdowns and the who page's search box are centred in
 -- the top band (rows 36-120 of the art, between its rims).
 local DROPDOWN_X, BAND_Y = 26, -78.5
@@ -381,6 +386,16 @@ local function SkinListing()
 		if view.ScrollBox then
 			PlaceScrollBar(view.ScrollBar, view.ScrollBox)
 			CreateActivityBars(view)
+		end
+		-- Both do not fit the classic window side by side: the checkbox's
+		-- label goes on two lines. Its label is anchored by its right edge
+		-- to the frame's, with the checkbox after it.
+		local dropdown, levelRanges = view.PlayStyleDropdown, view.LevelRangesCheckbox
+		if dropdown and levelRanges and levelRanges.Text then
+			Point(dropdown, "LEFT", view, "TOPLEFT", PLAYSTYLE_X, ROW_Y)
+			Point(levelRanges, "RIGHT", view, "TOPRIGHT", LEVEL_RANGES_RIGHT, ROW_Y)
+			levelRanges.Text:SetWidth(LEVEL_RANGES_WIDTH)
+			levelRanges.Text:SetJustifyH("RIGHT")
 		end
 	end
 
